@@ -1,0 +1,184 @@
+﻿<Page
+    x:Class="WaterMeasurements.Views.MainPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:CommunityToolkit.WinUI.Controls"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:esri="using:Esri.ArcGISRuntime.UI.Controls"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ui="using:CommunityToolkit.WinUI"
+    xmlns:viewmodels="using:WaterMeasurements.ViewModels"
+    d:DataContext="{d:DesignInstance Type=viewmodels:MainViewModel}"
+    Background="{ThemeResource SolidBackgroundFillColorBaseBrush}"
+    mc:Ignorable="d">
+
+    <Grid
+        x:Name="ContentArea"
+        Height="Auto"
+        VerticalAlignment="Top"
+        ColumnSpacing="18"
+        FlowDirection="LeftToRight">
+        <Grid.RowDefinitions>
+            <RowDefinition />
+            <RowDefinition Height="Auto" />
+            <RowDefinition />
+            <RowDefinition />
+
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition MinWidth="500" MaxWidth="800" />
+            <ColumnDefinition />
+        </Grid.ColumnDefinitions>
+
+        <TextBlock
+            x:Uid="Main_Title"
+            Grid.Row="0"
+            Style="{StaticResource PageTitleStyle}" />
+
+        <Grid Grid.Row="1" />
+
+        <Grid
+            Grid.Row="1"
+            Grid.Column="0"
+            FlowDirection="LeftToRight">
+            <CommandBar
+                HorizontalAlignment="Left"
+                DefaultLabelPosition="Right"
+                IsOpen="False">
+                <AppBarButton Label="Center">
+                    <AppBarButton.Icon>
+                        <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE81D;" />
+                    </AppBarButton.Icon>
+                </AppBarButton>
+                <AppBarButton Label="Auto Pan">
+                    <AppBarButton.Icon>
+                        <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xe7c2;" />
+                    </AppBarButton.Icon>
+                </AppBarButton>
+            </CommandBar>
+        </Grid>
+
+        <Grid
+            Grid.Row="2"
+            Grid.Column="0"
+            BorderThickness="6"
+            CornerRadius="3">
+            <esri:MapView
+                x:Name="MapView"
+                MinWidth="500"
+                MinHeight="500"
+                MaxWidth="800"
+                MaxHeight="800" />
+        </Grid>
+
+        <Grid
+            x:Name="Notifications"
+            Grid.Row="2"
+            Grid.Column="1">
+            <StackPanel
+                x:Name="CollectionStackPanel"
+                HorizontalAlignment="Stretch"
+                Spacing="30"
+                Visibility="Visible">
+
+                <StackPanel
+                    x:Name="SecchiStackPanel"
+                    MinWidth="200"
+                    MinHeight="200"
+                    HorizontalAlignment="Left"
+                    Visibility="Visible">
+                    <StackPanel>
+                        <TextBlock
+                            Opacity="0.8"
+                            Style="{StaticResource TitleTextBlockStyle}"
+                            Text="Test"
+                            TextAlignment="Center" />
+                    </StackPanel>
+
+                    <TextBlock
+                        x:Uid="Main_SecchiValues"
+                        Opacity=".5"
+                        Style="{StaticResource SubtitleTextBlockStyle}" />
+                    <TextBox
+                        x:Name="Measurement1"
+                        Margin="{StaticResource SmallTopMargin}"
+                        ui:TextBoxExtensions.ValidationMode="Dynamic"
+                        ui:TextBoxExtensions.ValidationType="Number"
+                        InputScope="Digits" />
+                    <TextBox
+                        x:Name="Measurement2"
+                        ui:TextBoxExtensions.ValidationMode="Dynamic"
+                        ui:TextBoxExtensions.ValidationType="Number"
+                        InputScope="Digits" />
+                    <TextBox
+                        x:Name="Measurement3"
+                        ui:TextBoxExtensions.ValidationMode="Dynamic"
+                        ui:TextBoxExtensions.ValidationType="Number"
+                        InputScope="Digits" />
+                    <StackPanel
+                        x:Name="ButtonStackPanel"
+                        Margin="{StaticResource SmallTopMargin}"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Bottom"
+                        Orientation="Horizontal"
+                        Spacing="5">
+                        <Button x:Name="SecchiSaveButton" x:Uid="Main_SecchiSaveButton" />
+                        <Button x:Name="SecchiCancelButton" x:Uid="Main_SecchiCancelButton" />
+                    </StackPanel>
+
+                </StackPanel>
+
+            </StackPanel>
+
+        </Grid>
+
+        <Grid
+            Grid.Row="3"
+            Grid.Column="1"
+            FlowDirection="LeftToRight">
+
+            <ListView>
+                <ListView.Header>
+                    <controls:DataTable Margin="0,40,0,0" ColumnSpacing="1">
+                        <controls:DataColumn CanResize="True" DesiredWidth="120">
+                            <TextBlock
+                                FontWeight="Bold"
+                                Opacity=".8"
+                                Style="{StaticResource BodyTextStyle}"
+                                Text="Location" />
+                        </controls:DataColumn>
+                        <controls:DataColumn MinWidth="80" CanResize="True">
+                            <TextBlock
+                                FontWeight="Bold"
+                                Opacity=".8"
+                                Style="{StaticResource BodyTextStyle}"
+                                Text="Obs1" />
+                        </controls:DataColumn>
+                        <controls:DataColumn MinWidth="80" CanResize="True">
+                            <TextBlock
+                                FontWeight="Bold"
+                                Opacity=".8"
+                                Style="{StaticResource BodyTextStyle}"
+                                Text="Obs2" />
+                        </controls:DataColumn>
+                        <controls:DataColumn MinWidth="80" CanResize="True">
+                            <TextBlock
+                                FontWeight="Bold"
+                                Opacity=".8"
+                                Style="{StaticResource BodyTextStyle}"
+                                Text="Obs3" />
+                        </controls:DataColumn>
+                        <controls:DataColumn MinWidth="40" CanResize="True">
+                            <TextBlock
+                                FontWeight="Bold"
+                                Opacity=".8"
+                                Style="{StaticResource BodyTextStyle}"
+                                Text="Secchi" />
+                        </controls:DataColumn>
+                    </controls:DataTable>
+                </ListView.Header>
+            </ListView>
+        </Grid>
+
+    </Grid>
+</Page>
