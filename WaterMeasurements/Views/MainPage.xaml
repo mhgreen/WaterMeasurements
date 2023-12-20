@@ -9,6 +9,7 @@
     xmlns:ui="using:CommunityToolkit.WinUI"
     xmlns:viewmodels="using:WaterMeasurements.ViewModels"
     d:DataContext="{d:DesignInstance Type=viewmodels:MainViewModel}"
+    x:Name="MapPage"
     Background="{ThemeResource SolidBackgroundFillColorBaseBrush}"
     mc:Ignorable="d">
 
@@ -91,7 +92,7 @@
                         <TextBlock
                             Opacity="0.8"
                             Style="{StaticResource TitleTextBlockStyle}"
-                            Text="Test"
+                            Text="-- Test --"
                             TextAlignment="Center" />
                     </StackPanel>
 
