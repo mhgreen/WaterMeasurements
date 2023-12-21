@@ -114,7 +114,6 @@ public partial class App : Application
                 "An error occurred while initializing the application: {exception}",
                 exception.Message
             );
-            // throw;
         }
 
         var config = new ConfigurationBuilder()
@@ -184,7 +183,7 @@ public partial class App : Application
         // https://docs.microsoft.com/windows/windows-app-sdk/api/winrt/microsoft.ui.xaml.application.unhandledexception.
     }
 
-    protected override async void OnLaunched(LaunchActivatedEventArgs args)
+    protected async override void OnLaunched(LaunchActivatedEventArgs args)
     {
         base.OnLaunched(args);
 

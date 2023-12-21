@@ -10,8 +10,13 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Dispatching;
 
+using NLog;
+
 using WaterMeasurements.ViewModels;
 using WaterMeasurements.Models;
+using WaterMeasurements.Services.Instances;
+using Microsoft.Extensions.Logging;
+using NLog.Fluent;
 
 namespace WaterMeasurements.Views;
 
@@ -43,7 +48,7 @@ public sealed partial class MainPage : Page
         .LocalSettings;
 
     // Current ArcGIS API key
-    private string? apiKey;
+    // private string? apiKey;
 
     [RelayCommand]
     private void ReCenter()
@@ -82,9 +87,10 @@ public sealed partial class MainPage : Page
 
     private async void Initialize()
     {
+        var logger = LogManager.GetCurrentClassLogger();
         try
         {
-            apiKey = (string?)localSettings.Values["apiKey"];
+            var apiKey = (string?)localSettings.Values["apiKey"];
             if (apiKey == "" || apiKey is null)
             {
                 // ActionStatus.IsOpen = true;
@@ -100,12 +106,12 @@ public sealed partial class MainPage : Page
             await systemLocation.StartAsync();
             var locationDisplay = MapView.LocationDisplay.IsEnabled;
             // Log to debug the value of locationDisplay with a label.
-            Debug.WriteLine($"Location Display IsEnabled: {locationDisplay}");
+            logger.Debug("MainPage.xaml.cs, Initialize: Location Display IsEnabled: {locationDisplay}", locationDisplay);
 
             // When the page is unloaded, unsubscribe from the location data source.
             MapPage.Unloaded += async (s, e) =>
             {
-                Debug.WriteLine("MapPage Unloaded");
+                logger.Debug("MainPage.xaml.cs, Initialize: MapPage Unloaded, sending MapPageUnloaded message");
                 // Send a message notifying modules that the MapPage has been unloaded.
                 WeakReferenceMessenger.Default.Send(new MapPageUnloaded());
                 // Unregister all listeners.
@@ -136,7 +142,7 @@ public sealed partial class MainPage : Page
             // When the map view unloads, try to clean up existing output data folders.
             MapView.Unloaded += (s, e) =>
             {
-                Debug.WriteLine("MapView Unloaded");
+                logger.Debug("MainPage.xaml.cs, Initialize (MapView.Unloaded handler): MapView Unloaded");
                 // ActionStatus.IsOpen = false;
                 // Find output mobile map folders in the temp directory.
                 var outputFolders = Directory.GetDirectories(
@@ -166,7 +172,11 @@ public sealed partial class MainPage : Page
             // ActionStatus.Title = exception.Message.GetType().Name;
             // ActionStatus.Content = exception.ToString();
             // ActionStatus.IsOpen = true;
-            Debug.WriteLine(exception.ToString());
+            logger.Error(
+                exception,
+                "An error occurred in MainPage.xaml.cs, Initialize: {exception}",
+                exception.Message
+            );
         }
     }
 

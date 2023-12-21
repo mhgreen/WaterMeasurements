@@ -25,7 +25,6 @@ using Windows.ApplicationModel.Store;
 using Ardalis.GuardClauses;
 using Stateless;
 
-
 // using static WaterMeasurements.Models.GetPreplannedMapModel;
 
 namespace WaterMeasurements.Services;
@@ -98,6 +97,12 @@ public partial class GetPreplannedMapService : IGetPreplannedMapService
         "DownloadPreplannedMapAreas"
     );
 
+    // Key for ArcGIS API key.
+    private const string arcgisApiKey = "ArcGISApiKey";
+
+    // Key for preplanned map identifier.
+    private const string offlineMapIdentifier = "OfflineMapIdentifier";
+
     // Most recently opened map package.
     private MobileMapPackage? mobileMapPackage;
 
@@ -153,12 +158,14 @@ public partial class GetPreplannedMapService : IGetPreplannedMapService
             PreplannedMapState.Undefined
         );
         InitializeStateMachine();
-        // GetPreplannedMap();
+        _ = CheckForArcgisKey();
     }
 
     // State Machine for GetPreplannedMapService.
     private async void InitializeStateMachine()
     {
+        var mapPackagePath = string.Empty;
+
         try
         {
             // Log that the GetPreplannedMapService has been created.
@@ -167,23 +174,38 @@ public partial class GetPreplannedMapService : IGetPreplannedMapService
                 "GetPreplannedMapService: Initializing state machine."
             );
 
-            // Get the current setting for mapPackagePath.
-            var mapPackagePath = await GetMapPackagePath(packagePathKey);
-            Guard.Against.NullOrEmpty(
-                mapPackagePath,
-                nameof(mapPackagePath),
-                "GetPreplannedMapService, StateMachine GetPreplannedMap: mapPackagePath can not be null or empty."
-            );
-
-            logger.LogDebug(
-                "GetPreplannedMapService, StateMachine: mapPackagePath has a value of {mapPackagePath} ",
-                mapPackagePath
-            );
-
             Guard.Against.Null(
                 localSettingsService,
                 nameof(localSettingsService),
                 "GetPreplannedMapService, StateMachine: localSettingsService can not be null."
+            );
+
+            // Get the current setting for mapPackagePath.
+            mapPackagePath = await GetMapPackagePath(packagePathKey);
+
+            // If mapPackagePath is null, then set it to default.
+            if (mapPackagePath is null || mapPackagePath == "")
+            {
+                logger.LogInformation(
+                    DownloadPreplannedEvent,
+                    "GetPreplannedMapService, Initialization: mapPackagePath is null or empty, setting mapPackagePath to default location."
+                );
+
+                // Set the mapPackagePath to the default value.
+                mapPackagePath = Path.Combine(offlineDataFolder, PreplannedMapName);
+                // Log mapPackagePath.
+                logger.LogDebug(
+                    DownloadPreplannedEvent,
+                    "GetPreplannedMapService, Initialization: mapPackagePath: {mapPackagePath}.",
+                    mapPackagePath
+                );
+                // Save the mapPackagePath for future runs.
+                await SetMapPackagePath(packagePathKey, mapPackagePath);
+            }
+
+            logger.LogDebug(
+                "GetPreplannedMapService, StateMachine: mapPackagePath has a value of {mapPackagePath} ",
+                mapPackagePath
             );
 
             // Log state transitions.
@@ -359,7 +381,8 @@ public partial class GetPreplannedMapService : IGetPreplannedMapService
         }
 
         // Start the state machine.
-        stateMachine.Fire(PreplannedMapTrigger.Startup);
+        // stateMachine.Fire(PreplannedMapTrigger.Startup);
+
     }
 
     // Cause map download by calling this with a true value.
@@ -617,6 +640,9 @@ public partial class GetPreplannedMapService : IGetPreplannedMapService
                     "GetPreplannedMapService, Initialization: initialRun is null or true, performing initialization and setting initialRun to false."
                 );
                 await localSettingsService.SaveSettingAsync("InitialRun", false);
+
+                /*
+
                 // Set the mapPackagePath to the default value.
                 var mapPackagePath = Path.Combine(offlineDataFolder, PreplannedMapName);
                 // Log mapPackagePath.
@@ -627,6 +653,8 @@ public partial class GetPreplannedMapService : IGetPreplannedMapService
                 );
                 // Save the mapPackagePath for future runs.
                 await SetMapPackagePath(packagePathKey, mapPackagePath);
+
+                */
 
                 checkedInitialRun = true;
             }
@@ -1327,6 +1355,103 @@ public partial class GetPreplannedMapService : IGetPreplannedMapService
             logger.LogError(
                 DownloadPreplannedEvent,
                 "GetPreplannedMapService, DeleteDownloadedMaps: Exception: {exception}.",
+                exception.ToString()
+            );
+        }
+    }
+
+    public async Task CheckForArcgisKey()
+    {
+        try
+        {
+            Guard.Against.Null(
+                localSettingsService,
+                nameof(localSettingsService),
+                "GetPreplannedMapService, CheckForArcgisKey: localSettingsService can not be null."
+            );
+
+            var arcgisKey = await localSettingsService.ReadSettingAsync<string>(arcgisApiKey);
+            var offlineMapId = await localSettingsService.ReadSettingAsync<string>(
+                offlineMapIdentifier
+            );
+            var arcgisKeyPresent = false;
+            var offlineMapPresent = false;
+
+            if (arcgisKey is not null && arcgisKey != "")
+            {
+                logger.LogInformation(
+                    DownloadPreplannedEvent,
+                    "GetPreplannedMapService, CheckForArcgisKey: arcgisKey is not null or blank."
+                );
+                // log the arcgisKey to debug.
+                logger.LogInformation(
+                    DownloadPreplannedEvent,
+                    "GetPreplannedMapService, CheckForArcgisKey: arcgisKey: {arcgisKey}.",
+                    arcgisKey
+                );
+
+                arcgisKeyPresent = true;
+
+                // stateMachine.Fire(PreplannedMapTrigger.ConfigChecked);
+            }
+            else
+            {
+                logger.LogInformation(
+                    DownloadPreplannedEvent,
+                    "GetPreplannedMapService, CheckForArcgisKey: arcgisKey is null or blank."
+                );
+                arcgisKeyPresent = false;
+            }
+
+            if (offlineMapId is not null && offlineMapId != "")
+            {
+                logger.LogInformation(
+                    DownloadPreplannedEvent,
+                    "GetPreplannedMapService, CheckForArcgisKey: offlineMapId is not null or blank."
+                );
+                // log the offlineMapId to debug.
+                logger.LogInformation(
+                    DownloadPreplannedEvent,
+                    "GetPreplannedMapService, CheckForArcgisKey: offlineMapId: {offlineMapId}.",
+                    offlineMapId
+                );
+
+                offlineMapPresent = true;
+
+                // await stateMachine.FireAsync(PreplannedMapTrigger.ConfigChecked);
+                //stateMachine.Fire(PreplannedMapTrigger.ConfigChecked);
+            }
+            else
+            {
+                logger.LogInformation(
+                    DownloadPreplannedEvent,
+                    "GetPreplannedMapService, CheckForArcgisKey: offlineMapId is null or blank."
+                );
+                offlineMapPresent = false;
+            }
+
+            if (arcgisKeyPresent && offlineMapPresent)
+            {
+                // stateMachine.Fire(PreplannedMapTrigger.ConfigChecked);
+                await stateMachine.FireAsync(PreplannedMapTrigger.Startup);
+            }
+            else
+            {
+                logger.LogDebug(
+                    DownloadPreplannedEvent,
+                    "GetPreplannedMapService, CheckForArcgisKey: arcgisKeyPresent: {arcgisKeyPresent}, offlineMapPresent: {offlineMapPresent}.",
+                    arcgisKeyPresent,
+                    offlineMapPresent
+                );
+                // stateMachine.Fire(PreplannedMapTrigger.Startup);
+                // await stateMachine.FireAsync(PreplannedMapTrigger.ConfigChecked);
+            }
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(
+                DownloadPreplannedEvent,
+                "GetPreplannedMapService, CheckForArcgisKey: Exception: {exception}.",
                 exception.ToString()
             );
         }

@@ -74,15 +74,15 @@ public partial class GeoDatabaseInstance : IGeoDatabaseInstance
         this.logger = logger;
 
         // Name = name;
-        Name = Guard.Against.NullOrWhiteSpace(name);
+        Name = Guard.Against.NullOrWhiteSpace(name, nameof(name), "GeoDatabaseInstance, constructor: Name is null or blank.");
         // GeoDatabaseType = geoDatabaseType;
-        GeoDatabaseType = Guard.Against.EnumOutOfRange(geoDatabaseType);
+        GeoDatabaseType = Guard.Against.EnumOutOfRange(geoDatabaseType, nameof(geoDatabaseType), "GeoDatabaseInstance, constructor: GeoDatabaseType enum is out of range.");
         // Channel = channel;
-        Channel = (uint)Guard.Against.NegativeOrZero(channel);
+        Channel = (uint)Guard.Against.NegativeOrZero(channel, nameof(channel), "GeoDatabaseInstance, constructor: Channel is negative or zero.");
         // Url = url;
-        Url = Guard.Against.NullOrWhiteSpace(url);
+        Url = Guard.Against.NullOrWhiteSpace(url, nameof(url), "GeoDatabaseInstance, constructor: Url is null or blank.");
         // CauseGeoDatabaseDownload = causeGeoDatabaseDownload;
-        CauseGeoDatabaseDownload = Guard.Against.Null(causeGeoDatabaseDownload);
+        CauseGeoDatabaseDownload = Guard.Against.Null(causeGeoDatabaseDownload, nameof(CauseGeoDatabaseDownload), "GeoDatabaseInstance, constructor: CauseGeoDatabaseDownload is null.");
 
         // Create a state machine to manage the state of the geodatabase service.
         stateMachine = new StateMachine<GeoDbServiceState, GeoDbServiceTrigger>(
