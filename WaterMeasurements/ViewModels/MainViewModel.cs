@@ -15,6 +15,7 @@ using WaterMeasurements.Views;
 using CommunityToolkit.Mvvm.Messaging;
 using Ardalis.GuardClauses;
 using WaterMeasurements.Services;
+using NLog;
 
 namespace WaterMeasurements.ViewModels;
 
@@ -83,7 +84,7 @@ public partial class MainViewModel : ObservableRecipient
             this,
             (recipient, message) =>
             {
-                logger.LogTrace(
+                logger.LogDebug(
                     MainViewModelLog,
                     "MainViewModel, InstanceChannelRequestMessage: {message}.",
                     message
@@ -97,6 +98,11 @@ public partial class MainViewModel : ObservableRecipient
 
     private async Task Initialize()
     {
+        // Log that the MainViewModel has been created.
+        logger.LogInformation(
+            MainViewModelLog,
+            "MainViewModel, Initialize(): MainViewModel created."
+        );
         try
         {
             Guard.Against.Null(
@@ -105,16 +111,34 @@ public partial class MainViewModel : ObservableRecipient
                 "MainViewModel, Initialize(): preplannedMapService can not be null"
             );
 
+            // Log that the MainViewModel has been created.
+            logger.LogDebug(
+                MainViewModelLog,
+                "MainViewModel, Initialize(): preplannedMapService checked."
+            );
+
             Guard.Against.Null(
                 geoDatabaseService,
                 nameof(geoDatabaseService),
                 "MainViewModel, Initialize(): geoDatabaseService can not be null"
             );
 
+            // Log that the geoDatabaseService has been checked.
+            logger.LogDebug(
+                MainViewModelLog,
+                "MainViewModel, Initialize(): geoDatabaseService checked."
+            );
+
             Guard.Against.Null(
                 networkStatusService,
                 nameof(networkStatusService),
                 "MainViewModel, Initialize(): networkStatusService can not be null"
+            );
+
+            // Log that the networkStatusService has been checked.
+            logger.LogDebug(
+                MainViewModelLog,
+                "MainViewModel, Initialize(): networkStatusService checked."
             );
 
             // Send a message requesting the next instance channel.
@@ -203,7 +227,7 @@ public partial class MainViewModel : ObservableRecipient
             // Get current network status.
             var networkStatus =
                 await WeakReferenceMessenger.Default.Send<NetworkStatusRequestMessage>();
-            logger.LogTrace(
+            logger.LogDebug(
                 MainViewModelLog,
                 "MainViewModel, NetworkStatusRequestMessage, isInternetAvailable: {isInternetAvailable}.",
                 networkStatus.IsInternetAvailable
@@ -211,14 +235,14 @@ public partial class MainViewModel : ObservableRecipient
             // Iterate over the network names networkStatus.NetworkNames and log them.
             foreach (var name in networkStatus.NetworkNames)
             {
-                logger.LogTrace(
+                logger.LogDebug(
                     MainViewModelLog,
                     "MainViewModel, NetworkStatusRequestMessage, NetworkName: {networkName}.",
                     name
                 );
             }
             // Log the rest of the network status properties.
-            logger.LogTrace(
+            logger.LogDebug(
                 MainViewModelLog,
                 "MainViewModel, NetworkStatusRequestMessage, ConnectionType: {connectionType}, ConnectivityLevel: {connectivityLevel}, IsInternetOnMeteredConnection: {isInternetOnMeteredConnection}.",
                 networkStatus.ConnectionType,
@@ -228,7 +252,6 @@ public partial class MainViewModel : ObservableRecipient
         }
         catch (Exception exception)
         {
-            // logger.Error(exception);
             logger.LogError(
                 MainViewModelLog,
                 exception,

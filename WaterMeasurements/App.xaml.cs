@@ -20,6 +20,7 @@ using WaterMeasurements.Models;
 using WaterMeasurements.Services;
 using WaterMeasurements.ViewModels;
 using WaterMeasurements.Views;
+using System.Diagnostics;
 
 namespace WaterMeasurements;
 
@@ -65,6 +66,8 @@ public partial class App : Application
         var logger = LogManager.GetCurrentClassLogger();
         InitializeComponent();
 
+        /*
+ 
         try
         {
             /* Authentication for ArcGIS location services:
@@ -85,6 +88,9 @@ public partial class App : Application
              * ArcGISRuntimeEnvironment.SetLicense(await myArcGISPortal.GetLicenseInfoAsync()); */
 
             // Initialize the ArcGIS Maps SDK runtime before any components are created.
+
+        /*
+ 
             apiKey = (string?)localSettings.Values["apiKey"];
             if (apiKey is not null)
             {
@@ -114,7 +120,13 @@ public partial class App : Application
                 "An error occurred while initializing the application: {exception}",
                 exception.Message
             );
+            Debug.WriteLine(
+                "An error occurred while initializing the application: {exception}",
+                exception.Message
+            );
         }
+        
+        */
 
         var config = new ConfigurationBuilder()
             .SetBasePath(System.IO.Directory.GetCurrentDirectory()) //From NuGet Package Microsoft.Extensions.Configuration.Json
@@ -127,6 +139,14 @@ public partial class App : Application
             .ConfigureServices(
                 (context, services) =>
                 {
+                    services.AddLogging(loggingBuilder =>
+                    {
+                        // configure Logging with NLog
+                        loggingBuilder.ClearProviders();
+                        loggingBuilder.SetMinimumLevel(Microsoft.Extensions.Logging.LogLevel.Trace);
+                        loggingBuilder.AddNLog(config);
+                    });
+
                     // Default Activation Handler
                     services.AddTransient<
                         ActivationHandler<LaunchActivatedEventArgs>,
@@ -178,12 +198,17 @@ public partial class App : Application
             sender,
             exception
         );
+        Debug.WriteLine(
+            "Error in App.xaml.cs: Sender: {sender}, Exception: {exception}.",
+            sender,
+            exception
+        );
 
         // TODO: Log and handle exceptions as appropriate.
         // https://docs.microsoft.com/windows/windows-app-sdk/api/winrt/microsoft.ui.xaml.application.unhandledexception.
     }
 
-    protected async override void OnLaunched(LaunchActivatedEventArgs args)
+    protected override async void OnLaunched(LaunchActivatedEventArgs args)
     {
         base.OnLaunched(args);
 

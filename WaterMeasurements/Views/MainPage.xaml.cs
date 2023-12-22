@@ -38,6 +38,8 @@ public sealed partial class MainPage : Page
 {
     public MainViewModel ViewModel { get; }
     public SecchiViewModel SecchiView { get; }
+
+    private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     private readonly SystemLocationDataSource systemLocation = new();
 
     // Retrieve the local app data store.
@@ -72,6 +74,7 @@ public sealed partial class MainPage : Page
     {
         ViewModel = App.GetService<MainViewModel>();
         SecchiView = App.GetService<SecchiViewModel>();
+        Logger.Debug("MainPage.xaml.cs, MainPage: Starting");
         InitializeComponent();
 
         // Send the UI Dispatcher Queue to subscribers.
@@ -87,9 +90,9 @@ public sealed partial class MainPage : Page
 
     private async void Initialize()
     {
-        var logger = LogManager.GetCurrentClassLogger();
         try
         {
+            Logger.Debug("MainPage.xaml.cs, Initialize: Initializing MainPage");
             var apiKey = (string?)localSettings.Values["apiKey"];
             if (apiKey == "" || apiKey is null)
             {
@@ -106,12 +109,18 @@ public sealed partial class MainPage : Page
             await systemLocation.StartAsync();
             var locationDisplay = MapView.LocationDisplay.IsEnabled;
             // Log to debug the value of locationDisplay with a label.
-            logger.Debug("MainPage.xaml.cs, Initialize: Location Display IsEnabled: {locationDisplay}", locationDisplay);
+            Logger.Debug(
+                "MainPage.xaml.cs, Initialize: Location Display IsEnabled: {locationDisplay}",
+                locationDisplay
+            );
 
             // When the page is unloaded, unsubscribe from the location data source.
             MapPage.Unloaded += async (s, e) =>
             {
-                logger.Debug("MainPage.xaml.cs, Initialize: MapPage Unloaded, sending MapPageUnloaded message");
+                Logger.Debug(
+                    "MainPage.xaml.cs, Initialize: MapPage Unloaded, sending MapPageUnloaded message"
+                );
+
                 // Send a message notifying modules that the MapPage has been unloaded.
                 WeakReferenceMessenger.Default.Send(new MapPageUnloaded());
                 // Unregister all listeners.
@@ -142,7 +151,9 @@ public sealed partial class MainPage : Page
             // When the map view unloads, try to clean up existing output data folders.
             MapView.Unloaded += (s, e) =>
             {
-                logger.Debug("MainPage.xaml.cs, Initialize (MapView.Unloaded handler): MapView Unloaded");
+                Logger.Debug(
+                    "MainPage.xaml.cs, Initialize (MapView.Unloaded handler): MapView Unloaded"
+                );
                 // ActionStatus.IsOpen = false;
                 // Find output mobile map folders in the temp directory.
                 var outputFolders = Directory.GetDirectories(
@@ -172,7 +183,7 @@ public sealed partial class MainPage : Page
             // ActionStatus.Title = exception.Message.GetType().Name;
             // ActionStatus.Content = exception.ToString();
             // ActionStatus.IsOpen = true;
-            logger.Error(
+            Logger.Error(
                 exception,
                 "An error occurred in MainPage.xaml.cs, Initialize: {exception}",
                 exception.Message

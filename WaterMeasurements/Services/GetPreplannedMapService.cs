@@ -39,6 +39,10 @@ public class MapExtentChangedMessage : ValueChangedMessage<MainMapExtent>
 // Request message to get the map envelope.
 public class MapEnvelopeRequestMessage : RequestMessage<Envelope> { }
 
+// Message to notify modules of the status of the preplanned map configuation.
+public class MapConfigurationMessage(PreplannedMapConfiguration configurationValid)
+    : ValueChangedMessage<PreplannedMapConfiguration>(configurationValid) { }
+
 public partial class GetPreplannedMapService : IGetPreplannedMapService
 {
     private readonly ILogger<GetPreplannedMapService> logger;
@@ -382,7 +386,6 @@ public partial class GetPreplannedMapService : IGetPreplannedMapService
 
         // Start the state machine.
         // stateMachine.Fire(PreplannedMapTrigger.Startup);
-
     }
 
     // Cause map download by calling this with a true value.
@@ -1377,6 +1380,7 @@ public partial class GetPreplannedMapService : IGetPreplannedMapService
             var arcgisKeyPresent = false;
             var offlineMapPresent = false;
 
+            // If the arcgisKey is not null or blank, then set arcgisKeyPresent to true.
             if (arcgisKey is not null && arcgisKey != "")
             {
                 logger.LogInformation(
@@ -1391,8 +1395,6 @@ public partial class GetPreplannedMapService : IGetPreplannedMapService
                 );
 
                 arcgisKeyPresent = true;
-
-                // stateMachine.Fire(PreplannedMapTrigger.ConfigChecked);
             }
             else
             {
@@ -1403,6 +1405,7 @@ public partial class GetPreplannedMapService : IGetPreplannedMapService
                 arcgisKeyPresent = false;
             }
 
+            // If the offlineMapId is not null or blank, then set offlineMapPresent to true.
             if (offlineMapId is not null && offlineMapId != "")
             {
                 logger.LogInformation(
@@ -1417,9 +1420,6 @@ public partial class GetPreplannedMapService : IGetPreplannedMapService
                 );
 
                 offlineMapPresent = true;
-
-                // await stateMachine.FireAsync(PreplannedMapTrigger.ConfigChecked);
-                //stateMachine.Fire(PreplannedMapTrigger.ConfigChecked);
             }
             else
             {
@@ -1430,11 +1430,18 @@ public partial class GetPreplannedMapService : IGetPreplannedMapService
                 offlineMapPresent = false;
             }
 
+            // If both the arcgisKey and offlineMapId are not null or blank, then send a message indicating that both have been set to some value.
+            // This is used by the UI and the state machine to determine if the map can be displayed or if the user needs to be prompted to enter the arcgisKey or offlineMapId.
             if (arcgisKeyPresent && offlineMapPresent)
             {
-                // stateMachine.Fire(PreplannedMapTrigger.ConfigChecked);
-                await stateMachine.FireAsync(PreplannedMapTrigger.Startup);
+                WeakReferenceMessenger.Default.Send(
+                    new MapConfigurationMessage(
+                        new PreplannedMapConfiguration(arcgisKeyPresent, offlineMapPresent)
+                    )
+                );
             }
+            // If both the arcgisKey or offlineMapId are not valid, then send a message indicating the validity of each.
+            // This is used by the UI to determine if user needs to be prompted to enter the arcgisKey or offlineMapId and by the state machine to delay start until both are valid.
             else
             {
                 logger.LogDebug(
@@ -1443,8 +1450,11 @@ public partial class GetPreplannedMapService : IGetPreplannedMapService
                     arcgisKeyPresent,
                     offlineMapPresent
                 );
-                // stateMachine.Fire(PreplannedMapTrigger.Startup);
-                // await stateMachine.FireAsync(PreplannedMapTrigger.ConfigChecked);
+                WeakReferenceMessenger.Default.Send(
+                    new MapConfigurationMessage(
+                        new PreplannedMapConfiguration(arcgisKeyPresent, offlineMapPresent)
+                    )
+                );
             }
         }
         catch (Exception exception)

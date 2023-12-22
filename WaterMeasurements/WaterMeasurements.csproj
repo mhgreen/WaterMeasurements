@@ -31,9 +31,6 @@
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.4.231115000" />
     <PackageReference Include="Microsoft.Xaml.Behaviors.WinUI.Managed" Version="2.0.9" />
-    <PackageReference Include="NLog" Version="5.2.7" />
-    <PackageReference Include="NLog.Extensions.Logging" Version="5.3.7" />
-    <PackageReference Include="NLog.Schema" Version="5.2.7" />
     <PackageReference Include="Rebus" Version="8.0.3" />
     <PackageReference Include="Rebus.NLog" Version="6.0.0" />
     <PackageReference Include="Rebus.RabbitMq" Version="9.0.1" />
