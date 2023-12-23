@@ -64,7 +64,7 @@ public partial class ConfigurationService : IConfigurationService
 
                     logger.LogDebug(
                         ConfigurationServiceLog,
-                        "NetworkChangedMessage IsInternetAvailable: {isInternetAvailable}",
+                        "ConfigurationService, NetworkChangedMessage IsInternetAvailable: {isInternetAvailable}",
                         netStat.IsInternetAvailable
                     );
                 }

@@ -57,9 +57,7 @@ public partial class MainViewModel : ObservableRecipient
     [ObservableProperty]
     private Brush mapBorderColor = new SolidColorBrush(Colors.Transparent);
 
-    private readonly IConfigurationService? configurationService;
-
-    
+    // private readonly IConfigurationService? configurationService;
 
     private readonly IGetPreplannedMapService? preplannedMapService;
 
@@ -69,7 +67,7 @@ public partial class MainViewModel : ObservableRecipient
     private uint instanceChannel = 0;
 
     public MainViewModel(
-        IConfigurationService configurationService,
+        // IConfigurationService configurationService,
         IGetPreplannedMapService preplannedMapService,
         IGeoDatabaseService geoDatabaseService,
         ILogger<MainViewModel> logger
@@ -77,9 +75,19 @@ public partial class MainViewModel : ObservableRecipient
     {
         this.logger = logger;
 
-        this.configurationService = configurationService;
-        this.preplannedMapService = preplannedMapService;
-        this.geoDatabaseService = geoDatabaseService;
+        // Register for the MapConfigurationMessage message and print the two values to the debug console.
+        WeakReferenceMessenger.Default.Register<MapConfigurationMessage>(
+            this,
+            (recipient, message) =>
+            {
+                logger.LogDebug(
+                    MainViewModelLog,
+                    "MainViewModel, MapConfiguredMessage, ArcGISApiConfigured: {arcGISApiConfigured}, OfflineMapIdConfigured: {offlineMapIdConfigured}",
+                    message.Value.ArcGISApiConfigured,
+                    message.Value.OfflineMapIdConfigured
+                );
+            }
+        );
 
         // Message handler for the InstanceChannelRequestMessage.
         WeakReferenceMessenger.Default.Register<MainViewModel, InstanceChannelRequestMessage>(
@@ -95,6 +103,11 @@ public partial class MainViewModel : ObservableRecipient
                 message.Reply(GetNextInstanceChannel());
             }
         );
+
+        // this.configurationService = configurationService;
+        this.preplannedMapService = preplannedMapService;
+        this.geoDatabaseService = geoDatabaseService;
+
         _ = Initialize();
     }
 
@@ -107,11 +120,15 @@ public partial class MainViewModel : ObservableRecipient
         );
         try
         {
+            /*
+            
             Guard.Against.Null(
                 configurationService,
                 nameof(configurationService),
                 "MainViewModel, Initialize(): configurationService can not be null"
             );
+
+            */
 
             Guard.Against.Null(
                 preplannedMapService,

@@ -17,6 +17,8 @@ using WaterMeasurements.Models;
 using WaterMeasurements.Services.Instances;
 using Microsoft.Extensions.Logging;
 using NLog.Fluent;
+using WaterMeasurements.Services;
+using WaterMeasurements.Contracts.Services;
 
 namespace WaterMeasurements.Views;
 
@@ -32,6 +34,13 @@ public class MapPageUnloaded : ValueChangedMessage<MapPageUnloadedMessage>
 {
     public MapPageUnloaded()
         : base(new MapPageUnloadedMessage()) { }
+}
+
+internal sealed class StartConfigurationServices(IConfigurationService configurationService)
+{
+#pragma warning disable IDE0052
+    private readonly IConfigurationService? configurationService = configurationService;
+#pragma warning restore IDE0052
 }
 
 public sealed partial class MainPage : Page
@@ -51,6 +60,12 @@ public sealed partial class MainPage : Page
 
     // Current ArcGIS API key
     // private string? apiKey;
+
+    // Track whether the ArcGIS API key has been configured.
+    private bool arcGISApiConfigured = false;
+
+    // Track whether the offline map identifier has been configured.
+    private bool offlineMapIdConfigured = false;
 
     [RelayCommand]
     private void ReCenter()
@@ -75,6 +90,26 @@ public sealed partial class MainPage : Page
         ViewModel = App.GetService<MainViewModel>();
         SecchiView = App.GetService<SecchiViewModel>();
         Logger.Debug("MainPage.xaml.cs, MainPage: Starting");
+
+        // Register for the MapConfigurationMessage message and print the two values to the debug console.
+        WeakReferenceMessenger.Default.Register<MapConfigurationMessage>(
+            this,
+            (recipient, message) =>
+            {
+                Logger.Debug(
+                    "MainPage.xaml.cs, MapConfiguredMessage, ArcGISApiConfigured: {arcGISApiConfigured}, OfflineMapIdConfigured: {offlineMapIdConfigured}",
+                    message.Value.ArcGISApiConfigured,
+                    message.Value.OfflineMapIdConfigured
+                );
+                arcGISApiConfigured = message.Value.ArcGISApiConfigured;
+                offlineMapIdConfigured = message.Value.OfflineMapIdConfigured;
+            }
+        );
+
+        // Start the configuration service.
+
+        _ = new StartConfigurationServices(App.GetService<IConfigurationService>());
+
         InitializeComponent();
 
         // Send the UI Dispatcher Queue to subscribers.
@@ -93,6 +128,7 @@ public sealed partial class MainPage : Page
         try
         {
             Logger.Debug("MainPage.xaml.cs, Initialize: Initializing MainPage");
+
             var apiKey = (string?)localSettings.Values["apiKey"];
             if (apiKey == "" || apiKey is null)
             {
@@ -102,17 +138,26 @@ public sealed partial class MainPage : Page
                 // ActionStatus.Content = "API Key is blank, configure an API key in Settings";
             }
 
-            // Set the location display's datasource to system and enable it.
-            MapView.LocationDisplay.DataSource = systemLocation;
-            MapView.LocationDisplay.IsEnabled = true;
-            AutoPan();
-            await systemLocation.StartAsync();
-            var locationDisplay = MapView.LocationDisplay.IsEnabled;
-            // Log to debug the value of locationDisplay with a label.
-            Logger.Debug(
-                "MainPage.xaml.cs, Initialize: Location Display IsEnabled: {locationDisplay}",
-                locationDisplay
-            );
+            if (arcGISApiConfigured && offlineMapIdConfigured)
+            {
+                // Set the location display's datasource to system and enable it.
+                MapView.LocationDisplay.DataSource = systemLocation;
+                MapView.LocationDisplay.IsEnabled = true;
+                AutoPan();
+                await systemLocation.StartAsync();
+                var locationDisplay = MapView.LocationDisplay.IsEnabled;
+                // Log to debug the value of locationDisplay with a label.
+                Logger.Debug(
+                    "MainPage.xaml.cs, Initialize: Location Display IsEnabled: {locationDisplay}",
+                    locationDisplay
+                );
+            }
+            else
+            {
+                Logger.Debug(
+                    "MainPage.xaml.cs, Initialize: ArcGIS API Key or Offline Map Identifier not configured"
+                );
+            }
 
             // When the page is unloaded, unsubscribe from the location data source.
             MapPage.Unloaded += async (s, e) =>

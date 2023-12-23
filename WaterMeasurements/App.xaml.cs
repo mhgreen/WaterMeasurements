@@ -162,13 +162,6 @@ public partial class App : Application
                     services.AddSingleton<IPageService, PageService>();
                     services.AddSingleton<INavigationService, NavigationService>();
 
-                    services.AddSingleton<INetworkStatusService, NetworkStatusService>();
-                    services.AddSingleton<IGeoDatabaseService, GeoDatabaseService>();
-                    services.AddSingleton<IGetPreplannedMapService, GetPreplannedMapService>();
-                    services.AddSingleton<IConfigurationService, ConfigurationService>();
-
-                    services.AddScoped<IGeoTriggerService, GeoTriggerService>();
-
                     // Core Services
                     services.AddSingleton<IFileService, FileService>();
 
@@ -176,6 +169,14 @@ public partial class App : Application
                     services.AddTransient<MainViewModel>();
                     services.AddTransient<MainPage>();
                     services.AddTransient<SecchiViewModel>();
+
+                    // Application Services                    
+                    services.AddSingleton<INetworkStatusService, NetworkStatusService>();
+                    services.AddSingleton<IGeoDatabaseService, GeoDatabaseService>();
+                    services.AddSingleton<IGetPreplannedMapService, GetPreplannedMapService>();
+                    services.AddSingleton<IConfigurationService, ConfigurationService>();
+
+                    services.AddScoped<IGeoTriggerService, GeoTriggerService>();
 
                     // Configuration
                     services.Configure<LocalSettingsOptions>(
@@ -209,7 +210,7 @@ public partial class App : Application
         // https://docs.microsoft.com/windows/windows-app-sdk/api/winrt/microsoft.ui.xaml.application.unhandledexception.
     }
 
-    protected override async void OnLaunched(LaunchActivatedEventArgs args)
+    protected async override void OnLaunched(LaunchActivatedEventArgs args)
     {
         base.OnLaunched(args);
 
