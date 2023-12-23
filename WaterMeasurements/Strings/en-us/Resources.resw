@@ -159,8 +159,8 @@
   <data name="Settings_Secchi_WebMapId.Header" xml:space="preserve">
     <value>ArcGIS web map identifier for Secchi measurements</value>
   </data>
-  <data name="Shell_Main.Content" xml:space="preserve">
-    <value>Main</value>
+  <data name="Main_Title.Text" xml:space="preserve">
+    <value>Water Measurements</value>
   </data>
   <data name="Main_SecchiCancelButton.Content" xml:space="preserve">
     <value>Cancel</value>

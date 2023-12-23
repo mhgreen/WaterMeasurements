@@ -30,13 +30,6 @@ public partial class GetPreplannedMapModel : ObservableRecipient
 // Record for Map extent subscription.
 public readonly record struct MainMapExtent(Envelope Extent);
 
-// Record for preplaned map configuration.
-public readonly record struct PreplannedMapConfiguration
-(
-    bool ArcGISApiConfigured,
-    bool OfflineMapIdConfigured
-);
-
 // State of the GetPreplannedMap service.
 public enum PreplannedMapState
 {

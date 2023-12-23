@@ -165,6 +165,7 @@ public partial class App : Application
                     services.AddSingleton<INetworkStatusService, NetworkStatusService>();
                     services.AddSingleton<IGeoDatabaseService, GeoDatabaseService>();
                     services.AddSingleton<IGetPreplannedMapService, GetPreplannedMapService>();
+                    services.AddSingleton<IConfigurationService, ConfigurationService>();
 
                     services.AddScoped<IGeoTriggerService, GeoTriggerService>();
 

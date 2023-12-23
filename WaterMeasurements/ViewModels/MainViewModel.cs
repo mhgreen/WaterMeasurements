@@ -57,7 +57,9 @@ public partial class MainViewModel : ObservableRecipient
     [ObservableProperty]
     private Brush mapBorderColor = new SolidColorBrush(Colors.Transparent);
 
-    private readonly INetworkStatusService? networkStatusService;
+    private readonly IConfigurationService? configurationService;
+
+    
 
     private readonly IGetPreplannedMapService? preplannedMapService;
 
@@ -67,17 +69,17 @@ public partial class MainViewModel : ObservableRecipient
     private uint instanceChannel = 0;
 
     public MainViewModel(
-        INetworkStatusService networkStatusService,
-        IGeoDatabaseService geoDatabaseService,
+        IConfigurationService configurationService,
         IGetPreplannedMapService preplannedMapService,
+        IGeoDatabaseService geoDatabaseService,
         ILogger<MainViewModel> logger
     )
     {
         this.logger = logger;
 
-        this.geoDatabaseService = geoDatabaseService;
+        this.configurationService = configurationService;
         this.preplannedMapService = preplannedMapService;
-        this.networkStatusService = networkStatusService;
+        this.geoDatabaseService = geoDatabaseService;
 
         // Message handler for the InstanceChannelRequestMessage.
         WeakReferenceMessenger.Default.Register<MainViewModel, InstanceChannelRequestMessage>(
@@ -106,39 +108,21 @@ public partial class MainViewModel : ObservableRecipient
         try
         {
             Guard.Against.Null(
+                configurationService,
+                nameof(configurationService),
+                "MainViewModel, Initialize(): configurationService can not be null"
+            );
+
+            Guard.Against.Null(
                 preplannedMapService,
                 nameof(preplannedMapService),
                 "MainViewModel, Initialize(): preplannedMapService can not be null"
-            );
-
-            // Log that the MainViewModel has been created.
-            logger.LogDebug(
-                MainViewModelLog,
-                "MainViewModel, Initialize(): preplannedMapService checked."
             );
 
             Guard.Against.Null(
                 geoDatabaseService,
                 nameof(geoDatabaseService),
                 "MainViewModel, Initialize(): geoDatabaseService can not be null"
-            );
-
-            // Log that the geoDatabaseService has been checked.
-            logger.LogDebug(
-                MainViewModelLog,
-                "MainViewModel, Initialize(): geoDatabaseService checked."
-            );
-
-            Guard.Against.Null(
-                networkStatusService,
-                nameof(networkStatusService),
-                "MainViewModel, Initialize(): networkStatusService can not be null"
-            );
-
-            // Log that the networkStatusService has been checked.
-            logger.LogDebug(
-                MainViewModelLog,
-                "MainViewModel, Initialize(): networkStatusService checked."
             );
 
             // Send a message requesting the next instance channel.
@@ -149,24 +133,6 @@ public partial class MainViewModel : ObservableRecipient
                 MainViewModelLog,
                 "MainViewModel, Initialize(): next instance channel is: {channel}.",
                 instanceChannelRequestMessage
-            );
-
-            WeakReferenceMessenger.Default.Register<NetworkChangedMessage>(
-                this,
-                (recipient, message) =>
-                {
-                    // Handle the message here, with recipient being the recipient and message being the
-                    // input message. Using the recipient passed as input makes it so that
-                    // the lambda expression doesn't capture "this", improving performance.
-
-                    var netStat = message.Value;
-
-                    logger.LogDebug(
-                        MainViewModelLog,
-                        "NetworkChangedMessage IsInternetAvailable: {isInternetAvailable}",
-                        netStat.IsInternetAvailable
-                    );
-                }
             );
 
             // Register to get map messages.
@@ -222,32 +188,6 @@ public partial class MainViewModel : ObservableRecipient
                     // Unregister all messages.
                     WeakReferenceMessenger.Default.UnregisterAll(this);
                 }
-            );
-
-            // Get current network status.
-            var networkStatus =
-                await WeakReferenceMessenger.Default.Send<NetworkStatusRequestMessage>();
-            logger.LogDebug(
-                MainViewModelLog,
-                "MainViewModel, NetworkStatusRequestMessage, isInternetAvailable: {isInternetAvailable}.",
-                networkStatus.IsInternetAvailable
-            );
-            // Iterate over the network names networkStatus.NetworkNames and log them.
-            foreach (var name in networkStatus.NetworkNames)
-            {
-                logger.LogDebug(
-                    MainViewModelLog,
-                    "MainViewModel, NetworkStatusRequestMessage, NetworkName: {networkName}.",
-                    name
-                );
-            }
-            // Log the rest of the network status properties.
-            logger.LogDebug(
-                MainViewModelLog,
-                "MainViewModel, NetworkStatusRequestMessage, ConnectionType: {connectionType}, ConnectivityLevel: {connectivityLevel}, IsInternetOnMeteredConnection: {isInternetOnMeteredConnection}.",
-                networkStatus.ConnectionType,
-                networkStatus.ConnectivityLevel,
-                networkStatus.IsInternetOnMeteredConnection
             );
         }
         catch (Exception exception)

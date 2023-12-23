@@ -31,12 +31,23 @@
             <ColumnDefinition />
         </Grid.ColumnDefinitions>
 
-        <TextBlock
-            x:Uid="Main_Title"
+        <Grid
+            x:Name="TitleBar"
             Grid.Row="0"
-            Style="{StaticResource PageTitleStyle}" />
-
-        <Grid Grid.Row="1" />
+            Grid.Column="0"
+            Grid.ColumnSpan="2"
+            Background="{ThemeResource AcrylicBackgroundFillColorDefaultBrush}"
+            Height="38"
+            VerticalAlignment="Top"
+            Visibility="Visible">
+            <TextBlock
+                x:Name="TitleBarText"
+                x:Uid="Main_Title"
+                Margin="12,0,0,0"
+                VerticalAlignment="Top"
+                HorizontalAlignment="Left"
+                Style="{StaticResource TitleTextBlockStyle}" />
+        </Grid>
 
         <Grid
             Grid.Row="1"

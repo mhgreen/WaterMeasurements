@@ -39,10 +39,6 @@ public class MapExtentChangedMessage : ValueChangedMessage<MainMapExtent>
 // Request message to get the map envelope.
 public class MapEnvelopeRequestMessage : RequestMessage<Envelope> { }
 
-// Message to notify modules of the status of the preplanned map configuation.
-public class MapConfigurationMessage(PreplannedMapConfiguration configurationValid)
-    : ValueChangedMessage<PreplannedMapConfiguration>(configurationValid) { }
-
 public partial class GetPreplannedMapService : IGetPreplannedMapService
 {
     private readonly ILogger<GetPreplannedMapService> logger;
@@ -162,7 +158,6 @@ public partial class GetPreplannedMapService : IGetPreplannedMapService
             PreplannedMapState.Undefined
         );
         InitializeStateMachine();
-        _ = CheckForArcgisKey();
     }
 
     // State Machine for GetPreplannedMapService.
@@ -183,6 +178,28 @@ public partial class GetPreplannedMapService : IGetPreplannedMapService
                 nameof(localSettingsService),
                 "GetPreplannedMapService, StateMachine: localSettingsService can not be null."
             );
+
+            //
+            // TODO: Move this to configuration service
+            //
+
+            await localSettingsService.SaveSettingAsync(
+                ConfigurationKey.HoursBetweenUpdateChecksKey,
+                2
+            );
+            // get the value of ConfigurationKey.HoursBetweenUpdateChecksKey and write that to debug.
+            var hoursBetweenUpdateChecks = await localSettingsService.ReadSettingAsync<int>(
+                ConfigurationKey.HoursBetweenUpdateChecksKey
+            );
+            logger.LogDebug(
+                DownloadPreplannedEvent,
+                "GetPreplannedMapService, InitializeStateMachine: hoursBetweenUpdateChecks: {hoursBetweenUpdateChecks}.",
+                hoursBetweenUpdateChecks
+            );
+
+            //
+            //
+            //
 
             // Get the current setting for mapPackagePath.
             mapPackagePath = await GetMapPackagePath(packagePathKey);
@@ -1358,110 +1375,6 @@ public partial class GetPreplannedMapService : IGetPreplannedMapService
             logger.LogError(
                 DownloadPreplannedEvent,
                 "GetPreplannedMapService, DeleteDownloadedMaps: Exception: {exception}.",
-                exception.ToString()
-            );
-        }
-    }
-
-    public async Task CheckForArcgisKey()
-    {
-        try
-        {
-            Guard.Against.Null(
-                localSettingsService,
-                nameof(localSettingsService),
-                "GetPreplannedMapService, CheckForArcgisKey: localSettingsService can not be null."
-            );
-
-            var arcgisKey = await localSettingsService.ReadSettingAsync<string>(arcgisApiKey);
-            var offlineMapId = await localSettingsService.ReadSettingAsync<string>(
-                offlineMapIdentifier
-            );
-            var arcgisKeyPresent = false;
-            var offlineMapPresent = false;
-
-            // If the arcgisKey is not null or blank, then set arcgisKeyPresent to true.
-            if (arcgisKey is not null && arcgisKey != "")
-            {
-                logger.LogInformation(
-                    DownloadPreplannedEvent,
-                    "GetPreplannedMapService, CheckForArcgisKey: arcgisKey is not null or blank."
-                );
-                // log the arcgisKey to debug.
-                logger.LogInformation(
-                    DownloadPreplannedEvent,
-                    "GetPreplannedMapService, CheckForArcgisKey: arcgisKey: {arcgisKey}.",
-                    arcgisKey
-                );
-
-                arcgisKeyPresent = true;
-            }
-            else
-            {
-                logger.LogInformation(
-                    DownloadPreplannedEvent,
-                    "GetPreplannedMapService, CheckForArcgisKey: arcgisKey is null or blank."
-                );
-                arcgisKeyPresent = false;
-            }
-
-            // If the offlineMapId is not null or blank, then set offlineMapPresent to true.
-            if (offlineMapId is not null && offlineMapId != "")
-            {
-                logger.LogInformation(
-                    DownloadPreplannedEvent,
-                    "GetPreplannedMapService, CheckForArcgisKey: offlineMapId is not null or blank."
-                );
-                // log the offlineMapId to debug.
-                logger.LogInformation(
-                    DownloadPreplannedEvent,
-                    "GetPreplannedMapService, CheckForArcgisKey: offlineMapId: {offlineMapId}.",
-                    offlineMapId
-                );
-
-                offlineMapPresent = true;
-            }
-            else
-            {
-                logger.LogInformation(
-                    DownloadPreplannedEvent,
-                    "GetPreplannedMapService, CheckForArcgisKey: offlineMapId is null or blank."
-                );
-                offlineMapPresent = false;
-            }
-
-            // If both the arcgisKey and offlineMapId are not null or blank, then send a message indicating that both have been set to some value.
-            // This is used by the UI and the state machine to determine if the map can be displayed or if the user needs to be prompted to enter the arcgisKey or offlineMapId.
-            if (arcgisKeyPresent && offlineMapPresent)
-            {
-                WeakReferenceMessenger.Default.Send(
-                    new MapConfigurationMessage(
-                        new PreplannedMapConfiguration(arcgisKeyPresent, offlineMapPresent)
-                    )
-                );
-            }
-            // If both the arcgisKey or offlineMapId are not valid, then send a message indicating the validity of each.
-            // This is used by the UI to determine if user needs to be prompted to enter the arcgisKey or offlineMapId and by the state machine to delay start until both are valid.
-            else
-            {
-                logger.LogDebug(
-                    DownloadPreplannedEvent,
-                    "GetPreplannedMapService, CheckForArcgisKey: arcgisKeyPresent: {arcgisKeyPresent}, offlineMapPresent: {offlineMapPresent}.",
-                    arcgisKeyPresent,
-                    offlineMapPresent
-                );
-                WeakReferenceMessenger.Default.Send(
-                    new MapConfigurationMessage(
-                        new PreplannedMapConfiguration(arcgisKeyPresent, offlineMapPresent)
-                    )
-                );
-            }
-        }
-        catch (Exception exception)
-        {
-            logger.LogError(
-                DownloadPreplannedEvent,
-                "GetPreplannedMapService, CheckForArcgisKey: Exception: {exception}.",
                 exception.ToString()
             );
         }
