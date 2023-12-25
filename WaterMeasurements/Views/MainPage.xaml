@@ -8,8 +8,8 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:ui="using:CommunityToolkit.WinUI"
     xmlns:viewmodels="using:WaterMeasurements.ViewModels"
-    d:DataContext="{d:DesignInstance Type=viewmodels:MainViewModel}"
     x:Name="MapPage"
+    d:DataContext="{d:DesignInstance Type=viewmodels:MainViewModel}"
     Background="{ThemeResource SolidBackgroundFillColorBaseBrush}"
     mc:Ignorable="d">
 
@@ -20,7 +20,7 @@
         ColumnSpacing="18"
         FlowDirection="LeftToRight">
         <Grid.RowDefinitions>
-            <RowDefinition />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition />
             <RowDefinition />
@@ -36,79 +36,104 @@
             Grid.Row="0"
             Grid.Column="0"
             Grid.ColumnSpan="2"
-            Background="{ThemeResource AcrylicBackgroundFillColorDefaultBrush}"
-            Height="38"
+            Height="110"
             VerticalAlignment="Top"
+            Background="{ThemeResource AcrylicBackgroundFillColorDefaultBrush}"
             Visibility="Visible">
             <TextBlock
                 x:Name="TitleBarText"
                 x:Uid="Main_Title"
                 Margin="12,0,0,0"
-                VerticalAlignment="Top"
                 HorizontalAlignment="Left"
+                VerticalAlignment="Top"
                 Style="{StaticResource TitleTextBlockStyle}" />
+            <StackPanel>
+                <ComboBox
+                    x:Name="ViewSelector"
+                    Width="200"
+                    Margin="10,45,0,0"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Bottom"
+                    Header="Select View"
+                    SelectedIndex="0">
+                    <x:String>Map</x:String>
+                    <x:String>Configuration</x:String>
+                    <x:String>Startup</x:String>
+                </ComboBox>
+            </StackPanel>
         </Grid>
 
         <Grid
             Grid.Row="1"
             Grid.Column="0"
             FlowDirection="LeftToRight">
-            <CommandBar
-                HorizontalAlignment="Left"
-                DefaultLabelPosition="Right"
-                IsOpen="False">
-                <AppBarButton Label="Center">
-                    <AppBarButton.Icon>
-                        <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE81D;" />
-                    </AppBarButton.Icon>
-                </AppBarButton>
-                <AppBarButton Label="Auto Pan">
-                    <AppBarButton.Icon>
-                        <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xe7c2;" />
-                    </AppBarButton.Icon>
-                </AppBarButton>
-            </CommandBar>
-        </Grid>
 
-        <Grid
-            Grid.Row="2"
-            Grid.Column="0"
-            BorderThickness="6"
-            CornerRadius="3">
-            <esri:MapView
-                x:Name="MapView"
-                MinWidth="500"
-                MinHeight="500"
-                MaxWidth="800"
-                MaxHeight="800" />
+            <controls:SwitchPresenter x:Name="UiViews" Value="{Binding SelectedItem, ElementName=ViewSelector}">
+
+                <controls:Case Value="Map">
+
+                    <StackPanel>
+
+                        <StackPanel>
+                            <CommandBar
+                                HorizontalAlignment="Left"
+                                DefaultLabelPosition="Right"
+                                IsOpen="False">
+                                <AppBarButton Label="Center">
+                                    <AppBarButton.Icon>
+                                        <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE81D;" />
+                                    </AppBarButton.Icon>
+                                </AppBarButton>
+                                <AppBarButton Label="Auto Pan">
+                                    <AppBarButton.Icon>
+                                        <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xe7c2;" />
+                                    </AppBarButton.Icon>
+                                </AppBarButton>
+                            </CommandBar>
+                        </StackPanel>
+
+                        <StackPanel BorderThickness="6" CornerRadius="3">
+                            <esri:MapView
+                                x:Name="MapView"
+                                MinWidth="500"
+                                MinHeight="500"
+                                MaxWidth="800"
+                                MaxHeight="800" />
+                        </StackPanel>
+
+                    </StackPanel>
+
+                </controls:Case>
+
+            </controls:SwitchPresenter>
+
         </Grid>
 
         <Grid
             x:Name="Notifications"
-            Grid.Row="2"
+            Grid.Row="1"
             Grid.Column="1">
             <StackPanel
                 x:Name="CollectionStackPanel"
-                HorizontalAlignment="Stretch"
-                Spacing="30"
+                Margin="0,0,0,0"
+                HorizontalAlignment="Left"
                 Visibility="Visible">
 
                 <StackPanel
-                    x:Name="SecchiStackPanel"
-                    MinWidth="200"
-                    MinHeight="200"
-                    HorizontalAlignment="Left"
-                    Visibility="Visible">
-                    <StackPanel>
-                        <TextBlock
-                            Opacity="0.8"
-                            Style="{StaticResource TitleTextBlockStyle}"
-                            Text="-- Test --"
-                            TextAlignment="Center" />
-                    </StackPanel>
+                    x:Name="ManualCollectionStackPanel"
+                    Width="200"
+                    Margin="{StaticResource SmallTopMargin}"
+                    HorizontalAlignment="Left">
+
+                    <TextBlock
+                        Opacity="0.8"
+                        Style="{StaticResource TitleTextBlockStyle}"
+                        Text="-- Test --"
+                        TextAlignment="Center" />
 
                     <TextBlock
                         x:Uid="Main_SecchiValues"
+                        HorizontalAlignment="Left"
                         Opacity=".5"
                         Style="{StaticResource SubtitleTextBlockStyle}" />
                     <TextBox
@@ -127,6 +152,7 @@
                         ui:TextBoxExtensions.ValidationMode="Dynamic"
                         ui:TextBoxExtensions.ValidationType="Number"
                         InputScope="Digits" />
+
                     <StackPanel
                         x:Name="ButtonStackPanel"
                         Margin="{StaticResource SmallTopMargin}"
@@ -137,59 +163,59 @@
                         <Button x:Name="SecchiSaveButton" x:Uid="Main_SecchiSaveButton" />
                         <Button x:Name="SecchiCancelButton" x:Uid="Main_SecchiCancelButton" />
                     </StackPanel>
+                    
+                </StackPanel>
 
+                <StackPanel
+                    x:Name="DatatableStackPanel"
+                    Width="500"
+                    Margin="{StaticResource SmallTopMargin}">
+
+                    <ListView>
+                        <ListView.Header>
+                            <controls:DataTable Margin="0,40,0,0" ColumnSpacing="1">
+                                <controls:DataColumn CanResize="True" DesiredWidth="120">
+                                    <TextBlock
+                                        FontWeight="Bold"
+                                        Opacity=".8"
+                                        Style="{StaticResource BodyTextStyle}"
+                                        Text="Location" />
+                                </controls:DataColumn>
+                                <controls:DataColumn MinWidth="80" CanResize="True">
+                                    <TextBlock
+                                        FontWeight="Bold"
+                                        Opacity=".8"
+                                        Style="{StaticResource BodyTextStyle}"
+                                        Text="Obs1" />
+                                </controls:DataColumn>
+                                <controls:DataColumn MinWidth="80" CanResize="True">
+                                    <TextBlock
+                                        FontWeight="Bold"
+                                        Opacity=".8"
+                                        Style="{StaticResource BodyTextStyle}"
+                                        Text="Obs2" />
+                                </controls:DataColumn>
+                                <controls:DataColumn MinWidth="80" CanResize="True">
+                                    <TextBlock
+                                        FontWeight="Bold"
+                                        Opacity=".8"
+                                        Style="{StaticResource BodyTextStyle}"
+                                        Text="Obs3" />
+                                </controls:DataColumn>
+                                <controls:DataColumn MinWidth="40" CanResize="True">
+                                    <TextBlock
+                                        FontWeight="Bold"
+                                        Opacity=".8"
+                                        Style="{StaticResource BodyTextStyle}"
+                                        Text="Secchi" />
+                                </controls:DataColumn>
+                            </controls:DataTable>
+                        </ListView.Header>
+                    </ListView>
                 </StackPanel>
 
             </StackPanel>
 
-        </Grid>
-
-        <Grid
-            Grid.Row="3"
-            Grid.Column="1"
-            FlowDirection="LeftToRight">
-
-            <ListView>
-                <ListView.Header>
-                    <controls:DataTable Margin="0,40,0,0" ColumnSpacing="1">
-                        <controls:DataColumn CanResize="True" DesiredWidth="120">
-                            <TextBlock
-                                FontWeight="Bold"
-                                Opacity=".8"
-                                Style="{StaticResource BodyTextStyle}"
-                                Text="Location" />
-                        </controls:DataColumn>
-                        <controls:DataColumn MinWidth="80" CanResize="True">
-                            <TextBlock
-                                FontWeight="Bold"
-                                Opacity=".8"
-                                Style="{StaticResource BodyTextStyle}"
-                                Text="Obs1" />
-                        </controls:DataColumn>
-                        <controls:DataColumn MinWidth="80" CanResize="True">
-                            <TextBlock
-                                FontWeight="Bold"
-                                Opacity=".8"
-                                Style="{StaticResource BodyTextStyle}"
-                                Text="Obs2" />
-                        </controls:DataColumn>
-                        <controls:DataColumn MinWidth="80" CanResize="True">
-                            <TextBlock
-                                FontWeight="Bold"
-                                Opacity=".8"
-                                Style="{StaticResource BodyTextStyle}"
-                                Text="Obs3" />
-                        </controls:DataColumn>
-                        <controls:DataColumn MinWidth="40" CanResize="True">
-                            <TextBlock
-                                FontWeight="Bold"
-                                Opacity=".8"
-                                Style="{StaticResource BodyTextStyle}"
-                                Text="Secchi" />
-                        </controls:DataColumn>
-                    </controls:DataTable>
-                </ListView.Header>
-            </ListView>
         </Grid>
 
     </Grid>

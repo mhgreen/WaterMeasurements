@@ -73,7 +73,6 @@ public partial class GetPreplannedMapService : IGetPreplannedMapService
         "WaterMeasurements"
     );
 
-    // TODO: Add this to the configuration screen.
     // The ID for a web map item hosted on the server.
     // This is used to make sure that the retrieved map is the correct one.
     private const string PreplannedMapName = "WaterMeasurements_MapArea";

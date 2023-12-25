@@ -33,6 +33,7 @@ public static class PrePlannedMapConfiguration
 {
     public enum Key
     {
+        InitialRun,
         PreplannedMapName,
         PackagePath,
         MapLastCheckedforUpdate,
@@ -49,6 +50,7 @@ public static class PrePlannedMapConfiguration
     } =
         new()
         {
+            { Key.InitialRun, "PreplannedMapInitialRun" },
             { Key.PreplannedMapName, "PreplannedMapName" },
             { Key.PackagePath, "MapPakagePath" },
             { Key.MapLastCheckedforUpdate, "MapLastCheckedforUpdate" },

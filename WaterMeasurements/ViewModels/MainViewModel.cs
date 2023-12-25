@@ -47,6 +47,9 @@ public partial class MainViewModel : ObservableRecipient
     [ObservableProperty]
     private bool showGeodatabaseDownloadProgress = false;
 
+    [ObservableProperty]
+    private string uiSelected = "Map";
+
     // Feature for the current location sent by the GeoTriggerService.
     public ArcGISFeature? feature;
 
@@ -77,6 +80,8 @@ public partial class MainViewModel : ObservableRecipient
     )
     {
         this.logger = logger;
+
+        UiSelected = "Map";
 
         // Message handler for the InstanceChannelRequestMessage.
         WeakReferenceMessenger.Default.Register<MainViewModel, InstanceChannelRequestMessage>(
