@@ -57,57 +57,45 @@ public partial class MainViewModel : ObservableRecipient
     [ObservableProperty]
     private Brush mapBorderColor = new SolidColorBrush(Colors.Transparent);
 
-    // private readonly IConfigurationService? configurationService;
-
-    private readonly IGetPreplannedMapService? preplannedMapService;
+    private readonly IGetPreplannedMapService? getPreplannedMapService;
 
     private readonly IGeoDatabaseService geoDatabaseService;
+
+    private readonly INetworkStatusService? networkStatusService;
+
+    private readonly IConfigurationService? configurationService;
 
     // instanceChannel is used to provide a unique identifier for messages associated with geodatabase and geotrigger instances.
     private uint instanceChannel = 0;
 
     public MainViewModel(
-        // IConfigurationService configurationService,
-        IGetPreplannedMapService preplannedMapService,
+        INetworkStatusService networkStatusService,
+        IConfigurationService configurationService,
+        IGetPreplannedMapService getPreplannedMapService,
         IGeoDatabaseService geoDatabaseService,
         ILogger<MainViewModel> logger
     )
     {
         this.logger = logger;
 
-        // Register for the MapConfigurationMessage message and print the two values to the debug console.
-        WeakReferenceMessenger.Default.Register<MapConfigurationMessage>(
-            this,
-            (recipient, message) =>
-            {
-                logger.LogDebug(
-                    MainViewModelLog,
-                    "MainViewModel, MapConfiguredMessage, ArcGISApiConfigured: {arcGISApiConfigured}, OfflineMapIdConfigured: {offlineMapIdConfigured}",
-                    message.Value.ArcGISApiConfigured,
-                    message.Value.OfflineMapIdConfigured
-                );
-            }
-        );
-
         // Message handler for the InstanceChannelRequestMessage.
         WeakReferenceMessenger.Default.Register<MainViewModel, InstanceChannelRequestMessage>(
             this,
             (recipient, message) =>
             {
-                logger.LogDebug(
+                logger.LogTrace(
                     MainViewModelLog,
-                    "MainViewModel, InstanceChannelRequestMessage: {message}.",
-                    message
+                    "MainViewModel, InstanceChannelRequestMessage received."
                 );
                 // Get the next instance channel and return the value.
                 message.Reply(GetNextInstanceChannel());
             }
         );
 
-        // this.configurationService = configurationService;
-        this.preplannedMapService = preplannedMapService;
+        this.networkStatusService = networkStatusService;
+        this.configurationService = configurationService;
+        this.getPreplannedMapService = getPreplannedMapService;
         this.geoDatabaseService = geoDatabaseService;
-
         _ = Initialize();
     }
 
@@ -120,27 +108,71 @@ public partial class MainViewModel : ObservableRecipient
         );
         try
         {
-            /*
-            
             Guard.Against.Null(
-                configurationService,
-                nameof(configurationService),
-                "MainViewModel, Initialize(): configurationService can not be null"
+                networkStatusService,
+                nameof(networkStatusService),
+                "MainViewModel, Initialize(): networkStatusService is null"
             );
 
-            */
-
             Guard.Against.Null(
-                preplannedMapService,
-                nameof(preplannedMapService),
-                "MainViewModel, Initialize(): preplannedMapService can not be null"
+                getPreplannedMapService,
+                nameof(getPreplannedMapService),
+                "MainViewModel, Initialize(): getPreplannedMapService is null"
             );
 
             Guard.Against.Null(
                 geoDatabaseService,
                 nameof(geoDatabaseService),
-                "MainViewModel, Initialize(): geoDatabaseService can not be null"
+                "MainViewModel, Initialize(): geoDatabaseService is null"
             );
+
+            Guard.Against.Null(
+                configurationService,
+                nameof(configurationService),
+                "MainViewModel, Initialize(): configurationService is null"
+            );
+
+            WeakReferenceMessenger.Default.Register<NetworkChangedMessage>(
+                this,
+                (recipient, message) =>
+                {
+                    var netStat = message.Value;
+
+                    logger.LogDebug(
+                        MainViewModelLog,
+                        "MainViewModel, NetworkChangedMessage IsInternetAvailable: {isInternetAvailable}",
+                        netStat.IsInternetAvailable
+                    );
+                }
+            );
+
+            // Get current network status.
+            var networkStatus =
+                await WeakReferenceMessenger.Default.Send<NetworkStatusRequestMessage>();
+            logger.LogDebug(
+                MainViewModelLog,
+                "MainViewModel, NetworkStatusRequestMessage, isInternetAvailable: {isInternetAvailable}.",
+                networkStatus.IsInternetAvailable
+            );
+            // Iterate over the network names networkStatus.NetworkNames and log them.
+            foreach (var name in networkStatus.NetworkNames)
+            {
+                logger.LogDebug(
+                    MainViewModelLog,
+                    "MainViewModel, NetworkStatusRequestMessage, NetworkName: {networkName}.",
+                    name
+                );
+            }
+            // Log the rest of the network status properties.
+            logger.LogDebug(
+                MainViewModelLog,
+                "MainViewModel, NetworkStatusRequestMessage, ConnectionType: {connectionType}, ConnectivityLevel: {connectivityLevel}, IsInternetOnMeteredConnection: {isInternetOnMeteredConnection}.",
+                networkStatus.ConnectionType,
+                networkStatus.ConnectivityLevel,
+                networkStatus.IsInternetOnMeteredConnection
+            );
+
+            // TODO: Determine if this is needed.
 
             // Send a message requesting the next instance channel.
             uint instanceChannelRequestMessage =
@@ -262,6 +294,32 @@ public partial class MainViewModel : ObservableRecipient
                 MainViewModelLog,
                 exception,
                 "Exception generated in MainViewModel, SubscribeGeoDbDownload(). {exception}",
+                exception.Message.ToString()
+            );
+        }
+    }
+
+    public async Task RequestPreplannedMapConfigurationMessage()
+    {
+        logger.LogDebug(
+            MainViewModelLog,
+            "MainViewModel, RequestPreplannedMapConfigurationMessage: Requesting PreplannedMapConfigurationStatusMessage."
+        );
+        try
+        {
+            Guard.Against.Null(
+                getPreplannedMapService,
+                nameof(getPreplannedMapService),
+                "MainViewModel, RequestPreplannedMapConfigurationMessage: getPreplannedMapService is null."
+            );
+            await getPreplannedMapService.PreplannedMapConfigurationStatusMessage();
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(
+                MainViewModelLog,
+                exception,
+                "Exception generated in MainViewModel, RequestPreplannedMapConfigurationMessage(). {exception}",
                 exception.Message.ToString()
             );
         }

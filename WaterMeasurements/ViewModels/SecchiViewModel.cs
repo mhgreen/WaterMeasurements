@@ -525,6 +525,8 @@ public partial class SecchiViewModel : ObservableRecipient
                 }
             );
 
+            /*
+
             // Submit a geodatabase request to the GeoDatabaseService to get SecchObservations.
             WeakReferenceMessenger.Default.Send<GeoDatabaseRequestMessage>(
                 new GeoDatabaseRequestMessage(
@@ -550,6 +552,9 @@ public partial class SecchiViewModel : ObservableRecipient
                     )
                 )
             );
+
+            */
+
         }
         catch (Exception exception)
         {

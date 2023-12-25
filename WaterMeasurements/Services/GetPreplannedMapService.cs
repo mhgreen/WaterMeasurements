@@ -24,6 +24,8 @@ using WaterMeasurements.Models;
 using Windows.ApplicationModel.Store;
 using Ardalis.GuardClauses;
 using Stateless;
+using System.ComponentModel;
+using static WaterMeasurements.Models.PrePlannedMapConfiguration;
 
 // using static WaterMeasurements.Models.GetPreplannedMapModel;
 
@@ -35,6 +37,10 @@ public class MapExtentChangedMessage : ValueChangedMessage<MainMapExtent>
     public MapExtentChangedMessage(MainMapExtent mapEnvelope)
         : base(mapEnvelope) { }
 }
+
+// Message to notify modules that the GetPreplannedMapService has a valid configuration.
+public class PreplannedMapConfigurationStatusMessage(bool configurationStatus)
+    : ValueChangedMessage<bool>(configurationStatus) { }
 
 // Request message to get the map envelope.
 public class MapEnvelopeRequestMessage : RequestMessage<Envelope> { }
@@ -97,12 +103,6 @@ public partial class GetPreplannedMapService : IGetPreplannedMapService
         "DownloadPreplannedMapAreas"
     );
 
-    // Key for ArcGIS API key.
-    private const string arcgisApiKey = "ArcGISApiKey";
-
-    // Key for preplanned map identifier.
-    private const string offlineMapIdentifier = "OfflineMapIdentifier";
-
     // Most recently opened map package.
     private MobileMapPackage? mobileMapPackage;
 
@@ -115,6 +115,30 @@ public partial class GetPreplannedMapService : IGetPreplannedMapService
         .ApplicationData
         .Current
         .LocalSettings;
+
+    // State of the GetPreplannedMap service.
+    private enum PreplannedMapState
+    {
+        WaitingForConfigStatus,
+        Initialization,
+        IsInternetAvailable,
+        SyncReady,
+        UseLocal,
+        AppClosing
+    }
+
+    // Triggers for the GetPreplannedMap service.
+    private enum PreplannedMapTrigger
+    {
+        ConfigurationStatusReceived,
+        AppClosing,
+        InitializationComplete,
+        InternetUnavailableRecieved,
+        InternetAvailableRecieved,
+        LocalPreplannedMapExists,
+        LocalPreplannedMapDoesNotExist,
+        Cancel
+    }
 
     // State machine for the GetPreplannedMapService.
     private readonly StateMachine<PreplannedMapState, PreplannedMapTrigger> stateMachine;
@@ -155,8 +179,9 @@ public partial class GetPreplannedMapService : IGetPreplannedMapService
 
         // Create a state machine for the GetPreplannedMapService.
         stateMachine = new StateMachine<PreplannedMapState, PreplannedMapTrigger>(
-            PreplannedMapState.Undefined
+            PreplannedMapState.WaitingForConfigStatus
         );
+
         InitializeStateMachine();
     }
 
@@ -179,27 +204,19 @@ public partial class GetPreplannedMapService : IGetPreplannedMapService
                 "GetPreplannedMapService, StateMachine: localSettingsService can not be null."
             );
 
-            //
-            // TODO: Move this to configuration service
-            //
-
             await localSettingsService.SaveSettingAsync(
-                ConfigurationKey.HoursBetweenUpdateChecksKey,
+                PrePlannedMapConfiguration.Item[Key.HoursBetweenUpdateChecks],
                 2
             );
             // get the value of ConfigurationKey.HoursBetweenUpdateChecksKey and write that to debug.
             var hoursBetweenUpdateChecks = await localSettingsService.ReadSettingAsync<int>(
-                ConfigurationKey.HoursBetweenUpdateChecksKey
+                PrePlannedMapConfiguration.Item[Key.HoursBetweenUpdateChecks]
             );
             logger.LogDebug(
                 DownloadPreplannedEvent,
                 "GetPreplannedMapService, InitializeStateMachine: hoursBetweenUpdateChecks: {hoursBetweenUpdateChecks}.",
                 hoursBetweenUpdateChecks
             );
-
-            //
-            //
-            //
 
             // Get the current setting for mapPackagePath.
             mapPackagePath = await GetMapPackagePath(packagePathKey);
@@ -234,8 +251,11 @@ public partial class GetPreplannedMapService : IGetPreplannedMapService
 
             // Start in an undefined state and wait for the Startup trigger to begin.
             stateMachine
-                .Configure(PreplannedMapState.Undefined)
-                .Permit(PreplannedMapTrigger.Startup, PreplannedMapState.Initialization);
+                .Configure(PreplannedMapState.WaitingForConfigStatus)
+                .Permit(
+                    PreplannedMapTrigger.ConfigurationStatusReceived,
+                    PreplannedMapState.Initialization
+                );
 
             // Perform initialization. First check to see if this is the first time the app has been run.
             // If it is the first time, then set the mapPackagePath and trigger InitializationComplete.
@@ -1377,6 +1397,90 @@ public partial class GetPreplannedMapService : IGetPreplannedMapService
                 "GetPreplannedMapService, DeleteDownloadedMaps: Exception: {exception}.",
                 exception.ToString()
             );
+        }
+    }
+
+    // Check for ArcGIS API key returning true if not null or empty.
+    public async Task<bool> IsArcgisApiKeyPresent()
+    {
+        Guard.Against.Null(
+            localSettingsService,
+            nameof(localSettingsService),
+            "GetPreplannedMapService, IsArcgisApiKeyPresent: localSettingsService can not be null."
+        );
+
+        var arcgisApiKey = await localSettingsService.ReadSettingAsync<string>(
+            PrePlannedMapConfiguration.Item[Key.ArcgisApiKey]
+        );
+        if (arcgisApiKey is not null)
+        {
+            logger.LogInformation(
+                DownloadPreplannedEvent,
+                "GetPreplannedMapService, IsArcgisApiKeyPresent: arcgisApiKey is not null."
+            );
+            return true;
+        }
+        else
+        {
+            logger.LogInformation(
+                DownloadPreplannedEvent,
+                "GetPreplannedMapService, IsArcgisApiKeyPresent: arcgisApiKey is null."
+            );
+            return false;
+        }
+    }
+
+    // Check for OfflineMapId returning true if not null or empty.
+    public async Task<bool> IsOfflineMapIdPresent()
+    {
+        Guard.Against.Null(
+            localSettingsService,
+            nameof(localSettingsService),
+            "GetPreplannedMapService, IsOfflineMapIdPresent: localSettingsService can not be null."
+        );
+
+        var offlineMapId = await localSettingsService.ReadSettingAsync<string>(
+            PrePlannedMapConfiguration.Item[Key.OfflineMapIdentifier]
+        );
+        if (offlineMapId is not null)
+        {
+            logger.LogInformation(
+                DownloadPreplannedEvent,
+                "GetPreplannedMapService, IsOfflineMapIdPresent: offlineMapId is not null."
+            );
+            return true;
+        }
+        else
+        {
+            logger.LogInformation(
+                DownloadPreplannedEvent,
+                "GetPreplannedMapService, IsOfflineMapIdPresent: offlineMapId is null."
+            );
+            return false;
+        }
+    }
+
+    // Verify that the ArcGIS API key is valid and that the offline map ID is valid.
+    // Send a PreplannedMapConfigurationStatusMessage with true if both are valid, false if not.
+    public async Task PreplannedMapConfigurationStatusMessage()
+    {
+        if (await IsArcgisApiKeyPresent() && await IsOfflineMapIdPresent())
+        {
+            logger.LogInformation(
+                DownloadPreplannedEvent,
+                "GetPreplannedMapService, IsArcgisApiKeyAndOfflineMapIdValid: arcgisApiKey and offlineMapId are not null."
+            );
+            // Send notification tha the configuration is valid.
+            WeakReferenceMessenger.Default.Send(new PreplannedMapConfigurationStatusMessage(true));
+        }
+        else
+        {
+            logger.LogInformation(
+                DownloadPreplannedEvent,
+                "GetPreplannedMapService, IsArcgisApiKeyAndOfflineMapIdValid: arcgisApiKey or offlineMapId is null."
+            );
+            // Send notification tha the configuration is not valid.
+            WeakReferenceMessenger.Default.Send(new PreplannedMapConfigurationStatusMessage(false));
         }
     }
 
