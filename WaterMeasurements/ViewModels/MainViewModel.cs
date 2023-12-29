@@ -262,7 +262,7 @@ public partial class MainViewModel : ObservableRecipient
         }
     }
 
-    public dynamic? RetrieveSettingByKey<T>(string settingKey)
+    public async Task<dynamic> RetrieveSettingByKeyAsync<T>(string settingKey)
     {
         logger.LogTrace(
             MainViewModelLog,
@@ -281,9 +281,9 @@ public partial class MainViewModel : ObservableRecipient
                 nameof(localSettingsService),
                 "MainViewModel, RetrieveSettingByKey: localSettingsService is null."
             );
-            var setting = localSettingsService.ReadSettingAsync<T>(settingKey);
+            var setting = await localSettingsService.ReadSettingAsync<T>(settingKey);
 
-            return setting;
+            return setting!;
         }
         catch (Exception exception)
         {
@@ -294,11 +294,11 @@ public partial class MainViewModel : ObservableRecipient
                 exception.Message.ToString()
             );
 
-            return null;
+            return null!;
         }
     }
 
-    public void StoreSettingByKey(string settingsKey, dynamic value)
+    public async Task StoreSettingByKeyAsync(string settingsKey, dynamic value)
     {
         if (value is string stringValue)
         {
@@ -359,7 +359,7 @@ public partial class MainViewModel : ObservableRecipient
                 "MainViewModel, StoreSettingByKey: localSettingsService is null."
             );
 
-            localSettingsService.SaveSettingAsync(settingsKey, value);
+            await localSettingsService.SaveSettingAsync(settingsKey, value);
         }
         catch (Exception exception)
         {
@@ -367,6 +367,29 @@ public partial class MainViewModel : ObservableRecipient
                 MainViewModelLog,
                 exception,
                 "Exception generated in MainViewModel, StoreSettingByKey(): {exception}",
+                exception.Message.ToString()
+            );
+        }
+    }
+
+    public async Task InitializeArcGISRuntimeAsync()
+    {
+        try
+        {
+            Guard.Against.Null(
+                configurationService,
+                nameof(configurationService),
+                "MainViewModel, InitializeArcGISRuntime(): configurationService is null."
+            );
+
+            await configurationService.ArcGISRuntimeInitialize();
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(
+                MainViewModelLog,
+                exception,
+                "Exception generated in MainViewModel, InitializeArcGISRuntime(): {exception}",
                 exception.Message.ToString()
             );
         }
@@ -442,6 +465,32 @@ public partial class MainViewModel : ObservableRecipient
                 MainViewModelLog,
                 exception,
                 "Exception generated in MainViewModel, RequestPreplannedMapConfigurationMessage(). {exception}",
+                exception.Message.ToString()
+            );
+        }
+    }
+
+    public async Task RequestArcGISRuntimeInitializeMessage()
+    {
+        logger.LogDebug(
+            MainViewModelLog,
+            "MainViewModel, RequestArcGISRuntimeInitialize: Requesting ArcGISRuntimeInitialize."
+        );
+        try
+        {
+            Guard.Against.Null(
+                configurationService,
+                nameof(configurationService),
+                "MainViewModel, RequestArcGISRuntimeInitialize: configurationService is null."
+            );
+            await configurationService.ArcGISRuntimeInitialize();
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(
+                MainViewModelLog,
+                exception,
+                "Exception generated in MainViewModel, RequestArcGISRuntimeInitialize(). {exception}",
                 exception.Message.ToString()
             );
         }

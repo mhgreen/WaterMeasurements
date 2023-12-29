@@ -7,4 +7,5 @@ using System.Threading.Tasks;
 namespace WaterMeasurements.Contracts.Services;
 public interface IConfigurationService
 {
+    public Task ArcGISRuntimeInitialize();
 }

@@ -150,7 +150,7 @@
                                     Width="450"
                                     Margin="0,0,8,0"
                                     AutomationProperties.Name="ArcGIS API key password box"
-                                    LostFocus="{x:Bind StoreDeveloperKey, Mode=OneWay}"
+                                    LostFocus="{x:Bind StoreDeveloperKeyAsync, Mode=OneWay}"
                                     Password="{x:Bind apiKey, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
                                     PasswordRevealMode="Hidden" />
                                 <CheckBox
@@ -168,7 +168,7 @@
                                 MinWidth="100"
                                 Margin="{StaticResource SmallTopMargin}"
                                 HorizontalAlignment="Left"
-                                LostFocus="{x:Bind StoreWebMapKey, Mode=OneWay}"
+                                LostFocus="{x:Bind StoreWebMapKeyAsync, Mode=OneWay}"
                                 Text="{x:Bind webMapIdKey, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" />
 
                         </StackPanel>

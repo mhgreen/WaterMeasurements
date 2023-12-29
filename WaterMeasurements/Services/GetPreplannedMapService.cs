@@ -129,6 +129,7 @@ public partial class GetPreplannedMapService : IGetPreplannedMapService
     // Triggers for the GetPreplannedMap service.
     private enum PreplannedMapTrigger
     {
+        ArcGISRuntimeStatusReceived,
         ConfigurationStatusReceived,
         AppClosing,
         InitializationComplete,
@@ -195,6 +196,16 @@ public partial class GetPreplannedMapService : IGetPreplannedMapService
             logger.LogInformation(
                 DownloadPreplannedEvent,
                 "GetPreplannedMapService: Initializing state machine."
+            );
+
+            // Trigger for map envelope received with envelope as a parameter.
+            var arcGISStatusReceived = stateMachine.SetTriggerParameters<bool>(
+                PreplannedMapTrigger.ArcGISRuntimeStatusReceived
+            );
+
+            // Trigger for configuration status received with configuration status as a parameter.
+            var configurationStatusReceived = stateMachine.SetTriggerParameters<bool>(
+                PreplannedMapTrigger.ConfigurationStatusReceived
             );
 
             Guard.Against.Null(
@@ -408,6 +419,63 @@ public partial class GetPreplannedMapService : IGetPreplannedMapService
                         trigger,
                         state
                     );
+                }
+            );
+
+            // Register to get the ArcGISRuntimeInitializedMessage and use that to trigger ArcGISRuntimeStatusReceived.
+            WeakReferenceMessenger.Default.Register<ArcGISRuntimeInitializedMessage>(
+                this,
+                (recipient, message) =>
+                {
+                    logger.LogTrace(
+                        DownloadPreplannedEvent,
+                        "GetPreplannedMapService, ArcGISRuntimeInitializedMessage: {message}.",
+                        message
+                    );
+                    if (message.Value == true)
+                    {
+                        logger.LogTrace(
+                            DownloadPreplannedEvent,
+                            "GetPreplannedMapService, ArcGISRuntimeInitializedMessage: ArcGISRuntimeStatus is true, firing arcGISStatusReceived."
+                        );
+                        stateMachine.Fire(arcGISStatusReceived, message.Value);
+                    }
+                    else
+                    {
+                        logger.LogError(
+                            DownloadPreplannedEvent,
+                            "GetPreplannedMapService, ArcGISRuntimeInitializedMessage: ArcGISRuntimeStatus is false, waiting for ArcGISRuntime status values to be present."
+                        );
+                    }
+                }
+            );
+
+            // Register to get the PreplannedMapConfigurationStatusMessage and use that to trigger ConfigurationStatusReceived.
+            WeakReferenceMessenger.Default.Register<PreplannedMapConfigurationStatusMessage>(
+                this,
+                (recipient, message) =>
+                {
+                    logger.LogTrace(
+                        DownloadPreplannedEvent,
+                        "GetPreplannedMapService, PreplannedMapConfigurationStatusMessage: {message}.",
+                        message
+                    );
+
+                    if (message.Value == true)
+                    {
+                        logger.LogTrace(
+                            DownloadPreplannedEvent,
+                            "GetPreplannedMapService, PreplannedMapConfigurationStatusMessage: ConfigurationStatus is true, firing configurationStatusReceived."
+                        );
+                        stateMachine.Fire(configurationStatusReceived, message.Value);
+                    }
+                    else
+                    {
+                        logger.LogError(
+                            DownloadPreplannedEvent,
+                            "GetPreplannedMapService, PreplannedMapConfigurationStatusMessage: ConfigurationStatus is false, waiting for configuration status values to be present."
+                        );
+                    }
                 }
             );
         }
@@ -1413,7 +1481,7 @@ public partial class GetPreplannedMapService : IGetPreplannedMapService
         );
         if (arcgisApiKey is not null)
         {
-            logger.LogInformation(
+            logger.LogTrace(
                 DownloadPreplannedEvent,
                 "GetPreplannedMapService, IsArcgisApiKeyPresent: arcgisApiKey is not null."
             );
@@ -1421,7 +1489,7 @@ public partial class GetPreplannedMapService : IGetPreplannedMapService
         }
         else
         {
-            logger.LogInformation(
+            logger.LogTrace(
                 DownloadPreplannedEvent,
                 "GetPreplannedMapService, IsArcgisApiKeyPresent: arcgisApiKey is null."
             );
@@ -1465,20 +1533,20 @@ public partial class GetPreplannedMapService : IGetPreplannedMapService
     {
         if (await IsArcgisApiKeyPresent() && await IsOfflineMapIdPresent())
         {
-            logger.LogInformation(
+            logger.LogDebug(
                 DownloadPreplannedEvent,
                 "GetPreplannedMapService, IsArcgisApiKeyAndOfflineMapIdValid: arcgisApiKey and offlineMapId are not null."
             );
-            // Send notification tha the configuration is valid.
+            // Send notification that the configuration is valid.
             WeakReferenceMessenger.Default.Send(new PreplannedMapConfigurationStatusMessage(true));
         }
         else
         {
-            logger.LogInformation(
+            logger.LogDebug(
                 DownloadPreplannedEvent,
                 "GetPreplannedMapService, IsArcgisApiKeyAndOfflineMapIdValid: arcgisApiKey or offlineMapId is null."
             );
-            // Send notification tha the configuration is not valid.
+            // Send notification that the configuration is not valid.
             WeakReferenceMessenger.Default.Send(new PreplannedMapConfigurationStatusMessage(false));
         }
     }
