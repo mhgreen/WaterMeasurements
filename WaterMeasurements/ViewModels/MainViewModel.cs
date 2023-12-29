@@ -16,6 +16,9 @@ using CommunityToolkit.Mvvm.Messaging;
 using Ardalis.GuardClauses;
 using WaterMeasurements.Services;
 using NLog;
+using static WaterMeasurements.Models.PrePlannedMapConfiguration;
+using Newtonsoft.Json.Linq;
+using Microsoft.Extensions.Primitives;
 
 namespace WaterMeasurements.ViewModels;
 
@@ -68,6 +71,8 @@ public partial class MainViewModel : ObservableRecipient
 
     private readonly IConfigurationService? configurationService;
 
+    private readonly ILocalSettingsService? localSettingsService;
+
     // instanceChannel is used to provide a unique identifier for messages associated with geodatabase and geotrigger instances.
     private uint instanceChannel = 0;
 
@@ -76,6 +81,7 @@ public partial class MainViewModel : ObservableRecipient
         IConfigurationService configurationService,
         IGetPreplannedMapService getPreplannedMapService,
         IGeoDatabaseService geoDatabaseService,
+        ILocalSettingsService? localSettingsService,
         ILogger<MainViewModel> logger
     )
     {
@@ -101,6 +107,7 @@ public partial class MainViewModel : ObservableRecipient
         this.configurationService = configurationService;
         this.getPreplannedMapService = getPreplannedMapService;
         this.geoDatabaseService = geoDatabaseService;
+        this.localSettingsService = localSettingsService;
         _ = Initialize();
     }
 
@@ -250,6 +257,116 @@ public partial class MainViewModel : ObservableRecipient
                 MainViewModelLog,
                 exception,
                 "Exception generated MainViewModel, Initialize() {exception}.",
+                exception.Message.ToString()
+            );
+        }
+    }
+
+    public dynamic? RetrieveSettingByKey<T>(string settingKey)
+    {
+        logger.LogTrace(
+            MainViewModelLog,
+            "MainViewModel, RetrieveSettingByKey: Requesting setting by key: {settingsKey}.",
+            settingKey
+        );
+        try
+        {
+            Guard.Against.NullOrWhiteSpace(
+                settingKey,
+                nameof(settingKey),
+                "MainViewModel, RetrieveSettingByKey: settingKey is null or whitespace."
+            );
+            Guard.Against.Null(
+                localSettingsService,
+                nameof(localSettingsService),
+                "MainViewModel, RetrieveSettingByKey: localSettingsService is null."
+            );
+            var setting = localSettingsService.ReadSettingAsync<T>(settingKey);
+
+            return setting;
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(
+                MainViewModelLog,
+                exception,
+                "Exception generated in MainViewModel, RetrieveSettingByKey(): {exception}",
+                exception.Message.ToString()
+            );
+
+            return null;
+        }
+    }
+
+    public void StoreSettingByKey(string settingsKey, dynamic value)
+    {
+        if (value is string stringValue)
+        {
+            logger.LogDebug(
+                MainViewModelLog,
+                "MainViewModel, StoreSettingByKey: configuration with key: {settingsKey} set to value {value}.",
+                settingsKey,
+                stringValue
+            );
+        }
+        else if (value is int intValue)
+        {
+            logger.LogDebug(
+                MainViewModelLog,
+                "MainViewModel, StoreSettingByKey: configuration with key: {settingsKey} set to value {value}.",
+                settingsKey,
+                intValue
+            );
+        }
+        else if (value is bool boolValue)
+        {
+            logger.LogDebug(
+                MainViewModelLog,
+                "MainViewModel, StoreSettingByKey: configuration with key: {settingsKey} set to value {value}.",
+                settingsKey,
+                boolValue
+            );
+        }
+        else if (value is double doubleValue)
+        {
+            logger.LogDebug(
+                MainViewModelLog,
+                "MainViewModel, StoreSettingByKey: configuration with key: {settingsKey} set to value {value}.",
+                settingsKey,
+                doubleValue
+            );
+        }
+        else
+        {
+            logger.LogDebug(
+                MainViewModelLog,
+                "MainViewModel, StoreSettingByKey: configuration with key: {settingsKey} is not of type string, integer, boolean, or double. Value will be set, but not confirmed here.",
+                settingsKey
+            );
+        }
+
+        try
+        {
+            Guard.Against.NullOrWhiteSpace(
+                settingsKey,
+                nameof(settingsKey),
+                "MainViewModel, StoreSettingByKey: settingsKey is null or whitespace."
+            );
+
+            Guard.Against.Null(
+                localSettingsService,
+                nameof(localSettingsService),
+                "MainViewModel, StoreSettingByKey: localSettingsService is null."
+            );
+
+            localSettingsService.SaveSettingAsync(settingsKey, value);
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(
+                MainViewModelLog,
+                exception,
+                "Exception generated in MainViewModel, StoreSettingByKey(): {exception}",
                 exception.Message.ToString()
             );
         }

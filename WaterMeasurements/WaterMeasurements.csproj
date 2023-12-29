@@ -26,6 +26,7 @@
     <PackageReference Include="CommunityToolkit.WinUI.Controls.Primitives" Version="8.0.230907" />
     <PackageReference Include="CommunityToolkit.WinUI.Controls.SettingsControls" Version="8.0.230907" />
     <PackageReference Include="CommunityToolkit.WinUI.Extensions" Version="8.0.230907" />
+    <PackageReference Include="CommunityToolkit.WinUI.Media" Version="8.0.230907" />
     <PackageReference Include="Esri.ArcGISRuntime.Toolkit.WinUI" Version="200.3.0" />
     <PackageReference Include="Esri.ArcGISRuntime.WinUI" Version="200.3.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0" />

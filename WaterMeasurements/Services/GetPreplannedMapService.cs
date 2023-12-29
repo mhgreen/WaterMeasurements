@@ -293,7 +293,7 @@ public partial class GetPreplannedMapService : IGetPreplannedMapService
                         "GetPreplannedMapService, StateMachine (SyncReady): localSettings can not be null or empty."
                     );
 
-                    var WebMapId = (string?)localSettings.Values["secchiWebMapIdKey"];
+                    var WebMapId = (string?)localSettings.Values["webMapIdKey"];
                     if (WebMapId == null || WebMapId == "")
                     {
                         // TODO: If WebMapId is null or empty, send a message to the UI.

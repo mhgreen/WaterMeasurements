@@ -6,12 +6,22 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:esri="using:Esri.ArcGISRuntime.UI.Controls"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:media="using:CommunityToolkit.WinUI.Media"
     xmlns:ui="using:CommunityToolkit.WinUI"
     xmlns:viewmodels="using:WaterMeasurements.ViewModels"
     x:Name="MapPage"
     d:DataContext="{d:DesignInstance Type=viewmodels:MainViewModel}"
     Background="{ThemeResource SolidBackgroundFillColorBaseBrush}"
     mc:Ignorable="d">
+
+    <Page.Resources>
+        <!--  We expect all our elements to bind to the same target with this resource  -->
+        <ui:AttachedDropShadow
+            x:Key="CommonShadow"
+            CastTo="{x:Bind CollectionStackPanel}"
+            Offset="8" />
+    </Page.Resources>
+
 
     <Grid
         x:Name="ContentArea"
@@ -74,6 +84,23 @@
 
                     <StackPanel>
 
+                        <NavigationView IsBackButtonVisible="Collapsed" PaneDisplayMode="Top">
+                            <NavigationView.MenuItems>
+                                <NavigationViewItem Content="Center">
+                                    <NavigationViewItem.Icon>
+                                        <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE81D;" />
+                                    </NavigationViewItem.Icon>
+                                </NavigationViewItem>
+                                <NavigationViewItem Content="Auto Pan">
+                                    <NavigationViewItem.Icon>
+                                        <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xe7c2;" />
+                                    </NavigationViewItem.Icon>
+                                </NavigationViewItem>
+                            </NavigationView.MenuItems>
+
+                            <Frame x:Name="MapFrame" />
+                        </NavigationView>
+
                         <StackPanel>
                             <CommandBar
                                 HorizontalAlignment="Left"
@@ -105,6 +132,51 @@
 
                 </controls:Case>
 
+                <controls:Case Value="Configuration">
+
+                    <StackPanel>
+                        <TextBlock
+                            x:Uid="Settings_Developer"
+                            Margin="{StaticResource SmallTopMargin}"
+                            Style="{ThemeResource SubtitleTextBlockStyle}" />
+                        <StackPanel Margin="{StaticResource SmallTopBottomMargin}">
+
+                            <TextBlock x:Uid="Settings_ApiKey" />
+
+                            <StackPanel Orientation="Horizontal">
+
+                                <PasswordBox
+                                    Name="ApiKeyArcGIS"
+                                    Width="450"
+                                    Margin="0,0,8,0"
+                                    AutomationProperties.Name="ArcGIS API key password box"
+                                    LostFocus="{x:Bind StoreDeveloperKey, Mode=OneWay}"
+                                    Password="{x:Bind apiKey, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                                    PasswordRevealMode="Hidden" />
+                                <CheckBox
+                                    Name="RevealApiKey"
+                                    x:Uid="Settings_RevealApiKey"
+                                    Checked="RevealApiKey_Changed"
+                                    IsChecked="False"
+                                    Unchecked="RevealApiKey_Changed" />
+
+                            </StackPanel>
+
+                            <TextBox
+                                x:Name="SecchiWebMapId"
+                                x:Uid="Settings_Secchi_WebMapId"
+                                MinWidth="100"
+                                Margin="{StaticResource SmallTopMargin}"
+                                HorizontalAlignment="Left"
+                                LostFocus="{x:Bind StoreWebMapKey, Mode=OneWay}"
+                                Text="{x:Bind webMapIdKey, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" />
+
+                        </StackPanel>
+                        
+                    </StackPanel>
+                    
+                </controls:Case>
+
             </controls:SwitchPresenter>
 
         </Grid>
@@ -113,108 +185,163 @@
             x:Name="Notifications"
             Grid.Row="1"
             Grid.Column="1">
-            <StackPanel
-                x:Name="CollectionStackPanel"
-                Margin="0,0,0,0"
-                HorizontalAlignment="Left"
-                Visibility="Visible">
 
-                <StackPanel
-                    x:Name="ManualCollectionStackPanel"
-                    Width="200"
-                    Margin="{StaticResource SmallTopMargin}"
-                    HorizontalAlignment="Left">
+            <TabView
+                x:Name="SecchiTab"
+                MinHeight="475"
+                Margin="0"
+                IsAddTabButtonVisible="False"
+                SelectedIndex="0">
 
-                    <TextBlock
-                        Opacity="0.8"
-                        Style="{StaticResource TitleTextBlockStyle}"
-                        Text="-- Test --"
-                        TextAlignment="Center" />
+                <TabView.Resources>
+                    <ResourceDictionary>
+                        <ResourceDictionary.ThemeDictionaries>
+                            <ResourceDictionary x:Key="Light">
+                                <SolidColorBrush x:Key="TabViewBackground" Color="{ThemeResource SystemAccentColorLight3}" />
+                            </ResourceDictionary>
+                            <ResourceDictionary x:Key="Dark">
+                                <SolidColorBrush x:Key="TabViewBackground" Color="{ThemeResource SystemAccentColorDark3}" />
+                            </ResourceDictionary>
+                        </ResourceDictionary.ThemeDictionaries>
+                    </ResourceDictionary>
+                </TabView.Resources>
 
-                    <TextBlock
-                        x:Uid="Main_SecchiValues"
-                        HorizontalAlignment="Left"
-                        Opacity=".5"
-                        Style="{StaticResource SubtitleTextBlockStyle}" />
-                    <TextBox
-                        x:Name="Measurement1"
-                        Margin="{StaticResource SmallTopMargin}"
-                        ui:TextBoxExtensions.ValidationMode="Dynamic"
-                        ui:TextBoxExtensions.ValidationType="Number"
-                        InputScope="Digits" />
-                    <TextBox
-                        x:Name="Measurement2"
-                        ui:TextBoxExtensions.ValidationMode="Dynamic"
-                        ui:TextBoxExtensions.ValidationType="Number"
-                        InputScope="Digits" />
-                    <TextBox
-                        x:Name="Measurement3"
-                        ui:TextBoxExtensions.ValidationMode="Dynamic"
-                        ui:TextBoxExtensions.ValidationType="Number"
-                        InputScope="Digits" />
+                <TabView.TabItems>
+                    <TabViewItem Header="Secchi" IsClosable="False">
+                        <TabViewItem.IconSource>
+                            <SymbolIconSource Symbol="Page" />
+                        </TabViewItem.IconSource>
 
-                    <StackPanel
-                        x:Name="ButtonStackPanel"
-                        Margin="{StaticResource SmallTopMargin}"
-                        HorizontalAlignment="Right"
-                        VerticalAlignment="Bottom"
-                        Orientation="Horizontal"
-                        Spacing="5">
-                        <Button x:Name="SecchiSaveButton" x:Uid="Main_SecchiSaveButton" />
-                        <Button x:Name="SecchiCancelButton" x:Uid="Main_SecchiCancelButton" />
-                    </StackPanel>
-                    
-                </StackPanel>
+                        <StackPanel
+                            x:Name="CollectionStackPanel"
+                            Margin="0,10,0,0"
+                            HorizontalAlignment="Left"
+                            Visibility="Visible">
 
-                <StackPanel
-                    x:Name="DatatableStackPanel"
-                    Width="500"
-                    Margin="{StaticResource SmallTopMargin}">
+                            <StackPanel x:Name="DatatableStackPanel" Margin="{StaticResource SmallTopMargin}">
 
-                    <ListView>
-                        <ListView.Header>
-                            <controls:DataTable Margin="0,40,0,0" ColumnSpacing="1">
-                                <controls:DataColumn CanResize="True" DesiredWidth="120">
-                                    <TextBlock
-                                        FontWeight="Bold"
-                                        Opacity=".8"
-                                        Style="{StaticResource BodyTextStyle}"
-                                        Text="Location" />
-                                </controls:DataColumn>
-                                <controls:DataColumn MinWidth="80" CanResize="True">
-                                    <TextBlock
-                                        FontWeight="Bold"
-                                        Opacity=".8"
-                                        Style="{StaticResource BodyTextStyle}"
-                                        Text="Obs1" />
-                                </controls:DataColumn>
-                                <controls:DataColumn MinWidth="80" CanResize="True">
-                                    <TextBlock
-                                        FontWeight="Bold"
-                                        Opacity=".8"
-                                        Style="{StaticResource BodyTextStyle}"
-                                        Text="Obs2" />
-                                </controls:DataColumn>
-                                <controls:DataColumn MinWidth="80" CanResize="True">
-                                    <TextBlock
-                                        FontWeight="Bold"
-                                        Opacity=".8"
-                                        Style="{StaticResource BodyTextStyle}"
-                                        Text="Obs3" />
-                                </controls:DataColumn>
-                                <controls:DataColumn MinWidth="40" CanResize="True">
-                                    <TextBlock
-                                        FontWeight="Bold"
-                                        Opacity=".8"
-                                        Style="{StaticResource BodyTextStyle}"
-                                        Text="Secchi" />
-                                </controls:DataColumn>
-                            </controls:DataTable>
-                        </ListView.Header>
-                    </ListView>
-                </StackPanel>
+                                <StackPanel Background="{ThemeResource AcrylicBackgroundFillColorDefaultBrush}">
+                                    <CommandBar
+                                        Margin="0,0,0,0"
+                                        HorizontalAlignment="Left"
+                                        DefaultLabelPosition="Right"
+                                        IsOpen="False">
+                                        <AppBarButton Label="Upload">
+                                            <AppBarButton.Icon>
+                                                <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xe898;" />
+                                            </AppBarButton.Icon>
+                                        </AppBarButton>
+                                        <AppBarButton Label="Discard">
+                                            <AppBarButton.Icon>
+                                                <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xe711;" />
+                                            </AppBarButton.Icon>
+                                        </AppBarButton>
+                                    </CommandBar>
+                                </StackPanel>
 
-            </StackPanel>
+                                <ListView Visibility="Visible">
+                                    <ListView.Header>
+                                        <controls:DataTable Margin="0,10,0,0" ColumnSpacing="1">
+                                            <controls:DataColumn CanResize="True" DesiredWidth="120">
+                                                <TextBlock
+                                                    FontWeight="Bold"
+                                                    Opacity=".8"
+                                                    Style="{StaticResource BodyTextStyle}"
+                                                    Text="Location" />
+                                            </controls:DataColumn>
+                                            <controls:DataColumn MinWidth="80" CanResize="True">
+                                                <TextBlock
+                                                    FontWeight="Bold"
+                                                    Opacity=".8"
+                                                    Style="{StaticResource BodyTextStyle}"
+                                                    Text="Obs1" />
+                                            </controls:DataColumn>
+                                            <controls:DataColumn MinWidth="80" CanResize="True">
+                                                <TextBlock
+                                                    FontWeight="Bold"
+                                                    Opacity=".8"
+                                                    Style="{StaticResource BodyTextStyle}"
+                                                    Text="Obs2" />
+                                            </controls:DataColumn>
+                                            <controls:DataColumn MinWidth="80" CanResize="True">
+                                                <TextBlock
+                                                    FontWeight="Bold"
+                                                    Opacity=".8"
+                                                    Style="{StaticResource BodyTextStyle}"
+                                                    Text="Obs3" />
+                                            </controls:DataColumn>
+                                            <controls:DataColumn MinWidth="40" CanResize="True">
+                                                <TextBlock
+                                                    FontWeight="Bold"
+                                                    Opacity=".8"
+                                                    Style="{StaticResource BodyTextStyle}"
+                                                    Text="Secchi" />
+                                            </controls:DataColumn>
+                                        </controls:DataTable>
+                                    </ListView.Header>
+                                </ListView>
+                            </StackPanel>
+
+                            <StackPanel
+                                x:Name="ManualCollectionStackPanel"
+                                Width="200"
+                                Margin="0,100,0,0"
+                                HorizontalAlignment="Left"
+                                Visibility="Visible">
+
+                                <TextBlock
+                                    Opacity="0.8"
+                                    Style="{StaticResource TitleTextBlockStyle}"
+                                    Text="HOA Test"
+                                    TextAlignment="Left" />
+
+                                <TextBlock
+                                    x:Uid="Main_SecchiValues"
+                                    HorizontalAlignment="Left"
+                                    Opacity=".5"
+                                    Style="{StaticResource SubtitleTextBlockStyle}" />
+                                <TextBox
+                                    x:Name="Measurement1"
+                                    Margin="{StaticResource SmallTopMargin}"
+                                    ui:TextBoxExtensions.ValidationMode="Dynamic"
+                                    ui:TextBoxExtensions.ValidationType="Number"
+                                    InputScope="Digits" />
+                                <TextBox
+                                    x:Name="Measurement2"
+                                    ui:TextBoxExtensions.ValidationMode="Dynamic"
+                                    ui:TextBoxExtensions.ValidationType="Number"
+                                    InputScope="Digits" />
+                                <TextBox
+                                    x:Name="Measurement3"
+                                    ui:TextBoxExtensions.ValidationMode="Dynamic"
+                                    ui:TextBoxExtensions.ValidationType="Number"
+                                    InputScope="Digits" />
+
+                                <StackPanel
+                                    x:Name="ButtonStackPanel"
+                                    Margin="{StaticResource SmallTopMargin}"
+                                    HorizontalAlignment="Right"
+                                    VerticalAlignment="Bottom"
+                                    Orientation="Horizontal"
+                                    Spacing="5">
+                                    <Button x:Name="SecchiSaveButton" x:Uid="Main_SecchiSaveButton" />
+                                    <Button x:Name="SecchiCancelButton" x:Uid="Main_SecchiCancelButton" />
+                                </StackPanel>
+
+                            </StackPanel>
+
+                        </StackPanel>
+
+
+                    </TabViewItem>
+                    <TabViewItem Header="Water Quality" IsClosable="False">
+                        <TabViewItem.IconSource>
+                            <SymbolIconSource Symbol="Page" />
+                        </TabViewItem.IconSource>
+                    </TabViewItem>
+
+                </TabView.TabItems>
+            </TabView>
 
         </Grid>
 

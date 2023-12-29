@@ -21,6 +21,7 @@ using Microsoft.Extensions.Logging;
 using NLog.Fluent;
 using WaterMeasurements.Services;
 using WaterMeasurements.Contracts.Services;
+using static WaterMeasurements.Models.PrePlannedMapConfiguration;
 
 namespace WaterMeasurements.Views;
 
@@ -44,17 +45,14 @@ public sealed partial class MainPage : Page
     public SecchiViewModel SecchiView { get; }
 
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
     private readonly SystemLocationDataSource systemLocation = new();
 
-    // Retrieve the local app data store.
-    private readonly Windows.Storage.ApplicationDataContainer localSettings = Windows
-        .Storage
-        .ApplicationData
-        .Current
-        .LocalSettings;
-
     // Current ArcGIS API key
-    // private string? apiKey;
+    public string? apiKey;
+
+    // Current WebMapId
+    public string? webMapIdKey;
 
     [RelayCommand]
     private void ReCenter()
@@ -72,6 +70,34 @@ public sealed partial class MainPage : Page
             .UI
             .LocationDisplayAutoPanMode
             .Navigation;
+    }
+
+    [RelayCommand]
+    public void StoreDeveloperKey()
+    {
+        apiKey = ApiKeyArcGIS.Password;
+        Logger.Debug("API key changed to: " + apiKey);
+        ViewModel.StoreSettingByKey(PrePlannedMapConfiguration.Item[Key.ArcgisApiKey], apiKey);
+    }
+
+    [RelayCommand]
+    public void StoreWebMapKey()
+    {
+        webMapIdKey = SecchiWebMapId.Text;
+        Logger.Debug("webMapIdKey key changed to: " + webMapIdKey);
+        ViewModel.StoreSettingByKey(PrePlannedMapConfiguration.Item[Key.OfflineMapIdentifier], webMapIdKey);
+    }
+
+    private void RevealApiKey_Changed(object sender, RoutedEventArgs e)
+    {
+        if (RevealApiKey.IsChecked == true)
+        {
+            ApiKeyArcGIS.PasswordRevealMode = PasswordRevealMode.Visible;
+        }
+        else
+        {
+            ApiKeyArcGIS.PasswordRevealMode = PasswordRevealMode.Hidden;
+        }
     }
 
     public MainPage()
@@ -98,6 +124,12 @@ public sealed partial class MainPage : Page
         try
         {
             Logger.Debug("MainPage.xaml.cs, Initialize: Initializing MainPage");
+
+            apiKey = await ViewModel.RetrieveSettingByKey<string>(PrePlannedMapConfiguration.Item[Key.ArcgisApiKey]);
+            webMapIdKey = await ViewModel.RetrieveSettingByKey<string>(PrePlannedMapConfiguration.Item[Key.OfflineMapIdentifier]);
+
+            Logger.Debug("ArcGIS API key initial value: " + apiKey);
+            Logger.Debug("ArcGIS Secchi web map id initial value: " + webMapIdKey);
 
             // Register for PreplannedMapConfigurationStatusMessage messages.
             // Log the result of the message.
