@@ -26,6 +26,7 @@ using Ardalis.GuardClauses;
 using Stateless;
 using System.ComponentModel;
 using static WaterMeasurements.Models.PrePlannedMapConfiguration;
+using System.Xml.Linq;
 
 // using static WaterMeasurements.Models.GetPreplannedMapModel;
 
@@ -75,7 +76,7 @@ public partial class GetPreplannedMapService : IGetPreplannedMapService
 
     // The ID for a web map item hosted on the server.
     // This is used to make sure that the retrieved map is the correct one.
-    private const string PreplannedMapName = "WaterMeasurements_MapArea";
+    private const string PreplannedMapName = "WaterData_MapArea";
 
     // Key for map package path which is stored when the map is downloaded and is used for offline retrieval.
     private const string packagePathKey = "MapPakagePath";
@@ -119,6 +120,7 @@ public partial class GetPreplannedMapService : IGetPreplannedMapService
     private enum PreplannedMapState
     {
         WaitingForConfigStatus,
+        WaitingForArcGISStatus,
         Initialization,
         IsInternetAvailable,
         SyncReady,
@@ -189,6 +191,8 @@ public partial class GetPreplannedMapService : IGetPreplannedMapService
     private async void InitializeStateMachine()
     {
         var mapPackagePath = string.Empty;
+        var configurationEntriesPresent = false;
+        var arcGISRuntimeStatusOk = false;
 
         try
         {
@@ -259,19 +263,96 @@ public partial class GetPreplannedMapService : IGetPreplannedMapService
             // Log state transitions.
             stateMachine.OnTransitioned(OnTransition);
 
-            // Start in an undefined state and wait for the Startup trigger to begin.
+            // Wait configuration values to be populated.
+            // Once they are populated, then move to WaitingForArcGISStatus (typical sequence).
+            // If the ArcGISRuntime status is received first then note that by setting arcGISRuntimeStatusOk to true.
+            // Given that arcGISRuntimeStatusOk is true, meaning that the ArcGISRuntime is ready, then when the configuration
+            // status is received, there is no need to wait for the ArcGISRuntime status to be received again,
+            // so move to Initialization (sequence where the state machine is waiting for configuration status but
+            // gets notification that the ArcGISRuntime is valid instead).
+
             stateMachine
                 .Configure(PreplannedMapState.WaitingForConfigStatus)
-                .Permit(
+                .OnEntryFrom(
+                    configurationStatusReceived,
+                    parametersConfigured => configurationEntriesPresent = parametersConfigured
+                )
+                .OnEntryFrom(
+                    arcGISStatusReceived,
+                    parametersConfigured => arcGISRuntimeStatusOk = parametersConfigured
+                )
+                .PermitReentry(PreplannedMapTrigger.ArcGISRuntimeStatusReceived)
+                .PermitIf(
                     PreplannedMapTrigger.ConfigurationStatusReceived,
-                    PreplannedMapState.Initialization
-                );
+                    PreplannedMapState.Initialization,
+                    () => arcGISRuntimeStatusOk
+                )
+                .PermitIf(
+                    PreplannedMapTrigger.ConfigurationStatusReceived,
+                    PreplannedMapState.WaitingForArcGISStatus,
+                    () => !arcGISRuntimeStatusOk
+                )
+                .OnExit(() =>
+                {
+                    logger.LogTrace(
+                        DownloadPreplannedEvent,
+                        "GetPreplannedMapService, StateMachine (WaitingForConfigStatus): Exiting WaitingForConfigStatus."
+                    );
+                    // Log configurationEntriesPresent and arcGISRuntimeStatusOk variables.
+                    logger.LogTrace(
+                        DownloadPreplannedEvent,
+                        "GetPreplannedMapService, StateMachine (WaitingForConfigStatus): configurationEntriesPresent: {configurationEntriesPresent}, arcGISRuntimeStatusOk: {arcGISRuntimeStatusOk}.",
+                        configurationEntriesPresent,
+                        arcGISRuntimeStatusOk
+                    );
+                });
+
+            // Wait for ArcGISRuntime status to be received.
+            // Once it is received, then move to Initialization.
+            // At this point, the configuration status has been received, so there should be no need
+            // to also handle the configurationStatusReceived message while waiting for arcGISStatus
+            // as was the case above.
+            stateMachine
+                .Configure(PreplannedMapState.WaitingForArcGISStatus)
+                .OnEntryFrom(
+                    arcGISStatusReceived,
+                    parametersConfigured => arcGISRuntimeStatusOk = parametersConfigured
+                )
+                .Permit(PreplannedMapTrigger.ArcGISRuntimeStatusReceived, PreplannedMapState.Initialization)
+                .OnExit(() =>
+                {
+                    logger.LogTrace(
+                        DownloadPreplannedEvent,
+                        "GetPreplannedMapService, StateMachine (WaitingForArcGISStatus): Exiting WaitingForArcGISStatus."
+                    );
+                    // Log configurationEntriesPresent and arcGISRuntimeStatusOk variables.
+                    logger.LogTrace(
+                        DownloadPreplannedEvent,
+                        "GetPreplannedMapService, StateMachine (WaitingForArcGISStatus): configurationEntriesPresent: {configurationEntriesPresent}, arcGISRuntimeStatusOk: {arcGISRuntimeStatusOk}.",
+                        configurationEntriesPresent,
+                        arcGISRuntimeStatusOk
+                    );
+                });
 
             // Perform initialization. First check to see if this is the first time the app has been run.
             // If it is the first time, then set the mapPackagePath and trigger InitializationComplete.
             stateMachine
                 .Configure(PreplannedMapState.Initialization)
-                .OnEntry(async () => await Initialization())
+                .OnEntry(async () =>
+                {
+                    logger.LogTrace(
+                        DownloadPreplannedEvent,
+                        "GetPreplannedMapService, StateMachine (Initialization): Entering Initialization."
+                    );
+                    // Log configurationEntriesPresent and arcGISRuntimeStatusOk variables.
+                    logger.LogTrace(
+                        DownloadPreplannedEvent,
+                        "GetPreplannedMapService, StateMachine (Initialization): configurationEntriesPresent: {configurationEntriesPresent}, arcGISRuntimeStatusOk: {arcGISRuntimeStatusOk}.",
+                        configurationEntriesPresent,
+                        arcGISRuntimeStatusOk
+                    );
+                    await Initialization();
+                })
                 .OnExit(async () => await GetNetworkStatusAsync())
                 .Permit(
                     PreplannedMapTrigger.InitializationComplete,
@@ -304,20 +385,15 @@ public partial class GetPreplannedMapService : IGetPreplannedMapService
                         "GetPreplannedMapService, StateMachine (SyncReady): localSettings can not be null or empty."
                     );
 
-                    var WebMapId = (string?)localSettings.Values["webMapIdKey"];
-                    if (WebMapId == null || WebMapId == "")
-                    {
-                        // TODO: If WebMapId is null or empty, send a message to the UI.
-                        logger.LogError(
-                            DownloadPreplannedEvent,
-                            "GetPreplannedMapService, StateMachine (SyncReady): Downloading a preplanned map area is not possible without a PortalItemId. Configure a valid web map identifier in settings."
-                        );
-                        Guard.Against.NullOrEmpty(
-                            WebMapId,
-                            nameof(WebMapId),
-                            "GetPreplannedMapService, StateMachine (SyncReady): Downloading a preplanned map area is not possible without a PortalItemId. Configure a valid web map identifier in settings."
-                        );
-                    }
+                    var offlineMapId = await localSettingsService.ReadSettingAsync<string>(
+                        PrePlannedMapConfiguration.Item[Key.OfflineMapIdentifier]
+                    );
+
+                    Guard.Against.NullOrEmpty(
+                        offlineMapId,
+                        nameof(offlineMapId),
+                        "GetPreplannedMapService, StateMachine (SyncReady): Downloading a preplanned map area is not possible without a PortalItemId. Configure a valid web map identifier in settings."
+                    );
 
                     // Set to true to cause InitializeOnlineAsync to be called at every run instead of waiting
                     // for a specified amount of time to pass between checks for updates.
@@ -378,7 +454,11 @@ public partial class GetPreplannedMapService : IGetPreplannedMapService
                                 elapsedSinceLastUpdate.TotalHours
                             );
                         }
-                        await InitializeOnlineAsync(PreplannedMapName, WebMapId, offlineDataFolder);
+                        await InitializeOnlineAsync(
+                            PreplannedMapName,
+                            offlineMapId,
+                            offlineDataFolder
+                        );
                     }
                     else
                     {
@@ -487,9 +567,6 @@ public partial class GetPreplannedMapService : IGetPreplannedMapService
                 exception.ToString()
             );
         }
-
-        // Start the state machine.
-        // stateMachine.Fire(PreplannedMapTrigger.Startup);
     }
 
     // Cause map download by calling this with a true value.
@@ -612,6 +689,20 @@ public partial class GetPreplannedMapService : IGetPreplannedMapService
             // Find the preplanned area and store it.
             var selectedArea = preplannedAreas.Where(
                 area => area.PortalItem!.Title == portalItemTitle
+            );
+
+            // Log the number of selected areas.
+            logger.LogTrace(
+                DownloadPreplannedEvent,
+                "GetPreplannedMapService, InitializeOnlineAsync: number of selected areas: {selectedArea}.",
+                selectedArea.Count()
+            );
+
+            // The expectation is that there will be one area selected.
+            var numberOfSelectedAreas = Guard.Against.AgainstExpression(
+                x => x == 1,
+                selectedArea.Count(),
+                "GetPreplannedMapService, InitializeOnlineAsync: the number of selected areas should be one."
             );
 
             Guard.Against.Null(
