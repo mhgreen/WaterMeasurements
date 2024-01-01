@@ -125,7 +125,8 @@
                                 MinWidth="500"
                                 MinHeight="500"
                                 MaxWidth="800"
-                                MaxHeight="800" />
+                                MaxHeight="800"
+                                Map="{x:Bind ViewModel.CurrentMap, Mode=TwoWay}" />
                         </StackPanel>
 
                     </StackPanel>
@@ -134,21 +135,22 @@
 
                 <controls:Case Value="Configuration">
 
-                    <StackPanel>
+                    <StackPanel x:Name="SettingsPanel" Margin="25,10,0,0">
+                        
                         <TextBlock
                             x:Uid="Settings_Developer"
                             Margin="{StaticResource SmallTopMargin}"
                             Style="{ThemeResource SubtitleTextBlockStyle}" />
-                        <StackPanel Margin="{StaticResource SmallTopBottomMargin}">
+                        
+                        <StackPanel Margin="20,15,0,0">
 
                             <TextBlock x:Uid="Settings_ApiKey" />
 
-                            <StackPanel Orientation="Horizontal">
-
+                            <StackPanel Margin="10,0,0,0" Orientation="Horizontal">
                                 <PasswordBox
                                     Name="ApiKeyArcGIS"
-                                    Width="450"
-                                    Margin="0,0,8,0"
+                                    Width="400"
+                                    Margin="0,5,10,0"
                                     AutomationProperties.Name="ArcGIS API key password box"
                                     LostFocus="{x:Bind StoreDeveloperKeyAsync, Mode=OneWay}"
                                     Password="{x:Bind apiKey, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
@@ -159,22 +161,32 @@
                                     Checked="RevealApiKey_Changed"
                                     IsChecked="False"
                                     Unchecked="RevealApiKey_Changed" />
-
                             </StackPanel>
 
+                            <TextBlock x:Uid="Settings_WebMapId" Margin="0,20,0,0" />
+
                             <TextBox
-                                x:Name="SecchiWebMapId"
-                                x:Uid="Settings_Secchi_WebMapId"
-                                MinWidth="100"
-                                Margin="{StaticResource SmallTopMargin}"
+                                x:Name="WebMapId"
+                                MinWidth="400"
+                                Margin="10,5,10,0"
                                 HorizontalAlignment="Left"
-                                LostFocus="{x:Bind StoreWebMapKeyAsync, Mode=OneWay}"
-                                Text="{x:Bind webMapIdKey, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" />
+                                LostFocus="{x:Bind StoreWebMapIdAsync, Mode=OneWay}"
+                                Text="{x:Bind webMapId, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" />
+
+                            <TextBlock x:Uid="Settings_PreplannedMapName" Margin="0,20,0,0" />
+
+                            <TextBox
+                                x:Name="PreplannedMapName"
+                                MinWidth="400"
+                                Margin="10,5,10,0"
+                                HorizontalAlignment="Left"
+                                LostFocus="{x:Bind StorePreplannedMapNameAsync, Mode=OneWay}"
+                                Text="{x:Bind preplannedMapName, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" />
 
                         </StackPanel>
-                        
-                    </StackPanel>
                     
+                    </StackPanel>
+
                 </controls:Case>
 
             </controls:SwitchPresenter>

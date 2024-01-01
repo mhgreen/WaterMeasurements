@@ -43,6 +43,10 @@ public class MapExtentChangedMessage : ValueChangedMessage<MainMapExtent>
 public class PreplannedMapConfigurationStatusMessage(bool configurationStatus)
     : ValueChangedMessage<bool>(configurationStatus) { }
 
+// Message to notify modules that the number of preplanned map areas is incorrect.
+public class PreplannedMapAreaCountMessage(int preplannedMapAreaCount)
+    : ValueChangedMessage<int>(preplannedMapAreaCount) { }
+
 // Request message to get the map envelope.
 public class MapEnvelopeRequestMessage : RequestMessage<Envelope> { }
 
@@ -135,6 +139,7 @@ public partial class GetPreplannedMapService : IGetPreplannedMapService
         ConfigurationStatusReceived,
         AppClosing,
         InitializationComplete,
+        WrongNumberOfPreplannedAreasReceived,
         InternetUnavailableRecieved,
         InternetAvailableRecieved,
         LocalPreplannedMapExists,
@@ -273,6 +278,15 @@ public partial class GetPreplannedMapService : IGetPreplannedMapService
 
             stateMachine
                 .Configure(PreplannedMapState.WaitingForConfigStatus)
+                .OnEntry(() =>
+                {
+                    logger.LogTrace(
+                        DownloadPreplannedEvent,
+                        "GetPreplannedMapService, StateMachine (WaitingForConfigStatus): Entering WaitingForConfigStatus and setting configurationEntriesPresent and arcGISRuntimeStatusOk to false."
+                    );
+                    configurationEntriesPresent = false;
+                    arcGISRuntimeStatusOk = false;
+                })
                 .OnEntryFrom(
                     configurationStatusReceived,
                     parametersConfigured => configurationEntriesPresent = parametersConfigured
@@ -318,7 +332,10 @@ public partial class GetPreplannedMapService : IGetPreplannedMapService
                     arcGISStatusReceived,
                     parametersConfigured => arcGISRuntimeStatusOk = parametersConfigured
                 )
-                .Permit(PreplannedMapTrigger.ArcGISRuntimeStatusReceived, PreplannedMapState.Initialization)
+                .Permit(
+                    PreplannedMapTrigger.ArcGISRuntimeStatusReceived,
+                    PreplannedMapState.Initialization
+                )
                 .OnExit(() =>
                 {
                     logger.LogTrace(
@@ -388,6 +405,13 @@ public partial class GetPreplannedMapService : IGetPreplannedMapService
                     var offlineMapId = await localSettingsService.ReadSettingAsync<string>(
                         PrePlannedMapConfiguration.Item[Key.OfflineMapIdentifier]
                     );
+
+                    // Get the name of the preplanned map from the settings.
+                    /*
+                    var preplannedMapName = await localSettingsService.ReadSettingAsync<string>(
+                        PrePlannedMapConfiguration.Item[Key.PreplannedMapName]
+                    );
+                    */
 
                     Guard.Against.NullOrEmpty(
                         offlineMapId,
@@ -474,7 +498,11 @@ public partial class GetPreplannedMapService : IGetPreplannedMapService
                         );
                         await GetOfflineMap(mapPackagePath);
                     }
-                });
+                })
+                .Permit(
+                    PreplannedMapTrigger.WrongNumberOfPreplannedAreasReceived,
+                    PreplannedMapState.WaitingForConfigStatus
+                );
 
             // If internet is not available, then the state is UseLocal.
             stateMachine
@@ -554,6 +582,29 @@ public partial class GetPreplannedMapService : IGetPreplannedMapService
                         logger.LogError(
                             DownloadPreplannedEvent,
                             "GetPreplannedMapService, PreplannedMapConfigurationStatusMessage: ConfigurationStatus is false, waiting for configuration status values to be present."
+                        );
+                    }
+                }
+            );
+            // Register to get the incorrect number of preplanned areas message and use that to trigger WrongNumberOfPreplannedAreasReceived.
+            WeakReferenceMessenger.Default.Register<PreplannedMapAreaCountMessage>(
+                this,
+                (recipient, message) =>
+                {
+                    logger.LogTrace(
+                        DownloadPreplannedEvent,
+                        "GetPreplannedMapService, PreplannedMapAreaCountMessage: Number of selected areas from preplanned map is {message}.",
+                        message.Value
+                    );
+
+                    if (message.Value != 1)
+                    {
+                        logger.LogError(
+                            DownloadPreplannedEvent,
+                            "GetPreplannedMapService, PreplannedMapAreaCountMessage: Wrong number of selected areas from the preplanned map, firing WrongNumberOfPreplannedAreasReceived."
+                        );
+                        stateMachine.Fire(
+                            PreplannedMapTrigger.WrongNumberOfPreplannedAreasReceived
                         );
                     }
                 }
@@ -660,7 +711,7 @@ public partial class GetPreplannedMapService : IGetPreplannedMapService
             // Create the ArcGIS Online portal.
             var portal = await ArcGISPortal.CreateAsync();
 
-            // Get the Cullaby secchi web map item using its ID.
+            // Get the web map using its ID.
             var webmapItem = await PortalItem.CreateAsync(portal, webMapId);
 
             // Create an offline map task for the web map item.
@@ -698,108 +749,107 @@ public partial class GetPreplannedMapService : IGetPreplannedMapService
                 selectedArea.Count()
             );
 
-            // The expectation is that there will be one area selected.
-            var numberOfSelectedAreas = Guard.Against.AgainstExpression(
-                x => x == 1,
-                selectedArea.Count(),
-                "GetPreplannedMapService, InitializeOnlineAsync: the number of selected areas should be one."
-            );
-
-            Guard.Against.Null(
-                selectedArea,
-                nameof(selectedArea),
-                "GetPreplannedMapService, InitializeOnlineAsync: selectedArea can not be null."
-            );
-
-            // Get the preplanned area (should be the only item in the list).
-            var offlineMapArea = selectedArea.First();
-
-            if (offlineMapArea.PortalItem!.Title != portalItemTitle)
+            if (selectedArea.Count() == 1)
             {
-                // TODO: Notify the user that the map that is being downloaded is not the one in the settings.
-
-                logger.LogError(
-                    DownloadPreplannedEvent,
-                    "GetPreplannedMapService, InitializeOnlineAsync: offlineMapArea.PortalItem.Title ({offlineMapArea.PortalItem.Title}) does not equal to portalItemTitle ({portalItemTitle}). This will result in unpredictable behavior.",
-                    offlineMapArea.PortalItem!.Title,
-                    portalItemTitle
+                // The expectation is that there will be one area selected.
+                var numberOfSelectedAreas = Guard.Against.AgainstExpression(
+                    x => x == 1,
+                    selectedArea.Count(),
+                    "GetPreplannedMapService, InitializeOnlineAsync: the number of selected areas should be one."
                 );
-            }
 
-            // await SetMapPackagePath(packagePathKey, mapPackagePath);
+                // Get the preplanned area (should be the only item in the list).
+                var offlineMapArea = selectedArea.First();
 
-            logger.LogDebug(
-                DownloadPreplannedEvent,
-                "GetPreplannedMapService, InitializeOnlineAsync: Planning to store {PortalItem} at {offlineDataFolder}.",
-                offlineMapArea.PortalItem.Title,
-                offlineDataFolder
-            );
-            // If an area has been downloaded, get that area.
-            if (Directory.Exists(mapPackagePath))
-            {
-                try
+                Guard.Against.Null(
+                    offlineMapArea.PortalItem,
+                    nameof(offlineMapArea.PortalItem),
+                    "GetPreplannedMapService, InitializeOnlineAsync: offlineMapArea.PortalItem can not be null."
+                );
+
+                logger.LogDebug(
+                    DownloadPreplannedEvent,
+                    "GetPreplannedMapService, InitializeOnlineAsync: Planning to store {PortalItem} at {offlineDataFolder}.",
+                    offlineMapArea.PortalItem.Title,
+                    offlineDataFolder
+                );
+                // If an area has been downloaded, get that area.
+                if (Directory.Exists(mapPackagePath))
+                {
+                    try
+                    {
+                        logger.LogDebug(
+                            DownloadPreplannedEvent,
+                            "GetPreplannedMapService, InitializeOnlineAsync: {PortalItem} at {offlineDataFolder} exists, getting locally stored map.",
+                            offlineMapArea.PortalItem.Title,
+                            offlineDataFolder
+                        );
+
+                        // Open local offline map package.
+                        mobileMapPackage = await MobileMapPackage.OpenAsync(mapPackagePath);
+
+                        // Get the first map in mobileMapPackage throwing an exception if null.
+                        var map = mobileMapPackage.Maps[0];
+                        Guard.Against.Null(
+                            map,
+                            nameof(map),
+                            "GetPreplannedMapService, InitializeOnlineAsync: First map in mobileMapPackage is null."
+                        );
+
+                        // If a scheduled update is available for the preplanned map, then delete the offline map directory,
+                        // call DownloadMapAreaAsync, then just treat it as an offline map.
+                        if (await IsScheduledUpdateAvailableAsync(map))
+                        {
+                            // Close the current mobile package if mobileMapPackage is not null.
+                            mobileMapPackage?.Close();
+                            DeleteDownloadedMaps(mapPackagePath);
+                            await DownloadMapAreaAsync(
+                                offlineMapArea,
+                                offlineMapTask,
+                                mapPackagePath
+                            );
+                            await GetOfflineMap(mapPackagePath);
+                        }
+                        else
+                        {
+                            // A scheduled update is not available, so display the map.
+                            // Send notification that the map has changed.
+                            // preplannedMapModel.Map = map;
+                            SendMapUpdate(map);
+                        }
+                    }
+                    catch (Exception exception)
+                    {
+                        logger.LogError(
+                            DownloadPreplannedEvent,
+                            "GetPreplannedMapService, InitializeOnlineAsync: mapPackagePath does not exist: {exception}.",
+                            exception.ToString()
+                        );
+                    }
+                }
+                // If there is not an area available locally,
+                // then download it and treat it as an offline map.
+                else
                 {
                     logger.LogDebug(
                         DownloadPreplannedEvent,
-                        "GetPreplannedMapService, InitializeOnlineAsync: {PortalItem} at {offlineDataFolder} exists, getting locally stored map.",
-                        offlineMapArea.PortalItem.Title,
-                        offlineDataFolder
+                        "GetPreplannedMapService, InitializeOnlineAsync: No local map, calling DownloadMapAreaAsync."
                     );
-
-                    // Open local offline map package.
-                    mobileMapPackage = await MobileMapPackage.OpenAsync(mapPackagePath);
-
-                    // Get the first map in mobileMapPackage throwing an exception if null.
-                    var map = mobileMapPackage.Maps[0];
-                    Guard.Against.Null(
-                        map,
-                        nameof(map),
-                        "GetPreplannedMapService, InitializeOnlineAsync: First map in mobileMapPackage is null."
-                    );
-
-                    Guard.Against.Null(
-                        localSettingsService,
-                        nameof(localSettingsService),
-                        "GetPreplannedMapService, InitializeOnlineAsync: localSettingService is null."
-                    );
-
-                    // If a scheduled update is available for the preplanned map, then delete the offline map directory,
-                    // call DownloadMapAreaAsync, then just treat it as an offline map.
-                    if (await IsScheduledUpdateAvailableAsync(map))
-                    {
-                        // Close the current mobile package if mobileMapPackage is not null.
-                        mobileMapPackage?.Close();
-                        DeleteDownloadedMaps(mapPackagePath);
-                        await DownloadMapAreaAsync(offlineMapArea, offlineMapTask, mapPackagePath);
-                        await GetOfflineMap(mapPackagePath);
-                    }
-                    else
-                    {
-                        // A scheduled update is not available, so display the map.
-                        // Send notification that the map has changed.
-                        // preplannedMapModel.Map = map;
-                        SendMapUpdate(map);
-                    }
-                }
-                catch (Exception exception)
-                {
-                    logger.LogError(
-                        DownloadPreplannedEvent,
-                        "GetPreplannedMapService, InitializeOnlineAsync: mapPackagePath does not exist: {exception}.",
-                        exception.ToString()
-                    );
+                    await DownloadMapAreaAsync(offlineMapArea, offlineMapTask, mapPackagePath);
+                    await GetOfflineMap(mapPackagePath);
                 }
             }
-            // If there is not an area available locally,
-            // then download it and treat it as an offline map.
             else
             {
-                logger.LogDebug(
+                logger.LogError(
                     DownloadPreplannedEvent,
-                    "GetPreplannedMapService, InitializeOnlineAsync: No local map, calling DownloadMapAreaAsync."
+                    "GetPreplannedMapService, InitializeOnlineAsync: There should be 1 preplanned area selected, but there are {selectedArea}.",
+                    selectedArea.Count()
                 );
-                await DownloadMapAreaAsync(offlineMapArea, offlineMapTask, mapPackagePath);
-                await GetOfflineMap(mapPackagePath);
+                // Send a message that the number of preplanned areas is incorrect.
+                WeakReferenceMessenger.Default.Send(
+                    new PreplannedMapAreaCountMessage(selectedArea.Count())
+                );
             }
         }
         catch (Exception exception)
@@ -1618,24 +1668,58 @@ public partial class GetPreplannedMapService : IGetPreplannedMapService
         }
     }
 
-    // Verify that the ArcGIS API key is valid and that the offline map ID is valid.
+    // Check for PreplannedMapName returning true if not null or empty.
+    public async Task<bool> IsPreplannedMapNamePresent()
+    {
+        Guard.Against.Null(
+            localSettingsService,
+            nameof(localSettingsService),
+            "GetPreplannedMapService, IsPreplannedMapNamePresent: localSettingsService can not be null."
+        );
+
+        var preplannedMapName = await localSettingsService.ReadSettingAsync<string>(
+            PrePlannedMapConfiguration.Item[Key.PreplannedMapName]
+        );
+        if (preplannedMapName is not null)
+        {
+            logger.LogInformation(
+                DownloadPreplannedEvent,
+                "GetPreplannedMapService, IsPreplannedMapNamePresent: preplannedMapName is not null."
+            );
+            return true;
+        }
+        else
+        {
+            logger.LogInformation(
+                DownloadPreplannedEvent,
+                "GetPreplannedMapService, IsPreplannedMapNamePresent: preplannedMapName is null."
+            );
+            return false;
+        }
+    }
+
+    // Verify that the ArcGIS API key is present, the preplanned map name, and that the offline map ID is present.
     // Send a PreplannedMapConfigurationStatusMessage with true if both are valid, false if not.
     public async Task PreplannedMapConfigurationStatusMessage()
     {
-        if (await IsArcgisApiKeyPresent() && await IsOfflineMapIdPresent())
+        if (
+            await IsArcgisApiKeyPresent()
+            && await IsOfflineMapIdPresent()
+            && await IsPreplannedMapNamePresent()
+        )
         {
-            logger.LogDebug(
+            logger.LogInformation(
                 DownloadPreplannedEvent,
-                "GetPreplannedMapService, IsArcgisApiKeyAndOfflineMapIdValid: arcgisApiKey and offlineMapId are not null."
+                "GetPreplannedMapService, IsArcgisApiKeyAndOfflineMapIdValid: arcgisApiKey, preplannedMapName, and offlineMapId are not null."
             );
             // Send notification that the configuration is valid.
             WeakReferenceMessenger.Default.Send(new PreplannedMapConfigurationStatusMessage(true));
         }
         else
         {
-            logger.LogDebug(
+            logger.LogInformation(
                 DownloadPreplannedEvent,
-                "GetPreplannedMapService, IsArcgisApiKeyAndOfflineMapIdValid: arcgisApiKey or offlineMapId is null."
+                "GetPreplannedMapService, IsArcgisApiKeyAndOfflineMapIdValid: arcgisApiKey, preplannedMapName, or offlineMapId is null."
             );
             // Send notification that the configuration is not valid.
             WeakReferenceMessenger.Default.Send(new PreplannedMapConfigurationStatusMessage(false));

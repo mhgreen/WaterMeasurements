@@ -52,7 +52,10 @@ public sealed partial class MainPage : Page
     public string? apiKey;
 
     // Current WebMapId
-    public string? webMapIdKey;
+    public string? webMapId;
+
+    // Current PreplannedMapName
+    public string? preplannedMapName;
 
     [RelayCommand]
     private void ReCenter()
@@ -85,13 +88,12 @@ public sealed partial class MainPage : Page
     }
 
     [RelayCommand]
-    public async Task StoreWebMapKeyAsync()
+    public async Task StoreWebMapIdAsync()
     {
-        webMapIdKey = SecchiWebMapId.Text;
-        Logger.Debug("webMapIdKey key changed to: " + webMapIdKey);
+        Logger.Debug("webMapId changed to: " + WebMapId.Text);
         await ViewModel.StoreSettingByKeyAsync(
             PrePlannedMapConfiguration.Item[Key.OfflineMapIdentifier],
-            webMapIdKey
+            WebMapId.Text
         );
     }
 
@@ -105,6 +107,16 @@ public sealed partial class MainPage : Page
         {
             ApiKeyArcGIS.PasswordRevealMode = PasswordRevealMode.Hidden;
         }
+    }
+
+    [RelayCommand]
+    public async Task StorePreplannedMapNameAsync()
+    {
+        Logger.Debug("Preplanned Map Name changed to: " + PreplannedMapName.Text);
+        await ViewModel.StoreSettingByKeyAsync(
+            PrePlannedMapConfiguration.Item[Key.PreplannedMapName],
+            PreplannedMapName.Text
+        );
     }
 
     public MainPage()
@@ -135,14 +147,20 @@ public sealed partial class MainPage : Page
             apiKey = await ViewModel.RetrieveSettingByKeyAsync<string>(
                 PrePlannedMapConfiguration.Item[Key.ArcgisApiKey]
             );
-            webMapIdKey = await ViewModel.RetrieveSettingByKeyAsync<string>(
+            webMapId = await ViewModel.RetrieveSettingByKeyAsync<string>(
                 PrePlannedMapConfiguration.Item[Key.OfflineMapIdentifier]
+            );
+            preplannedMapName = await ViewModel.RetrieveSettingByKeyAsync<string>(
+                PrePlannedMapConfiguration.Item[Key.PreplannedMapName]
             );
 
             Logger.Debug("MainPage.xaml.cs, Initialize: ArcGIS API key initial value: " + apiKey);
             Logger.Debug(
-                "MainPage.xaml.cs, Initialize: ArcGIS Secchi web map id initial value: "
-                    + webMapIdKey
+                "MainPage.xaml.cs, Initialize: ArcGIS web map id initial value: " + webMapId
+            );
+            Logger.Debug(
+                "MainPage.xaml.cs, Initialize: Preplanned map name initial value: "
+                    + preplannedMapName
             );
 
             // Register for PreplannedMapConfigurationStatusMessage messages.

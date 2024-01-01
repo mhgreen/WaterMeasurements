@@ -156,9 +156,6 @@
   <data name="Settings_RevealApiKey.Content" xml:space="preserve">
     <value>Show API Key</value>
   </data>
-  <data name="Settings_Secchi_WebMapId.Header" xml:space="preserve">
-    <value>ArcGIS web map identifier for Secchi measurements</value>
-  </data>
   <data name="Main_Title.Text" xml:space="preserve">
     <value>Water Measurements</value>
   </data>
@@ -173,5 +170,11 @@
   </data>
   <data name="Main_GeoDatabaseDownload.Text" xml:space="preserve">
     <value>Geodatabase Download</value>
+  </data>
+  <data name="Settings_PreplannedMapName.Text" xml:space="preserve">
+    <value>Name of preplanned web map</value>
+  </data>
+  <data name="Settings_WebMapId.Text" xml:space="preserve">
+    <value>Web map identifier for main map</value>
   </data>
 </root>
