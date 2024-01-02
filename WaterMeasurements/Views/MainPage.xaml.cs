@@ -43,6 +43,7 @@ public sealed partial class MainPage : Page
 {
     public MainViewModel ViewModel { get; }
     public SecchiViewModel SecchiView { get; }
+    public MapConfigurationViewModel MapConfigurationView { get; }
 
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
@@ -53,9 +54,6 @@ public sealed partial class MainPage : Page
 
     // Current WebMapId
     public string? webMapId;
-
-    // Current PreplannedMapName
-    public string? preplannedMapName;
 
     [RelayCommand]
     private void ReCenter()
@@ -109,20 +107,11 @@ public sealed partial class MainPage : Page
         }
     }
 
-    [RelayCommand]
-    public async Task StorePreplannedMapNameAsync()
-    {
-        Logger.Debug("Preplanned Map Name changed to: " + PreplannedMapName.Text);
-        await ViewModel.StoreSettingByKeyAsync(
-            PrePlannedMapConfiguration.Item[Key.PreplannedMapName],
-            PreplannedMapName.Text
-        );
-    }
-
     public MainPage()
     {
         ViewModel = App.GetService<MainViewModel>();
         SecchiView = App.GetService<SecchiViewModel>();
+        MapConfigurationView = App.GetService<MapConfigurationViewModel>();
         Logger.Debug("MainPage.xaml.cs, MainPage: Starting");
 
         InitializeComponent();
@@ -150,7 +139,7 @@ public sealed partial class MainPage : Page
             webMapId = await ViewModel.RetrieveSettingByKeyAsync<string>(
                 PrePlannedMapConfiguration.Item[Key.OfflineMapIdentifier]
             );
-            preplannedMapName = await ViewModel.RetrieveSettingByKeyAsync<string>(
+            var preplannedMapName = await ViewModel.RetrieveSettingByKeyAsync<string>(
                 PrePlannedMapConfiguration.Item[Key.PreplannedMapName]
             );
 

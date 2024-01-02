@@ -1,5 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.Mvvm.Messaging.Messages;
+using CommunityToolkit.Mvvm.Input;
 
 using Esri.ArcGISRuntime.Data;
 using Esri.ArcGISRuntime.Mapping;
@@ -12,11 +14,10 @@ using Microsoft.UI.Dispatching;
 using WaterMeasurements.Contracts.Services;
 using WaterMeasurements.Models;
 using WaterMeasurements.Views;
-using CommunityToolkit.Mvvm.Messaging;
-using Ardalis.GuardClauses;
 using WaterMeasurements.Services;
-using NLog;
 using static WaterMeasurements.Models.PrePlannedMapConfiguration;
+
+using Ardalis.GuardClauses;
 using Newtonsoft.Json.Linq;
 using Microsoft.Extensions.Primitives;
 
@@ -142,6 +143,12 @@ public partial class MainViewModel : ObservableRecipient
                 configurationService,
                 nameof(configurationService),
                 "MainViewModel, Initialize(): configurationService is null"
+            );
+
+            Guard.Against.Null(
+                localSettingsService,
+                nameof(localSettingsService),
+                "MainViewModel, Initialize(): localSettingsService is null"
             );
 
             WeakReferenceMessenger.Default.Register<NetworkChangedMessage>(

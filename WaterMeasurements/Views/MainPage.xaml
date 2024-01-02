@@ -105,8 +105,9 @@
                             <CommandBar
                                 HorizontalAlignment="Left"
                                 DefaultLabelPosition="Right"
+                                IsEnabled="True"
                                 IsOpen="False">
-                                <AppBarButton Label="Center">
+                                <AppBarButton HorizontalAlignment="Left" Label="Center">
                                     <AppBarButton.Icon>
                                         <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE81D;" />
                                     </AppBarButton.Icon>
@@ -116,10 +117,18 @@
                                         <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xe7c2;" />
                                     </AppBarButton.Icon>
                                 </AppBarButton>
+                                <CommandBar.SecondaryCommands >
+                                    <AppBarButton Icon="Setting" Label="Settings">
+                                        
+                                    </AppBarButton>
+                                </CommandBar.SecondaryCommands>
                             </CommandBar>
                         </StackPanel>
 
-                        <StackPanel BorderThickness="6" CornerRadius="3">
+                        <StackPanel
+                            BorderBrush="{x:Bind SecchiView.MapBorderColor, Mode=OneWay}"
+                            BorderThickness="6"
+                            CornerRadius="3">
                             <esri:MapView
                                 x:Name="MapView"
                                 MinWidth="500"
@@ -135,13 +144,34 @@
 
                 <controls:Case Value="Configuration">
 
-                    <StackPanel x:Name="SettingsPanel" Margin="25,10,0,0">
-                        
+                    <StackPanel x:Name="SettingsPanel">
+
                         <TextBlock
-                            x:Uid="Settings_Developer"
-                            Margin="{StaticResource SmallTopMargin}"
+                            x:Uid="Settings_Map_Configuration"
+                            Margin="15,10,0,10"
                             Style="{ThemeResource SubtitleTextBlockStyle}" />
-                        
+
+                        <StackPanel Background="{ThemeResource AcrylicBackgroundFillColorDefaultBrush}">
+
+                            <CommandBar
+                                Margin="0,0,0,0"
+                                HorizontalAlignment="Left"
+                                DefaultLabelPosition="Right"
+                                IsOpen="False">
+                                <AppBarButton x:Uid="Settings_Map_Config_Save" Click="{x:Bind MapConfigurationView.UpdateSettingsAsync}">
+                                    <AppBarButton.Icon>
+                                        <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xe74e;" />
+                                    </AppBarButton.Icon>
+                                </AppBarButton>
+                                <AppBarButton x:Uid="Settings_Map_Config_Exit">
+                                    <AppBarButton.Icon>
+                                        <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xe944;" />
+                                    </AppBarButton.Icon>
+                                </AppBarButton>
+                            </CommandBar>
+
+                        </StackPanel>
+
                         <StackPanel Margin="20,15,0,0">
 
                             <TextBlock x:Uid="Settings_ApiKey" />
@@ -180,11 +210,11 @@
                                 MinWidth="400"
                                 Margin="10,5,10,0"
                                 HorizontalAlignment="Left"
-                                LostFocus="{x:Bind StorePreplannedMapNameAsync, Mode=OneWay}"
-                                Text="{x:Bind preplannedMapName, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" />
+                                LostFocus="{x:Bind MapConfigurationView.StorePreplannedMapNameAsync, Mode=OneWay}"
+                                Text="{x:Bind MapConfigurationView.PreplannedMapName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
 
                         </StackPanel>
-                    
+
                     </StackPanel>
 
                 </controls:Case>

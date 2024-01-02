@@ -169,6 +169,7 @@ public partial class App : Application
                     services.AddTransient<MainViewModel>();
                     services.AddTransient<MainPage>();
                     services.AddTransient<SecchiViewModel>();
+                    services.AddTransient<MapConfigurationViewModel>();
 
                     // Application Services                    
                     services.AddSingleton<INetworkStatusService, NetworkStatusService>();

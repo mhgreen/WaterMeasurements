@@ -147,9 +147,6 @@
   <data name="Settings_PrivacyTerms.Text" xml:space="preserve">
     <value>No personal information is collected or used by this application</value>
   </data>
-  <data name="Settings_Developer.Text" xml:space="preserve">
-    <value>Developer Settings</value>
-  </data>
   <data name="Settings_ApiKey.Text" xml:space="preserve">
     <value>ArcGIS API Key</value>
   </data>
@@ -170,6 +167,15 @@
   </data>
   <data name="Main_GeoDatabaseDownload.Text" xml:space="preserve">
     <value>Geodatabase Download</value>
+  </data>
+  <data name="Settings_Map_Configuration.Text" xml:space="preserve">
+    <value>Main Map Configuration</value>
+  </data>
+  <data name="Settings_Map_Config_Exit.Label" xml:space="preserve">
+    <value>Return to Map</value>
+  </data>
+  <data name="Settings_Map_Config_Save.Label" xml:space="preserve">
+    <value>Update</value>
   </data>
   <data name="Settings_PreplannedMapName.Text" xml:space="preserve">
     <value>Name of preplanned web map</value>
