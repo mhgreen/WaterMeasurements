@@ -1,4 +1,8 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.Mvvm.Messaging.Messages;
 using CommunityToolkit.Mvvm.Input;
@@ -7,9 +11,12 @@ using Esri.ArcGISRuntime.Data;
 using Esri.ArcGISRuntime.Mapping;
 
 using Microsoft.Extensions.Logging;
+
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI;
 using Microsoft.UI.Dispatching;
+using Microsoft.UI.Xaml.Navigation;
+using Microsoft.UI.Xaml.Controls;
 
 using WaterMeasurements.Contracts.Services;
 using WaterMeasurements.Models;
@@ -20,6 +27,7 @@ using static WaterMeasurements.Models.PrePlannedMapConfiguration;
 using Ardalis.GuardClauses;
 using Newtonsoft.Json.Linq;
 using Microsoft.Extensions.Primitives;
+using Esri.ArcGISRuntime.UI.Controls;
 
 namespace WaterMeasurements.ViewModels;
 
@@ -269,7 +277,39 @@ public partial class MainViewModel : ObservableRecipient
         }
     }
 
-    public async Task<dynamic> RetrieveSettingByKeyAsync<T>(string settingKey)
+    public void CollectionNavView_ItemInvoked(
+        NavigationView sender,
+        NavigationViewItemInvokedEventArgs args
+    )
+    {
+        var navOptions = new FrameNavigationOptions
+        {
+            TransitionInfoOverride = args.RecommendedNavigationTransitionInfo,
+            IsNavigationStackEnabled = false,
+        };
+
+    // Log to debug that the MapNavView_ItemInvoked event was fired.
+    logger.LogDebug(
+        MainViewModelLog,
+            "CollectionNavView_ItemInvoked(): CollectionNavView_ItemInvoked event fired."
+        );
+
+        // Log the name of the invoked item.
+        logger.LogDebug(
+            MainViewModelLog,
+            "CollectionNavView_ItemInvoked(): Invoked item name: {invokedItemName}.",
+            args.InvokedItemContainer.Name
+        );
+
+        // Log the sender name.
+        logger.LogDebug(
+            MainViewModelLog,
+            "CollectionNavView_ItemInvoked(): Sender name: {senderName}.",
+            sender.Name
+        );
+    }
+
+public async Task<dynamic> RetrieveSettingByKeyAsync<T>(string settingKey)
     {
         logger.LogTrace(
             MainViewModelLog,

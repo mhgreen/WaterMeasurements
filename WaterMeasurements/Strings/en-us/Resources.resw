@@ -169,7 +169,7 @@
     <value>Geodatabase Download</value>
   </data>
   <data name="Settings_Map_Configuration.Text" xml:space="preserve">
-    <value>Main Map Configuration</value>
+    <value>Main Map Settings</value>
   </data>
   <data name="Settings_Map_Config_Exit.Label" xml:space="preserve">
     <value>Return to Map</value>

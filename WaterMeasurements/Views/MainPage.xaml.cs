@@ -22,6 +22,9 @@ using NLog.Fluent;
 using WaterMeasurements.Services;
 using WaterMeasurements.Contracts.Services;
 using static WaterMeasurements.Models.PrePlannedMapConfiguration;
+using Windows.ApplicationModel.VoiceCommands;
+using Esri.ArcGISRuntime.UI.Controls;
+using Windows.Security.Cryptography.Core;
 
 namespace WaterMeasurements.Views;
 
@@ -38,6 +41,12 @@ public class MapPageUnloaded : ValueChangedMessage<MapPageUnloadedMessage>
     public MapPageUnloaded()
         : base(new MapPageUnloadedMessage()) { }
 }
+
+// Message to set the map to autopan.
+public class SetMapAutoPanMessage(bool value) : ValueChangedMessage<bool>(value) { }
+
+// Message to center the map.
+public class SetMapCenterMessage(bool value) : ValueChangedMessage<bool>(value) { }
 
 public sealed partial class MainPage : Page
 {
@@ -123,6 +132,42 @@ public sealed partial class MainPage : Page
                 new UIQueueSetMessage(new UIQueue(DispatcherQueue.GetForCurrentThread()))
             );
         });
+
+        // Handle the SetMapAutoPanMessage message.
+        WeakReferenceMessenger.Default.Register<SetMapAutoPanMessage>(
+            this,
+            (recipient, message) =>
+            {
+                // Log to trace the value of message.Value with a label.
+                Logger.Trace(
+                    "MainPage.xaml.cs, MainPage: SetMapAutoPanMessage, message.Value: {messageValue}",
+                    message.Value
+                );
+
+                MapView.LocationDisplay.AutoPanMode = Esri.ArcGISRuntime
+                    .UI
+                    .LocationDisplayAutoPanMode
+                    .Navigation;
+            }
+        );
+
+        // Handle the SetMapCenterMessage message.
+        WeakReferenceMessenger.Default.Register<SetMapCenterMessage>(
+            this,
+            (recipient, message) =>
+            {
+                // Log to trace the value of message.Value with a label.
+                Logger.Trace(
+                    "MainPage.xaml.cs, MainPage: SetMapCenterMessage, message.Value: {messageValue}",
+                    message.Value
+                );
+
+                MapView.LocationDisplay.AutoPanMode = Esri.ArcGISRuntime
+                    .UI
+                    .LocationDisplayAutoPanMode
+                    .Recenter;
+            }
+        );
 
         Initialize();
     }
@@ -272,6 +317,13 @@ public sealed partial class MainPage : Page
                     }
                 }
             };
+
+            SettingsPanel.Unloaded += (s, e) =>
+            {
+                Logger.Debug(
+                    "MainPage.xaml.cs, Initialize (SettingsPanel.Unloaded handler): SettingsPanel Unloaded"
+                );
+            };
         }
         catch (Exception exception)
         {
@@ -286,6 +338,16 @@ public sealed partial class MainPage : Page
                 exception.Message
             );
         }
+    }
+
+    private void MapNavView_Loaded(object sender, RoutedEventArgs e)
+    {
+        MapNavView.SelectedItem = MapNavView.MenuItems[1];
+    }
+
+    private void CollectionNavView_Loaded(object sender, RoutedEventArgs e)
+    {
+        CollectionNavView.SelectedItem = CollectionNavView.MenuItems[0];
     }
 
     /*
