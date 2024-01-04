@@ -33,11 +33,12 @@ namespace WaterMeasurements.ViewModels;
 
 public partial class MapConfigurationViewModel : ObservableValidator
 {
-    private readonly ILogger<MapConfigurationViewModel> logger;
+    private readonly ILogger<MapConfigurationViewModel> Logger;
 
     internal EventId MapConfigurationViewModelLog = new(12, "MapConfigurationViewModel");
 
-    private readonly ILocalSettingsService? localSettingsService;
+    private readonly ILocalSettingsService? LocalSettingsService;
+    private readonly IDialogService DialogService;
 
     public event EventHandler? SettingsUpdateComplete;
     public event EventHandler? SettingsUpdateFailed;
@@ -55,20 +56,20 @@ public partial class MapConfigurationViewModel : ObservableValidator
     {
         try
         {
-            logger.LogDebug(
+            Logger.LogDebug(
                 MapConfigurationViewModelLog,
                 "Preplanned Map Name changed to: {preplannedMap}",
                 PreplannedMapName
             );
             ValidateProperty(PreplannedMapName, nameof(PreplannedMapName));
             Guard.Against.Null(
-                localSettingsService,
-                nameof(localSettingsService),
-                "Configuration Service, StorePreplannedMapNameAsync(): localSettingsService is null."
+                LocalSettingsService,
+                nameof(LocalSettingsService),
+                "Configuration Service, StorePreplannedMapNameAsync(): LocalSettingsService is null."
             );
             if (PreplannedMapName != null)
             {
-                await localSettingsService.SaveSettingAsync(
+                await LocalSettingsService.SaveSettingAsync(
                     PrePlannedMapConfiguration.Item[Key.PreplannedMapName],
                     PreplannedMapName
                 );
@@ -76,7 +77,7 @@ public partial class MapConfigurationViewModel : ObservableValidator
         }
         catch (Exception exception)
         {
-            logger.LogError(
+            Logger.LogError(
                 MapConfigurationViewModelLog,
                 exception,
                 "Configuration Service, StorePreplannedMapNameAsync(): exception: {exception}.",
@@ -90,7 +91,7 @@ public partial class MapConfigurationViewModel : ObservableValidator
     {
         try
         {
-            logger.LogDebug(
+            Logger.LogDebug(
                 MapConfigurationViewModelLog,
                 "UpdateSettingsAsync(): Preplanned Map Name changed to: {preplannedMap}",
                 PreplannedMapName
@@ -99,7 +100,7 @@ public partial class MapConfigurationViewModel : ObservableValidator
 
             if (HasErrors)
             {
-                logger.LogDebug(
+                Logger.LogDebug(
                     MapConfigurationViewModelLog,
                     "UpdateSettingsAsync(): HasErrors is true, returning."
                 );
@@ -108,23 +109,23 @@ public partial class MapConfigurationViewModel : ObservableValidator
             }
 
             Guard.Against.Null(
-                localSettingsService,
-                nameof(localSettingsService),
-                "Configuration Service, UpdateSettingsAsync(): localSettingsService is null."
+                LocalSettingsService,
+                nameof(LocalSettingsService),
+                "Configuration Service, UpdateSettingsAsync(): LocalSettingsService is null."
             );
             if (PreplannedMapName != null)
             {
-                await localSettingsService.SaveSettingAsync(
+                await LocalSettingsService.SaveSettingAsync(
                     PrePlannedMapConfiguration.Item[Key.PreplannedMapName],
                     PreplannedMapName
                 );
             }
             SettingsUpdateComplete?.Invoke(this, EventArgs.Empty);
-            SelectView = "Map";
+            // SelectView = "Map";
         }
         catch (Exception exception)
         {
-            logger.LogError(
+            Logger.LogError(
                 MapConfigurationViewModelLog,
                 exception,
                 "Configuration Service, UpdateSettingsAsync(): exception: {exception}.",
@@ -137,24 +138,39 @@ public partial class MapConfigurationViewModel : ObservableValidator
     public void SelectMapPage()
     {
         // Log to trace that the SelectMapPage command was called.
-        logger.LogTrace(
+        Logger.LogTrace(
             MapConfigurationViewModelLog,
             "SelectMapPage(): SelectMapPage command called."
         );
         SelectView = "Map";
     }
 
+    [RelayCommand]
+    private void ShowErrors()
+    {
+        var message = string.Join(Environment.NewLine, GetErrors().Select(e => e.ErrorMessage));
+
+        // Log to trace that the ShowErrors command was called.
+        Logger.LogTrace(MapConfigurationViewModelLog, "ShowErrors(): ShowErrors command called.");
+        // Log the message.
+        Logger.LogTrace(MapConfigurationViewModelLog, "ShowErrors(): Message: {message}.", message);
+
+        _ = DialogService.ShowMessageDialogAsync("Validation errors", message);
+    }
+
     public MapConfigurationViewModel(
         ILocalSettingsService? localSettingsService,
-        ILogger<MapConfigurationViewModel> logger
+        ILogger<MapConfigurationViewModel> logger,
+        IDialogService dialogService
     )
     {
-        this.logger = logger;
-        this.localSettingsService = localSettingsService;
+        Logger = logger;
+        LocalSettingsService = localSettingsService;
+        DialogService = dialogService;
 
         _ = Initialize();
         // Log that the MapConfigurationViewModel is starting.
-        logger.LogInformation(MapConfigurationViewModelLog, "Starting MapConfigurationViewModel");
+        Logger.LogInformation(MapConfigurationViewModelLog, "Starting MapConfigurationViewModel");
     }
 
     private async Task Initialize()
@@ -162,18 +178,18 @@ public partial class MapConfigurationViewModel : ObservableValidator
         try
         {
             Guard.Against.Null(
-                localSettingsService,
-                nameof(localSettingsService),
-                "Configuration Service, Initialize(): localSettingsService is null."
+                LocalSettingsService,
+                nameof(LocalSettingsService),
+                "Configuration Service, Initialize(): LocalSettingsService is null."
             );
             // Get the preplanned map name from the local settings.
-            PreplannedMapName = await localSettingsService.ReadSettingAsync<string>(
+            PreplannedMapName = await LocalSettingsService.ReadSettingAsync<string>(
                 PrePlannedMapConfiguration.Item[Key.PreplannedMapName]
             );
         }
         catch (Exception exception)
         {
-            logger.LogError(
+            Logger.LogError(
                 MapConfigurationViewModelLog,
                 exception,
                 "Configuration Service, Initialize(): exception: {exception}.",
@@ -194,20 +210,20 @@ public partial class MapConfigurationViewModel : ObservableValidator
         };
 
         // Log to debug that the MapNavView_ItemInvoked event was fired.
-        logger.LogDebug(
+        Logger.LogDebug(
             MapConfigurationViewModelLog,
             "MapNavView_ItemInvoked(): MapNavView_ItemInvoked event fired."
         );
 
         // Log the name of the invoked item.
-        logger.LogDebug(
+        Logger.LogDebug(
             MapConfigurationViewModelLog,
             "MapNavView_ItemInvoked(): Invoked item name: {invokedItemName}.",
             args.InvokedItemContainer.Name
         );
 
         // Log the sender name.
-        logger.LogDebug(
+        Logger.LogDebug(
             MapConfigurationViewModelLog,
             "MapNavView_ItemInvoked(): Sender name: {senderName}.",
             sender.Name
@@ -217,7 +233,7 @@ public partial class MapConfigurationViewModel : ObservableValidator
         {
             case "MapNavCenter":
                 // Log that the MapNavCenter item was invoked.
-                logger.LogDebug(
+                Logger.LogDebug(
                     MapConfigurationViewModelLog,
                     "MapNavView_ItemInvoked(): MapNavCenter item invoked."
                 );
@@ -226,7 +242,7 @@ public partial class MapConfigurationViewModel : ObservableValidator
                 break;
             case "MapNavAutoPan":
                 // Log that the MapNavAutoPan item was invoked.
-                logger.LogDebug(
+                Logger.LogDebug(
                     MapConfigurationViewModelLog,
                     "MapNavView_ItemInvoked(): MapNavAutoPan item invoked."
                 );
@@ -235,7 +251,7 @@ public partial class MapConfigurationViewModel : ObservableValidator
                 break;
             case "SettingsItem":
                 // Log that the SettingsItem item was invoked.
-                logger.LogDebug(
+                Logger.LogDebug(
                     MapConfigurationViewModelLog,
                     "MapNavView_ItemInvoked(): SettingsItem item invoked."
                 );

@@ -5,6 +5,9 @@
     xmlns:controls="using:CommunityToolkit.WinUI.Controls"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:esri="using:Esri.ArcGISRuntime.UI.Controls"
+    xmlns:interactions="using:Microsoft.Xaml.Interactions.Core"
+    xmlns:interactivity="using:Microsoft.Xaml.Interactivity"
+    xmlns:local="using:WaterMeasurements.Controls"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:media="using:CommunityToolkit.WinUI.Media"
     xmlns:ui="using:CommunityToolkit.WinUI"
@@ -134,7 +137,7 @@
                 <controls:Case Value="Settings">
 
                     <StackPanel x:Name="SettingsPanel">
-                        
+
                         <TextBlock
                             x:Uid="Settings_Map_Configuration"
                             Margin="15,10,0,5"
@@ -198,9 +201,56 @@
                                 MinWidth="400"
                                 Margin="10,5,10,0"
                                 HorizontalAlignment="Left"
+                                IsSpellCheckEnabled="False"
                                 LostFocus="{x:Bind MapConfigurationView.StorePreplannedMapNameAsync, Mode=OneWay}"
                                 Text="{x:Bind MapConfigurationView.PreplannedMapName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
 
+                        </StackPanel>
+
+                        <StackPanel
+                            Grid.Row="2"
+                            Grid.Column="0"
+                            VerticalAlignment="Bottom"
+                            FlowDirection="LeftToRight">
+                            <InfoBar
+                                x:Name="SuccessInfoBar"
+                                Title="Success"
+                                Message="The form was filled in correctly."
+                                Severity="Success">
+                                <interactivity:Interaction.Behaviors>
+                                    <interactions:EventTriggerBehavior EventName="SettingsUpdateComplete" SourceObject="{x:Bind MapConfigurationView}">
+                                        <interactions:ChangePropertyAction
+                                            PropertyName="IsOpen"
+                                            TargetObject="{x:Bind SuccessInfoBar}"
+                                            Value="True" />
+                                        <interactions:ChangePropertyAction
+                                            PropertyName="IsOpen"
+                                            TargetObject="{x:Bind FailureInfoBar}"
+                                            Value="False" />
+                                    </interactions:EventTriggerBehavior>
+                                </interactivity:Interaction.Behaviors>
+                            </InfoBar>
+                            <InfoBar
+                                x:Name="FailureInfoBar"
+                                Title="Error"
+                                Message="The form was filled in with some errors."
+                                Severity="Error">
+                                <InfoBar.ActionButton>
+                                    <Button Command="{x:Bind MapConfigurationView.ShowErrorsCommand}" Content="Show errors" />
+                                </InfoBar.ActionButton>
+                                <interactivity:Interaction.Behaviors>
+                                    <interactions:EventTriggerBehavior EventName="SettingsUpdateFailed" SourceObject="{x:Bind MapConfigurationView}">
+                                        <interactions:ChangePropertyAction
+                                            PropertyName="IsOpen"
+                                            TargetObject="{x:Bind SuccessInfoBar}"
+                                            Value="False" />
+                                        <interactions:ChangePropertyAction
+                                            PropertyName="IsOpen"
+                                            TargetObject="{x:Bind FailureInfoBar}"
+                                            Value="True" />
+                                    </interactions:EventTriggerBehavior>
+                                </interactivity:Interaction.Behaviors>
+                            </InfoBar>
                         </StackPanel>
 
                     </StackPanel>
