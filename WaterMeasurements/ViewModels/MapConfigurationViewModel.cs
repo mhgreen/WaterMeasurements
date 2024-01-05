@@ -38,7 +38,6 @@ public partial class MapConfigurationViewModel : ObservableValidator
     internal EventId MapConfigurationViewModelLog = new(12, "MapConfigurationViewModel");
 
     private readonly ILocalSettingsService? LocalSettingsService;
-    private readonly IDialogService DialogService;
 
     public event EventHandler? SettingsUpdateComplete;
     public event EventHandler? SettingsUpdateFailed;
@@ -154,19 +153,15 @@ public partial class MapConfigurationViewModel : ObservableValidator
         Logger.LogTrace(MapConfigurationViewModelLog, "ShowErrors(): ShowErrors command called.");
         // Log the message.
         Logger.LogTrace(MapConfigurationViewModelLog, "ShowErrors(): Message: {message}.", message);
-
-        _ = DialogService.ShowMessageDialogAsync("Validation errors", message);
     }
 
     public MapConfigurationViewModel(
         ILocalSettingsService? localSettingsService,
-        ILogger<MapConfigurationViewModel> logger,
-        IDialogService dialogService
+        ILogger<MapConfigurationViewModel> logger
     )
     {
         Logger = logger;
         LocalSettingsService = localSettingsService;
-        DialogService = dialogService;
 
         _ = Initialize();
         // Log that the MapConfigurationViewModel is starting.

@@ -5,11 +5,7 @@
     xmlns:controls="using:CommunityToolkit.WinUI.Controls"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:esri="using:Esri.ArcGISRuntime.UI.Controls"
-    xmlns:interactions="using:Microsoft.Xaml.Interactions.Core"
-    xmlns:interactivity="using:Microsoft.Xaml.Interactivity"
-    xmlns:local="using:WaterMeasurements.Controls"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:media="using:CommunityToolkit.WinUI.Media"
     xmlns:ui="using:CommunityToolkit.WinUI"
     xmlns:viewmodels="using:WaterMeasurements.ViewModels"
     x:Name="MapPage"
@@ -18,11 +14,22 @@
     mc:Ignorable="d">
 
     <Page.Resources>
-        <!--  We expect all our elements to bind to the same target with this resource  -->
-        <ui:AttachedDropShadow
-            x:Key="CommonShadow"
-            CastTo="{x:Bind CollectionStackPanel}"
-            Offset="8" />
+
+        <!--  These styles can be referenced to create a consistent SettingsPage layout  -->
+
+        <!--  Spacing between cards  -->
+        <x:Double x:Key="SettingsCardSpacing">4</x:Double>
+
+        <!--  Style (inc. the correct spacing) of a section header  -->
+        <Style
+            x:Key="SettingsSectionHeaderTextBlockStyle"
+            BasedOn="{StaticResource BodyStrongTextBlockStyle}"
+            TargetType="TextBlock">
+            <Style.Setters>
+                <Setter Property="Margin" Value="1,30,0,6" />
+            </Style.Setters>
+        </Style>
+
     </Page.Resources>
 
 
@@ -136,124 +143,120 @@
 
                 <controls:Case Value="Settings">
 
-                    <StackPanel x:Name="SettingsPanel">
+                    <ScrollViewer>
+                        <Grid>
 
-                        <TextBlock
-                            x:Uid="Settings_Map_Configuration"
-                            Margin="15,10,0,5"
-                            Style="{ThemeResource SubtitleTextBlockStyle}" />
+                            <StackPanel x:Name="SettingsPanel">
 
-                        <StackPanel Background="{ThemeResource AcrylicBackgroundFillColorBaseBrush}">
-                            <CommandBar
-                                Margin="0,0,0,0"
-                                HorizontalAlignment="Left"
-                                DefaultLabelPosition="Right"
-                                IsOpen="False"
-                                Style="{ThemeResource DefaultCommandBarStyle}">
-                                <AppBarButton x:Uid="Settings_Map_Config_Save" Click="{x:Bind MapConfigurationView.UpdateSettingsAsync}">
-                                    <AppBarButton.Icon>
-                                        <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xe74e;" />
-                                    </AppBarButton.Icon>
-                                </AppBarButton>
-                                <AppBarButton x:Uid="Settings_Map_Config_Exit" Click="{x:Bind MapConfigurationView.SelectMapPage}">
-                                    <AppBarButton.Icon>
-                                        <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xe944;" />
-                                    </AppBarButton.Icon>
-                                </AppBarButton>
-                            </CommandBar>
-                        </StackPanel>
+                                <TextBlock
+                                    x:Uid="Settings_Map_Configuration"
+                                    Margin="15,10,0,5"
+                                    Style="{ThemeResource SubtitleTextBlockStyle}" />
 
-                        <StackPanel Margin="20,40,0,0">
+                                <StackPanel Background="{ThemeResource AcrylicBackgroundFillColorBaseBrush}">
+                                    <CommandBar
+                                        Margin="0,0,0,0"
+                                        HorizontalAlignment="Left"
+                                        DefaultLabelPosition="Right"
+                                        IsOpen="False"
+                                        Style="{ThemeResource DefaultCommandBarStyle}">
+                                        <AppBarButton x:Uid="Settings_Map_Config_Save" Click="{x:Bind MapConfigurationView.UpdateSettingsAsync}">
+                                            <AppBarButton.Icon>
+                                                <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xe74e;" />
+                                            </AppBarButton.Icon>
+                                        </AppBarButton>
+                                        <AppBarButton x:Uid="Settings_Map_Config_Exit" Click="{x:Bind MapConfigurationView.SelectMapPage}">
+                                            <AppBarButton.Icon>
+                                                <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xe944;" />
+                                            </AppBarButton.Icon>
+                                        </AppBarButton>
+                                    </CommandBar>
+                                </StackPanel>
 
-                            <TextBlock x:Uid="Settings_ApiKey" />
+                                <StackPanel Margin="20,20,0,0">
 
-                            <StackPanel Margin="10,0,0,0" Orientation="Horizontal">
-                                <PasswordBox
-                                    Name="ApiKeyArcGIS"
-                                    Width="400"
-                                    Margin="0,5,10,0"
-                                    AutomationProperties.Name="ArcGIS API key password box"
-                                    LostFocus="{x:Bind StoreDeveloperKeyAsync, Mode=OneWay}"
-                                    Password="{x:Bind apiKey, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
-                                    PasswordRevealMode="Hidden" />
-                                <CheckBox
-                                    Name="RevealApiKey"
-                                    x:Uid="Settings_RevealApiKey"
-                                    Checked="RevealApiKey_Changed"
-                                    IsChecked="False"
-                                    Unchecked="RevealApiKey_Changed" />
+                                    <controls:SettingsExpander
+                                        Description="ArcGIS developer settings"
+                                        Header="Developer Settings"
+                                        HeaderIcon="{ui:FontIcon Glyph=&#xE91B;}">
+
+                                        <controls:SettingsExpander.Items>
+
+                                            <controls:SettingsCard HorizontalContentAlignment="Left">
+                                                <StackPanel>
+                                                    <TextBlock x:Uid="Settings_ApiKey" />
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <PasswordBox
+                                                            Name="ApiKeyArcGIS"
+                                                            Width="380"
+                                                            MinWidth="180"
+                                                            Margin="0,5,10,0"
+                                                            AutomationProperties.Name="ArcGIS API key password box"
+                                                            LostFocus="{x:Bind StoreDeveloperKeyAsync, Mode=OneWay}"
+                                                            Password="{x:Bind apiKey, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                                                            PasswordRevealMode="Hidden" />
+                                                        <CheckBox
+                                                            Name="RevealApiKey"
+                                                            x:Uid="Settings_RevealApiKey"
+                                                            Width="250"
+                                                            MinWidth="250"
+                                                            HorizontalAlignment="Stretch"
+                                                            Checked="RevealApiKey_Changed"
+                                                            IsChecked="False"
+                                                            Unchecked="RevealApiKey_Changed" />
+                                                    </StackPanel>
+                                                </StackPanel>
+                                            </controls:SettingsCard>
+
+                                        </controls:SettingsExpander.Items>
+                                    </controls:SettingsExpander>
+
+
+                                    <controls:SettingsExpander
+                                        Description="ArcGIS main map settings"
+                                        Header="Web Map Settings"
+                                        HeaderIcon="{ui:FontIcon Glyph=&#xE91B;}">
+
+                                        <controls:SettingsExpander.Items>
+
+                                            <controls:SettingsCard HorizontalContentAlignment="Left">
+                                                <StackPanel>
+                                                    <TextBlock x:Uid="Settings_WebMapId" />
+                                                    <StackPanel Orientation="Horizontal" />
+
+                                                    <TextBox
+                                                        x:Name="WebMapId"
+                                                        MinWidth="400"
+                                                        Margin="10,5,10,0"
+                                                        HorizontalAlignment="Left"
+                                                        LostFocus="{x:Bind StoreWebMapIdAsync, Mode=OneWay}"
+                                                        Text="{x:Bind webMapId, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" />
+
+                                                    <TextBlock x:Uid="Settings_PreplannedMapName" Margin="0,20,0,0" />
+
+                                                    <TextBox
+                                                        x:Name="PreplannedMapName"
+                                                        MinWidth="400"
+                                                        Margin="10,5,10,0"
+                                                        HorizontalAlignment="Left"
+                                                        IsSpellCheckEnabled="False"
+                                                        LostFocus="{x:Bind MapConfigurationView.StorePreplannedMapNameAsync, Mode=OneWay}"
+                                                        Text="{x:Bind MapConfigurationView.PreplannedMapName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+
+                                                </StackPanel>
+
+                                            </controls:SettingsCard>
+
+                                        </controls:SettingsExpander.Items>
+                                    </controls:SettingsExpander>
+
+
+                                </StackPanel>
+
                             </StackPanel>
 
-                            <TextBlock x:Uid="Settings_WebMapId" Margin="0,20,0,0" />
-
-                            <TextBox
-                                x:Name="WebMapId"
-                                MinWidth="400"
-                                Margin="10,5,10,0"
-                                HorizontalAlignment="Left"
-                                LostFocus="{x:Bind StoreWebMapIdAsync, Mode=OneWay}"
-                                Text="{x:Bind webMapId, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" />
-
-                            <TextBlock x:Uid="Settings_PreplannedMapName" Margin="0,20,0,0" />
-
-                            <TextBox
-                                x:Name="PreplannedMapName"
-                                MinWidth="400"
-                                Margin="10,5,10,0"
-                                HorizontalAlignment="Left"
-                                IsSpellCheckEnabled="False"
-                                LostFocus="{x:Bind MapConfigurationView.StorePreplannedMapNameAsync, Mode=OneWay}"
-                                Text="{x:Bind MapConfigurationView.PreplannedMapName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-
-                        </StackPanel>
-
-                        <StackPanel
-                            Grid.Row="2"
-                            Grid.Column="0"
-                            VerticalAlignment="Bottom"
-                            FlowDirection="LeftToRight">
-                            <InfoBar
-                                x:Name="SuccessInfoBar"
-                                Title="Success"
-                                Message="The form was filled in correctly."
-                                Severity="Success">
-                                <interactivity:Interaction.Behaviors>
-                                    <interactions:EventTriggerBehavior EventName="SettingsUpdateComplete" SourceObject="{x:Bind MapConfigurationView}">
-                                        <interactions:ChangePropertyAction
-                                            PropertyName="IsOpen"
-                                            TargetObject="{x:Bind SuccessInfoBar}"
-                                            Value="True" />
-                                        <interactions:ChangePropertyAction
-                                            PropertyName="IsOpen"
-                                            TargetObject="{x:Bind FailureInfoBar}"
-                                            Value="False" />
-                                    </interactions:EventTriggerBehavior>
-                                </interactivity:Interaction.Behaviors>
-                            </InfoBar>
-                            <InfoBar
-                                x:Name="FailureInfoBar"
-                                Title="Error"
-                                Message="The form was filled in with some errors."
-                                Severity="Error">
-                                <InfoBar.ActionButton>
-                                    <Button Command="{x:Bind MapConfigurationView.ShowErrorsCommand}" Content="Show errors" />
-                                </InfoBar.ActionButton>
-                                <interactivity:Interaction.Behaviors>
-                                    <interactions:EventTriggerBehavior EventName="SettingsUpdateFailed" SourceObject="{x:Bind MapConfigurationView}">
-                                        <interactions:ChangePropertyAction
-                                            PropertyName="IsOpen"
-                                            TargetObject="{x:Bind SuccessInfoBar}"
-                                            Value="False" />
-                                        <interactions:ChangePropertyAction
-                                            PropertyName="IsOpen"
-                                            TargetObject="{x:Bind FailureInfoBar}"
-                                            Value="True" />
-                                    </interactions:EventTriggerBehavior>
-                                </interactivity:Interaction.Behaviors>
-                            </InfoBar>
-                        </StackPanel>
-
-                    </StackPanel>
+                        </Grid>
+                    </ScrollViewer>
 
                 </controls:Case>
 

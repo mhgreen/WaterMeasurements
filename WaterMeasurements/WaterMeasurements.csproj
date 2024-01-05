@@ -14,32 +14,30 @@
 	<UseWinUI>true</UseWinUI>
     <EnableMsixTooling>true</EnableMsixTooling>
   </PropertyGroup>
-  <ItemGroup>
-    <Page Remove="Controls\ValidationTextBox.xaml" />
-  </ItemGroup>
 
   <ItemGroup>
     <Manifest Include="$(ApplicationManifest)" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Ardalis.GuardClauses" Version="4.2.0" />
+    <PackageReference Include="Ardalis.GuardClauses" Version="4.3.0" />
     <PackageReference Include="CommunityToolkit.Labs.Uwp.Controls.DataTable" Version="0.1.230830" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.2" />
     <PackageReference Include="CommunityToolkit.WinUI.Controls.Primitives" Version="8.0.230907" />
     <PackageReference Include="CommunityToolkit.WinUI.Controls.SettingsControls" Version="8.0.230907" />
     <PackageReference Include="CommunityToolkit.WinUI.Extensions" Version="8.0.230907" />
     <PackageReference Include="CommunityToolkit.WinUI.Media" Version="8.0.230907" />
+    <PackageReference Include="CommunityToolkit.WinUI.Triggers" Version="8.0.230907" />
     <PackageReference Include="Esri.ArcGISRuntime.Toolkit.WinUI" Version="200.3.0" />
     <PackageReference Include="Esri.ArcGISRuntime.WinUI" Version="200.3.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.4.231115000" />
     <PackageReference Include="Microsoft.Xaml.Behaviors.WinUI.Managed" Version="2.0.9" />
-    <PackageReference Include="Rebus" Version="8.0.3" />
+    <PackageReference Include="Rebus" Version="8.1.0" />
     <PackageReference Include="Rebus.NLog" Version="6.0.0" />
     <PackageReference Include="Rebus.RabbitMq" Version="9.0.1" />
     <PackageReference Include="Rebus.ServiceProvider" Version="10.0.0" />
-    <PackageReference Include="Stateless" Version="5.14.0" />
+    <PackageReference Include="Stateless" Version="5.15.0" />
     <PackageReference Include="WinUIEx" Version="2.3.3" />
   </ItemGroup>
 
@@ -49,9 +47,6 @@
   <ItemGroup>
     <None Update="appsettings.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="Controls\ValidationTextBox.xaml">
-      <Generator>MSBuild:Compile</Generator>
     </None>
   </ItemGroup>
 
