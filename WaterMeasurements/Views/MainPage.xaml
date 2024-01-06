@@ -211,7 +211,7 @@
                                                     <Grid.ColumnDefinitions>
                                                         <ColumnDefinition Width="*" MinWidth="380" />
                                                     </Grid.ColumnDefinitions>
-                                                    
+
                                                     <StackPanel HorizontalAlignment="Stretch" Orientation="Horizontal">
                                                         <TextBlock x:Uid="Settings_ApiKey" />
                                                         <Button
@@ -222,7 +222,7 @@
                                                             Template="{StaticResource ButtonHelpTemplate}" />
                                                     </StackPanel>
                                                     <PasswordBox
-                                                        Name="ApiKeyArcGIS"
+                                                        x:Name="ApiKeyArcGIS"
                                                         Grid.Row="1"
                                                         Width="380"
                                                         Margin="10,5,0,0"
@@ -231,14 +231,36 @@
                                                         LostFocus="{x:Bind StoreDeveloperKeyAsync, Mode=OneWay}"
                                                         Password="{x:Bind apiKey, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
                                                         PasswordRevealMode="Hidden" />
+                                                    <TextBlock
+                                                        x:Name="ApiKeyArcGISError"
+                                                        VerticalAlignment="Center"
+                                                        Foreground="{ThemeResource SystemFillColorCriticalBrush}"
+                                                        Text="Map will not load without a valid ArcGIS API key."
+                                                        Visibility="Collapsed" />
                                                     <CheckBox
-                                                        Name="RevealApiKey"
+                                                        x:Name="RevealApiKey"
                                                         x:Uid="Settings_RevealApiKey"
                                                         Grid.Row="2"
                                                         HorizontalAlignment="Right"
                                                         Checked="RevealApiKey_Changed"
                                                         IsChecked="False"
                                                         Unchecked="RevealApiKey_Changed" />
+
+                                                    <VisualStateManager.VisualStateGroups>
+                                                        <VisualStateGroup x:Name="TextBoxStates">
+                                                            <VisualState x:Name="TextBoxNotEmptyState" />
+                                                            <VisualState x:Name="TextBoxEmptyState">
+                                                                <VisualState.StateTriggers>
+                                                                    <ui:IsNullOrEmptyStateTrigger Value="{Binding Password, ElementName=ApiKeyArcGIS, Mode=OneWay}" />
+                                                                </VisualState.StateTriggers>
+                                                                <VisualState.Setters>
+                                                                    <Setter Target="ApiKeyArcGIS.BorderBrush" Value="Red" />
+                                                                    <Setter Target="ApiKeyArcGISError.Visibility" Value="Visible" />
+                                                                </VisualState.Setters>
+                                                            </VisualState>
+                                                        </VisualStateGroup>
+                                                    </VisualStateManager.VisualStateGroups>
+                                                    
                                                 </Grid>
 
                                             </controls:SettingsCard>
@@ -265,7 +287,7 @@
                                                     <Grid.ColumnDefinitions>
                                                         <ColumnDefinition Width="*" MinWidth="380" />
                                                     </Grid.ColumnDefinitions>
-                                                    
+
                                                     <TextBlock
                                                         x:Uid="Settings_WebMapId"
                                                         Grid.Row="0"
@@ -298,7 +320,7 @@
                                             </controls:SettingsCard>
 
                                         </controls:SettingsExpander.Items>
-                                        
+
                                     </controls:SettingsExpander>
 
                                 </StackPanel>
@@ -306,7 +328,7 @@
                             </StackPanel>
 
                         </Grid>
-                        
+
                     </ScrollViewer>
 
                 </controls:Case>
