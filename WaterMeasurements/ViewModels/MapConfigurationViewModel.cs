@@ -28,6 +28,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
 using RabbitMQ.Client;
 using Esri.ArcGISRuntime.UI.Controls;
+using Microsoft.UI.Xaml;
 
 namespace WaterMeasurements.ViewModels;
 
@@ -255,5 +256,14 @@ public partial class MapConfigurationViewModel : ObservableValidator
             default:
                 break;
         }
+    }
+
+    public void ArcGISApiKeyHelpClick(object sender, RoutedEventArgs e)
+    {
+        // Log that the ArcGISApiKeyHelpClick event was fired.
+        Logger.LogDebug(
+            MapConfigurationViewModelLog,
+            "ArcGISApiKeyHelpClick(): ArcGISApiKeyHelpClick event fired."
+        );
     }
 }

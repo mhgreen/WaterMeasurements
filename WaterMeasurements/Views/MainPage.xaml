@@ -30,6 +30,22 @@
             </Style.Setters>
         </Style>
 
+        <ControlTemplate x:Key="ButtonHelpTemplate">
+            <Grid>
+                <Ellipse
+                    Fill="{ThemeResource AccentAcrylicInAppFillColorBaseBrush}"
+                    Stroke="{ThemeResource TextBoxBorderThemeBrush}"
+                    StrokeThickness=".5" />
+                <TextBlock
+                    Margin="0,-2,0,0"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    FontSize="10"
+                    FontWeight="Bold"
+                    Text="?" />
+            </Grid>
+        </ControlTemplate>
+
     </Page.Resources>
 
 
@@ -148,10 +164,12 @@
 
                             <StackPanel x:Name="SettingsPanel">
 
-                                <TextBlock
-                                    x:Uid="Settings_Map_Configuration"
-                                    Margin="15,10,0,5"
-                                    Style="{ThemeResource SubtitleTextBlockStyle}" />
+                                <StackPanel>
+                                    <TextBlock
+                                        x:Uid="Settings_Map_Configuration"
+                                        Margin="15,10,0,5"
+                                        Style="{ThemeResource SubtitleTextBlockStyle}" />
+                                </StackPanel>
 
                                 <StackPanel Background="{ThemeResource AcrylicBackgroundFillColorBaseBrush}">
                                     <CommandBar
@@ -173,7 +191,7 @@
                                     </CommandBar>
                                 </StackPanel>
 
-                                <StackPanel Margin="20,20,0,0">
+                                <StackPanel Margin="0,0,0,0">
 
                                     <controls:SettingsExpander
                                         Description="ArcGIS developer settings"
@@ -182,30 +200,47 @@
 
                                         <controls:SettingsExpander.Items>
 
-                                            <controls:SettingsCard HorizontalContentAlignment="Left">
-                                                <StackPanel>
-                                                    <TextBlock x:Uid="Settings_ApiKey" />
-                                                    <StackPanel Orientation="Horizontal">
-                                                        <PasswordBox
-                                                            Name="ApiKeyArcGIS"
-                                                            Width="380"
-                                                            MinWidth="180"
-                                                            Margin="0,5,10,0"
-                                                            AutomationProperties.Name="ArcGIS API key password box"
-                                                            LostFocus="{x:Bind StoreDeveloperKeyAsync, Mode=OneWay}"
-                                                            Password="{x:Bind apiKey, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
-                                                            PasswordRevealMode="Hidden" />
-                                                        <CheckBox
-                                                            Name="RevealApiKey"
-                                                            x:Uid="Settings_RevealApiKey"
-                                                            Width="250"
-                                                            MinWidth="250"
-                                                            HorizontalAlignment="Stretch"
-                                                            Checked="RevealApiKey_Changed"
-                                                            IsChecked="False"
-                                                            Unchecked="RevealApiKey_Changed" />
+                                            <controls:SettingsCard HorizontalContentAlignment="Stretch">
+
+                                                <Grid>
+                                                    <Grid.RowDefinitions>
+                                                        <RowDefinition Height="*" />
+                                                        <RowDefinition Height="*" />
+                                                        <RowDefinition Height="*" />
+                                                    </Grid.RowDefinitions>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*" MinWidth="380" />
+                                                    </Grid.ColumnDefinitions>
+                                                    
+                                                    <StackPanel HorizontalAlignment="Stretch" Orientation="Horizontal">
+                                                        <TextBlock x:Uid="Settings_ApiKey" />
+                                                        <Button
+                                                            Width="12"
+                                                            Height="12"
+                                                            Margin="5,0,0,0"
+                                                            Click="{x:Bind MapConfigurationView.ArcGISApiKeyHelpClick}"
+                                                            Template="{StaticResource ButtonHelpTemplate}" />
                                                     </StackPanel>
-                                                </StackPanel>
+                                                    <PasswordBox
+                                                        Name="ApiKeyArcGIS"
+                                                        Grid.Row="1"
+                                                        Width="380"
+                                                        Margin="10,5,0,0"
+                                                        HorizontalAlignment="Stretch"
+                                                        AutomationProperties.Name="ArcGIS API key password box"
+                                                        LostFocus="{x:Bind StoreDeveloperKeyAsync, Mode=OneWay}"
+                                                        Password="{x:Bind apiKey, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                                                        PasswordRevealMode="Hidden" />
+                                                    <CheckBox
+                                                        Name="RevealApiKey"
+                                                        x:Uid="Settings_RevealApiKey"
+                                                        Grid.Row="2"
+                                                        HorizontalAlignment="Right"
+                                                        Checked="RevealApiKey_Changed"
+                                                        IsChecked="False"
+                                                        Unchecked="RevealApiKey_Changed" />
+                                                </Grid>
+
                                             </controls:SettingsCard>
 
                                         </controls:SettingsExpander.Items>
@@ -219,43 +254,59 @@
 
                                         <controls:SettingsExpander.Items>
 
-                                            <controls:SettingsCard HorizontalContentAlignment="Left">
-                                                <StackPanel>
-                                                    <TextBlock x:Uid="Settings_WebMapId" />
-                                                    <StackPanel Orientation="Horizontal" />
+                                            <controls:SettingsCard HorizontalAlignment="Stretch">
+                                                <Grid>
+                                                    <Grid.RowDefinitions>
+                                                        <RowDefinition Height="*" />
+                                                        <RowDefinition Height="*" />
+                                                        <RowDefinition Height="*" />
+                                                        <RowDefinition Height="*" />
+                                                    </Grid.RowDefinitions>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*" MinWidth="380" />
+                                                    </Grid.ColumnDefinitions>
+                                                    
+                                                    <TextBlock
+                                                        x:Uid="Settings_WebMapId"
+                                                        Grid.Row="0"
+                                                        HorizontalAlignment="Stretch" />
 
                                                     <TextBox
                                                         x:Name="WebMapId"
-                                                        MinWidth="400"
-                                                        Margin="10,5,10,0"
-                                                        HorizontalAlignment="Left"
+                                                        Grid.Row="1"
+                                                        Margin="10,5,0,0"
+                                                        HorizontalAlignment="Stretch"
                                                         LostFocus="{x:Bind StoreWebMapIdAsync, Mode=OneWay}"
                                                         Text="{x:Bind webMapId, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" />
 
-                                                    <TextBlock x:Uid="Settings_PreplannedMapName" Margin="0,20,0,0" />
+                                                    <TextBlock
+                                                        x:Uid="Settings_PreplannedMapName"
+                                                        Grid.Row="2"
+                                                        Margin="0,20,0,0"
+                                                        HorizontalAlignment="Stretch" />
 
                                                     <TextBox
                                                         x:Name="PreplannedMapName"
-                                                        MinWidth="400"
-                                                        Margin="10,5,10,0"
-                                                        HorizontalAlignment="Left"
+                                                        Grid.Row="3"
+                                                        Margin="10,5,0,0"
+                                                        HorizontalAlignment="Stretch"
                                                         IsSpellCheckEnabled="False"
                                                         LostFocus="{x:Bind MapConfigurationView.StorePreplannedMapNameAsync, Mode=OneWay}"
                                                         Text="{x:Bind MapConfigurationView.PreplannedMapName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-
-                                                </StackPanel>
+                                                </Grid>
 
                                             </controls:SettingsCard>
 
                                         </controls:SettingsExpander.Items>
+                                        
                                     </controls:SettingsExpander>
-
 
                                 </StackPanel>
 
                             </StackPanel>
 
                         </Grid>
+                        
                     </ScrollViewer>
 
                 </controls:Case>
@@ -326,8 +377,6 @@
                                 Visibility="Visible">
 
                                 <StackPanel x:Name="DatatableStackPanel" Margin="{StaticResource SmallTopMargin}">
-
-
 
                                     <ListView Visibility="Visible">
                                         <ListView.Header>
