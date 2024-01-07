@@ -1620,21 +1620,21 @@ public partial class GetPreplannedMapService : IGetPreplannedMapService
         var arcgisApiKey = await localSettingsService.ReadSettingAsync<string>(
             PrePlannedMapConfiguration.Item[Key.ArcgisApiKey]
         );
-        if (arcgisApiKey is not null)
+        if (string.IsNullOrEmpty(arcgisApiKey))
+        {
+            logger.LogTrace(
+                DownloadPreplannedEvent,
+                "GetPreplannedMapService, IsArcgisApiKeyPresent: arcgisApiKey is null or empty."
+            );
+            return false;
+        }
+        else
         {
             logger.LogTrace(
                 DownloadPreplannedEvent,
                 "GetPreplannedMapService, IsArcgisApiKeyPresent: arcgisApiKey is not null."
             );
             return true;
-        }
-        else
-        {
-            logger.LogTrace(
-                DownloadPreplannedEvent,
-                "GetPreplannedMapService, IsArcgisApiKeyPresent: arcgisApiKey is null."
-            );
-            return false;
         }
     }
 
@@ -1650,21 +1650,21 @@ public partial class GetPreplannedMapService : IGetPreplannedMapService
         var offlineMapId = await localSettingsService.ReadSettingAsync<string>(
             PrePlannedMapConfiguration.Item[Key.OfflineMapIdentifier]
         );
-        if (offlineMapId is not null)
+        if (string.IsNullOrEmpty(offlineMapId))
+        {
+            logger.LogInformation(
+                DownloadPreplannedEvent,
+                "GetPreplannedMapService, IsOfflineMapIdPresent: offlineMapId is null or empty."
+            );
+            return false;
+        }
+        else
         {
             logger.LogInformation(
                 DownloadPreplannedEvent,
                 "GetPreplannedMapService, IsOfflineMapIdPresent: offlineMapId is not null."
             );
             return true;
-        }
-        else
-        {
-            logger.LogInformation(
-                DownloadPreplannedEvent,
-                "GetPreplannedMapService, IsOfflineMapIdPresent: offlineMapId is null."
-            );
-            return false;
         }
     }
 
@@ -1680,21 +1680,21 @@ public partial class GetPreplannedMapService : IGetPreplannedMapService
         var preplannedMapName = await localSettingsService.ReadSettingAsync<string>(
             PrePlannedMapConfiguration.Item[Key.PreplannedMapName]
         );
-        if (preplannedMapName is not null)
+        if (string.IsNullOrEmpty(preplannedMapName))
+        {
+            logger.LogInformation(
+                DownloadPreplannedEvent,
+                "GetPreplannedMapService, IsPreplannedMapNamePresent: preplannedMapName is null or empty."
+            );
+            return false;
+        }
+        else
         {
             logger.LogInformation(
                 DownloadPreplannedEvent,
                 "GetPreplannedMapService, IsPreplannedMapNamePresent: preplannedMapName is not null."
             );
             return true;
-        }
-        else
-        {
-            logger.LogInformation(
-                DownloadPreplannedEvent,
-                "GetPreplannedMapService, IsPreplannedMapNamePresent: preplannedMapName is null."
-            );
-            return false;
         }
     }
 

@@ -48,7 +48,6 @@
 
     </Page.Resources>
 
-
     <Grid
         x:Name="ContentArea"
         Height="Auto"
@@ -247,9 +246,9 @@
                                                         Unchecked="RevealApiKey_Changed" />
 
                                                     <VisualStateManager.VisualStateGroups>
-                                                        <VisualStateGroup x:Name="TextBoxStates">
-                                                            <VisualState x:Name="TextBoxNotEmptyState" />
-                                                            <VisualState x:Name="TextBoxEmptyState">
+                                                        <VisualStateGroup x:Name="ApiKeyArcGISTextBoxStates">
+                                                            <VisualState x:Name="ApiKeyArcGISTextBoxNotEmptyState" />
+                                                            <VisualState x:Name="ApiKeyArcGISTextBoxEmptyState">
                                                                 <VisualState.StateTriggers>
                                                                     <ui:IsNullOrEmptyStateTrigger Value="{Binding Password, ElementName=ApiKeyArcGIS, Mode=OneWay}" />
                                                                 </VisualState.StateTriggers>
@@ -260,7 +259,6 @@
                                                             </VisualState>
                                                         </VisualStateGroup>
                                                     </VisualStateManager.VisualStateGroups>
-                                                    
                                                 </Grid>
 
                                             </controls:SettingsCard>
@@ -277,45 +275,77 @@
                                         <controls:SettingsExpander.Items>
 
                                             <controls:SettingsCard HorizontalAlignment="Stretch">
-                                                <Grid>
-                                                    <Grid.RowDefinitions>
-                                                        <RowDefinition Height="*" />
-                                                        <RowDefinition Height="*" />
-                                                        <RowDefinition Height="*" />
-                                                        <RowDefinition Height="*" />
-                                                    </Grid.RowDefinitions>
-                                                    <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="*" MinWidth="380" />
-                                                    </Grid.ColumnDefinitions>
 
-                                                    <TextBlock
-                                                        x:Uid="Settings_WebMapId"
-                                                        Grid.Row="0"
-                                                        HorizontalAlignment="Stretch" />
+                                                <StackPanel MinWidth="380" HorizontalAlignment="Stretch">
+                                                    <StackPanel>
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <TextBlock x:Uid="Settings_WebMapId" />
+                                                            <Button
+                                                                Width="12"
+                                                                Height="12"
+                                                                Margin="5,0,0,0"
+                                                                Click="{x:Bind MapConfigurationView.ArcGISApiKeyHelpClick}"
+                                                                Template="{StaticResource ButtonHelpTemplate}" />
+                                                        </StackPanel>
+                                                        <TextBox
+                                                            x:Name="WebMapId"
+                                                            Margin="10,5,0,0"
+                                                            LostFocus="{x:Bind StoreWebMapIdAsync, Mode=OneWay}"
+                                                            Text="{x:Bind webMapId, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" />
+                                                        <TextBlock
+                                                            x:Name="WebMapIdError"
+                                                            HorizontalAlignment="right"
+                                                            Foreground="{ThemeResource SystemFillColorCriticalBrush}"
+                                                            Text="Web Map ID string in map overview."
+                                                            Visibility="Visible" />
+                                                    </StackPanel>
 
-                                                    <TextBox
-                                                        x:Name="WebMapId"
-                                                        Grid.Row="1"
-                                                        Margin="10,5,0,0"
-                                                        HorizontalAlignment="Stretch"
-                                                        LostFocus="{x:Bind StoreWebMapIdAsync, Mode=OneWay}"
-                                                        Text="{x:Bind webMapId, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" />
+                                                    <StackPanel Margin="0,15,0,0">
+                                                        <StackPanel HorizontalAlignment="Stretch" Orientation="Horizontal">
+                                                            <TextBlock x:Uid="Settings_PreplannedMapName" />
+                                                            <Button
+                                                                Width="12"
+                                                                Height="12"
+                                                                Margin="5,0,0,0"
+                                                                Click="{x:Bind MapConfigurationView.ArcGISApiKeyHelpClick}"
+                                                                Template="{StaticResource ButtonHelpTemplate}" />
+                                                            <ToolTipService.ToolTip>
+                                                                <ToolTip 
+                                                                    Content="Name from Web Map, Settings, OfflineMap areas." 
+                                                                    VerticalOffset="-48"
+                                                                    HorizontalOffset="200"
+                                                                    />
+                                                            </ToolTipService.ToolTip>
+                                                        </StackPanel>
+                                                        <TextBox
+                                                            x:Name="PreplannedMapName"
+                                                            Margin="10,5,0,0"
+                                                            IsSpellCheckEnabled="False"
+                                                            LostFocus="{x:Bind MapConfigurationView.StorePreplannedMapNameAsync, Mode=OneWay}"
+                                                            Text="{x:Bind MapConfigurationView.PreplannedMapName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                                        <TextBlock
+                                                            x:Name="PreplannedMapNameError"
+                                                            HorizontalAlignment="right"
+                                                            Foreground="{ThemeResource SystemFillColorCriticalBrush}"
+                                                            Text="Name from Web Map, Settings, OfflineMap areas."
+                                                            Visibility="Visible" />
+                                                    </StackPanel>
 
-                                                    <TextBlock
-                                                        x:Uid="Settings_PreplannedMapName"
-                                                        Grid.Row="2"
-                                                        Margin="0,20,0,0"
-                                                        HorizontalAlignment="Stretch" />
-
-                                                    <TextBox
-                                                        x:Name="PreplannedMapName"
-                                                        Grid.Row="3"
-                                                        Margin="10,5,0,0"
-                                                        HorizontalAlignment="Stretch"
-                                                        IsSpellCheckEnabled="False"
-                                                        LostFocus="{x:Bind MapConfigurationView.StorePreplannedMapNameAsync, Mode=OneWay}"
-                                                        Text="{x:Bind MapConfigurationView.PreplannedMapName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                                </Grid>
+                                                    <VisualStateManager.VisualStateGroups>
+                                                        <VisualStateGroup x:Name="WebMapTextBoxStates">
+                                                            <VisualState x:Name="WebMapIdTextBoxNotEmptyState" />
+                                                            <VisualState x:Name="WebMapIdTextBoxEmptyState">
+                                                                <VisualState.StateTriggers>
+                                                                    <ui:IsNullOrEmptyStateTrigger Value="{Binding Text, ElementName=WebMapId, Mode=OneWay}" />
+                                                                </VisualState.StateTriggers>
+                                                                <VisualState.Setters>
+                                                                    <Setter Target="WebMapId.BorderBrush" Value="Red" />
+                                                                    <Setter Target="WebMapIdError.Visibility" Value="Visible" />
+                                                                </VisualState.Setters>
+                                                            </VisualState>
+                                                        </VisualStateGroup>
+                                                    </VisualStateManager.VisualStateGroups>
+                                                </StackPanel>
 
                                             </controls:SettingsCard>
 

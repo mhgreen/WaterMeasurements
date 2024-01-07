@@ -188,14 +188,43 @@ public sealed partial class MainPage : Page
                 PrePlannedMapConfiguration.Item[Key.PreplannedMapName]
             );
 
-            Logger.Debug("MainPage.xaml.cs, Initialize: ArcGIS API key initial value: " + apiKey);
-            Logger.Debug(
-                "MainPage.xaml.cs, Initialize: ArcGIS web map id initial value: " + webMapId
-            );
-            Logger.Debug(
-                "MainPage.xaml.cs, Initialize: Preplanned map name initial value: "
-                    + preplannedMapName
-            );
+            if (string.IsNullOrEmpty(apiKey))
+            {
+                Logger.Debug("MainPage.xaml.cs, Initialize: ApiKey key is null or empty.");
+            }
+            else
+            {
+                Logger.Debug(
+                    "MainPage.xaml.cs, Initialize: ArcGIS API key initial value: {apiKey}.",
+                    apiKey
+                );
+            }
+
+            if (string.IsNullOrEmpty(webMapId))
+            {
+                Logger.Debug("MainPage.xaml.cs, Initialize: WebMapId key is null or empty.");
+            }
+            else
+            {
+                Logger.Debug(
+                    "MainPage.xaml.cs, Initialize: ArcGIS web map id initial value: {webMapId}.",
+                    webMapId
+                );
+            }
+
+            if (string.IsNullOrEmpty(preplannedMapName))
+            {
+                Logger.Debug(
+                    "MainPage.xaml.cs, Initialize: Preplanned map name key is null or empty."
+                );
+            }
+            else
+            {
+                Logger.Debug(
+                    "MainPage.xaml.cs, Initialize: Preplanned map name initial value: {preplannedMapName}.",
+                    preplannedMapName
+                );
+            }
 
             // Register for PreplannedMapConfigurationStatusMessage messages.
             // Log the result of the message.
