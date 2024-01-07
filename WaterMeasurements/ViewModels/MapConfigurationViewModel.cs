@@ -29,6 +29,8 @@ using Microsoft.UI.Xaml.Navigation;
 using RabbitMQ.Client;
 using Esri.ArcGISRuntime.UI.Controls;
 using Microsoft.UI.Xaml;
+using static System.Runtime.InteropServices.JavaScript.JSType;
+using System.ComponentModel;
 
 namespace WaterMeasurements.ViewModels;
 
@@ -45,7 +47,6 @@ public partial class MapConfigurationViewModel : ObservableValidator
 
     [ObservableProperty]
     [Required(ErrorMessage = "Preplanned Map Name is required.")]
-    [MinLength(1, ErrorMessage = "Preplanned Map Name must be at least 1 character.")]
     private string? preplannedMapName;
 
     [ObservableProperty]
@@ -62,6 +63,14 @@ public partial class MapConfigurationViewModel : ObservableValidator
                 PreplannedMapName
             );
             ValidateProperty(PreplannedMapName, nameof(PreplannedMapName));
+            if (HasErrors)
+            {
+                Logger.LogDebug(
+                    MapConfigurationViewModelLog,
+                    "StorePreplannedMapNameAsync(): Validating PrePlannedMapName produced errors, not saving the value."
+                );
+                return;
+            }
             Guard.Against.Null(
                 LocalSettingsService,
                 nameof(LocalSettingsService),
@@ -164,6 +173,9 @@ public partial class MapConfigurationViewModel : ObservableValidator
         Logger = logger;
         LocalSettingsService = localSettingsService;
 
+        ErrorsChanged += MapConfigurationErrorsChanged;
+        PropertyChanged += MapConfigurationPropertyChanged;
+
         _ = Initialize();
         // Log that the MapConfigurationViewModel is starting.
         Logger.LogInformation(MapConfigurationViewModelLog, "Starting MapConfigurationViewModel");
@@ -265,5 +277,65 @@ public partial class MapConfigurationViewModel : ObservableValidator
             MapConfigurationViewModelLog,
             "ArcGISApiKeyHelpClick(): ArcGISApiKeyHelpClick event fired."
         );
+    }
+
+    public string Errors =>
+        string.Join(
+            Environment.NewLine,
+            from ValidationResult error in GetErrors(null)
+            select error.ErrorMessage
+        );
+
+    private void MapConfigurationPropertyChanged(object? sender, PropertyChangedEventArgs error)
+    {
+        // Log to trace that the MapConfigurationPropertyChanged event was fired.
+        Logger.LogTrace(
+            MapConfigurationViewModelLog,
+            "MapConfigurationPropertyChanged(): MapConfigurationPropertyChanged event fired."
+        );
+
+        if (error.PropertyName != nameof(HasErrors))
+        {
+            // OnPropertyChanged(nameof(HasErrors)); // Update HasErrors on every change, so I can bind to it.
+            // Log to trace that the HasErrors property was updated.
+            Logger.LogTrace(
+                MapConfigurationViewModelLog,
+                "MapConfigurationPropertyChanged(), Property in error: {PropertyInError}.",
+                error.PropertyName
+            );
+        }
+    }
+
+    private void MapConfigurationErrorsChanged(object? sender, DataErrorsChangedEventArgs error)
+    {
+        // OnPropertyChanged(nameof(Errors)); // Update Errors on every Error change, so I can bind to it.
+        // Log to trace that the MapConfigurationErrorsChanged event was fired.
+        Logger.LogTrace(
+            MapConfigurationViewModelLog,
+            "MapConfigurationErrorsChanged(): MapConfigurationErrorsChanged event fired."
+        );
+        // Log the property name.
+        Logger.LogTrace(
+            MapConfigurationViewModelLog,
+            "MapConfigurationErrorsChanged(): Property name: {propertyName}.",
+            error.PropertyName
+        );
+        if (string.IsNullOrEmpty(Errors))
+        {
+            // Log that the Errors property is empty.
+            Logger.LogTrace(
+                MapConfigurationViewModelLog,
+                "MapConfigurationErrorsChanged(): Entry passed validation."
+            );
+        }
+        else
+        {
+            // Log that the Errors property is not empty.
+            Logger.LogTrace(
+                MapConfigurationViewModelLog,
+                "MapConfigurationErrorsChanged(): Errors: {errors}.",
+            Errors
+            );
+        }
     }
 }
