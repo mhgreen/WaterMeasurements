@@ -46,7 +46,7 @@ public partial class MapConfigurationViewModel : ObservableValidator
     public event EventHandler? SettingsUpdateFailed;
 
     [ObservableProperty]
-    [Required(ErrorMessage = "Preplanned Map Name is required.")]
+    [Required(ErrorMessage = "Unable to validate without name..")]
     private string? preplannedMapName;
 
     [ObservableProperty]
@@ -69,6 +69,7 @@ public partial class MapConfigurationViewModel : ObservableValidator
                     MapConfigurationViewModelLog,
                     "StorePreplannedMapNameAsync(): Validating PrePlannedMapName produced errors, not saving the value."
                 );
+                OnPropertyChanged(nameof(PreplannedMapName));
                 return;
             }
             Guard.Against.Null(

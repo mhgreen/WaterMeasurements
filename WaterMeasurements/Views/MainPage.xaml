@@ -296,8 +296,8 @@
                                                             x:Name="WebMapIdError"
                                                             HorizontalAlignment="right"
                                                             Foreground="{ThemeResource SystemFillColorCriticalBrush}"
-                                                            Text="Web Map ID string in map overview."
-                                                            Visibility="Visible" />
+                                                            Text="Unable to load map without map identifier."
+                                                            Visibility="Collapsed" />
                                                     </StackPanel>
 
                                                     <StackPanel Margin="0,15,0,0">
@@ -327,7 +327,7 @@
                                                             x:Name="PreplannedMapNameError"
                                                             HorizontalAlignment="right"
                                                             Foreground="{ThemeResource SystemFillColorCriticalBrush}"
-                                                            Text="Name from Web Map, Settings, OfflineMap areas."
+                                                            Text="Unable to validate without name."
                                                             Visibility="Visible" />
                                                     </StackPanel>
 
