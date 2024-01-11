@@ -173,7 +173,7 @@
                                 <StackPanel Background="{ThemeResource AcrylicBackgroundFillColorBaseBrush}">
                                     <CommandBar
                                         Margin="0,0,0,0"
-                                        HorizontalAlignment="Left"
+                                        HorizontalAlignment="Right"
                                         DefaultLabelPosition="Right"
                                         IsOpen="False"
                                         Style="{ThemeResource DefaultCommandBarStyle}">
@@ -224,6 +224,7 @@
                                                         x:Name="ApiKeyArcGIS"
                                                         Grid.Row="1"
                                                         Width="380"
+                                                        MaxWidth="500"
                                                         Margin="10,5,0,0"
                                                         HorizontalAlignment="Stretch"
                                                         AutomationProperties.Name="ArcGIS API key password box"
@@ -244,21 +245,6 @@
                                                         Checked="RevealApiKey_Changed"
                                                         IsChecked="False"
                                                         Unchecked="RevealApiKey_Changed" />
-
-                                                    <VisualStateManager.VisualStateGroups>
-                                                        <VisualStateGroup x:Name="ApiKeyArcGISTextBoxStates">
-                                                            <VisualState x:Name="ApiKeyArcGISTextBoxNotEmptyState" />
-                                                            <VisualState x:Name="ApiKeyArcGISTextBoxEmptyState">
-                                                                <VisualState.StateTriggers>
-                                                                    <ui:IsNullOrEmptyStateTrigger Value="{Binding Password, ElementName=ApiKeyArcGIS, Mode=OneWay}" />
-                                                                </VisualState.StateTriggers>
-                                                                <VisualState.Setters>
-                                                                    <Setter Target="ApiKeyArcGIS.BorderBrush" Value="Red" />
-                                                                    <Setter Target="ApiKeyArcGISError.Visibility" Value="Visible" />
-                                                                </VisualState.Setters>
-                                                            </VisualState>
-                                                        </VisualStateGroup>
-                                                    </VisualStateManager.VisualStateGroups>
                                                 </Grid>
 
                                             </controls:SettingsCard>
@@ -320,31 +306,19 @@
                                                         <TextBox
                                                             x:Name="PreplannedMapName"
                                                             Margin="10,5,0,0"
+                                                            MaxWidth="500"
                                                             IsSpellCheckEnabled="False"
+                                                            TextChanged="{x:Bind MapConfigurationView.PreplannedMapNameIsChanging, Mode=OneWay}"
                                                             LostFocus="{x:Bind MapConfigurationView.StorePreplannedMapNameAsync, Mode=OneWay}"
                                                             Text="{x:Bind MapConfigurationView.PreplannedMapName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                                                         <TextBlock
                                                             x:Name="PreplannedMapNameError"
                                                             HorizontalAlignment="right"
                                                             Foreground="{ThemeResource SystemFillColorCriticalBrush}"
-                                                            Text="Unable to validate without name."
-                                                            Visibility="Visible" />
+                                                            Text="{x:Bind MapConfigurationView.PreplannedMapNameError, Mode=OneWay}"
+                                                            Visibility="{x:Bind MapConfigurationView.PreplannedMapNameErrorVisibility, Mode=OneWay}" />
                                                     </StackPanel>
 
-                                                    <VisualStateManager.VisualStateGroups>
-                                                        <VisualStateGroup x:Name="WebMapTextBoxStates">
-                                                            <VisualState x:Name="WebMapIdTextBoxNotEmptyState" />
-                                                            <VisualState x:Name="WebMapIdTextBoxEmptyState">
-                                                                <VisualState.StateTriggers>
-                                                                    <ui:IsNullOrEmptyStateTrigger Value="{Binding Text, ElementName=WebMapId, Mode=OneWay}" />
-                                                                </VisualState.StateTriggers>
-                                                                <VisualState.Setters>
-                                                                    <Setter Target="WebMapId.BorderBrush" Value="Red" />
-                                                                    <Setter Target="WebMapIdError.Visibility" Value="Visible" />
-                                                                </VisualState.Setters>
-                                                            </VisualState>
-                                                        </VisualStateGroup>
-                                                    </VisualStateManager.VisualStateGroups>
                                                 </StackPanel>
 
                                             </controls:SettingsCard>

@@ -183,4 +183,10 @@
   <data name="Settings_WebMapId.Text" xml:space="preserve">
     <value>Web map identifier for main map</value>
   </data>
+  <data name="Error_UnableWithoutName" xml:space="preserve">
+    <value>Unable to validate without name.</value>
+  </data>
+  <data name="Error_NotBetweenOneAndHundred" xml:space="preserve">
+    <value>Name has a maximum length of 100 characters.</value>
+  </data>
 </root>

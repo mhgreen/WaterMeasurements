@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Resources;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
@@ -18,6 +19,7 @@ using Microsoft.UI.Dispatching;
 using WaterMeasurements.Contracts.Services;
 using WaterMeasurements.Models;
 using WaterMeasurements.Views;
+using WaterMeasurements.Helpers;
 using WaterMeasurements.Services;
 using static WaterMeasurements.Models.PrePlannedMapConfiguration;
 
@@ -31,6 +33,7 @@ using Esri.ArcGISRuntime.UI.Controls;
 using Microsoft.UI.Xaml;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 using System.ComponentModel;
+using Microsoft.UI.Xaml.Input;
 
 namespace WaterMeasurements.ViewModels;
 
@@ -42,46 +45,129 @@ public partial class MapConfigurationViewModel : ObservableValidator
 
     private readonly ILocalSettingsService? LocalSettingsService;
 
-    public event EventHandler? SettingsUpdateComplete;
-    public event EventHandler? SettingsUpdateFailed;
+    //public event EventHandler? SettingsUpdateComplete;
+    //public event EventHandler? SettingsUpdateFailed;
+
+    private bool preplannedMapNameValid = false;
+
+    // It does not seem possible to localize the error messages in the DataAnnotations.
+    // Using the ResourceExtensions.GetLocalized() method to get the localized strings.
+
+    private static readonly string unableToValide = ResourceExtensions.GetLocalized(
+        "Error_UnableWithoutName"
+    );
+    private static readonly string stringNotOneToHundred = ResourceExtensions.GetLocalized(
+        "Error_NotBetweenOneAndHundred"
+    );
 
     [ObservableProperty]
-    [Required(ErrorMessage = "Unable to validate without name..")]
+    [Required(ErrorMessage = "NeedName")]
+    [StringLength(100, MinimumLength = 1, ErrorMessage = "NotOneToHundred")]
     private string? preplannedMapName;
 
     [ObservableProperty]
+    private string? preplannedMapNameError;
+
+    [ObservableProperty]
+    private string? preplannedMapNameErrorVisibility = "Collapsed";
+
+    [ObservableProperty]
     public string selectView = "Map";
+
+    [RelayCommand]
+    public void PreplannedMapNameIsChanging()
+    {
+        // Log to trace that the PreplannedMapNameIsChanging command was called.
+        Logger.LogTrace(
+            MapConfigurationViewModelLog,
+            "PreplannedMapNameIsChanging(): PreplannedMapNameIsChanging invoked."
+        );
+        // Log the PreplannedMapName.
+        Logger.LogTrace(
+            MapConfigurationViewModelLog,
+            "PreplannedMapNameIsChanging(): PreplannedMapName: {preplannedMapName}.",
+            PreplannedMapName
+        );
+
+        var results = new List<ValidationResult>();
+        preplannedMapNameValid = Validator.TryValidateProperty(
+            PreplannedMapName,
+            new ValidationContext(this, null, null) { MemberName = nameof(PreplannedMapName) },
+            results
+        );
+        // Log isValid to debug.
+        Logger.LogTrace(
+            MapConfigurationViewModelLog,
+            "PreplannedMapNameIsChanging(): isValid: {isValid}.",
+            preplannedMapNameValid
+        );
+        if (preplannedMapNameValid is false)
+        {
+            var firstValidationResult = results.FirstOrDefault();
+            if (firstValidationResult != null)
+            {
+                Logger.LogDebug(
+                    MapConfigurationViewModelLog,
+                    "StorePreplannedMapNameAsync(): firstValidationResult: {firstValidationResult}.",
+                    firstValidationResult
+                );
+            }
+            if (firstValidationResult is not null)
+            {
+                if (firstValidationResult.ToString() == "NeedName")
+                {
+                    Logger.LogTrace(
+                        MapConfigurationViewModelLog,
+                        "PreplannedMapNameIsChanging(): NeedName error."
+                    );
+                    PreplannedMapNameError = unableToValide;
+                    PreplannedMapNameErrorVisibility = "Visible";
+                }
+                if (firstValidationResult.ToString() == "NotOneToHundred")
+                {
+                    Logger.LogTrace(
+                        MapConfigurationViewModelLog,
+                        "PreplannedMapNameIsChanging(): NotOneToHundred error."
+                    );
+                    PreplannedMapNameError = stringNotOneToHundred;
+                    PreplannedMapNameErrorVisibility = "Visible";
+                }
+            }
+        }
+        else
+        {
+            PreplannedMapNameErrorVisibility = "Collapsed";
+        }
+    }
 
     [RelayCommand]
     public async Task StorePreplannedMapNameAsync()
     {
         try
         {
-            Logger.LogDebug(
+            Logger.LogTrace(
                 MapConfigurationViewModelLog,
-                "Preplanned Map Name changed to: {preplannedMap}",
+                "StorePreplannedMapNameAsync(): invoked with preplannedMap set to: {preplannedMap}",
                 PreplannedMapName
             );
-            ValidateProperty(PreplannedMapName, nameof(PreplannedMapName));
-            if (HasErrors)
-            {
-                Logger.LogDebug(
-                    MapConfigurationViewModelLog,
-                    "StorePreplannedMapNameAsync(): Validating PrePlannedMapName produced errors, not saving the value."
-                );
-                OnPropertyChanged(nameof(PreplannedMapName));
-                return;
-            }
+
             Guard.Against.Null(
                 LocalSettingsService,
                 nameof(LocalSettingsService),
                 "Configuration Service, StorePreplannedMapNameAsync(): LocalSettingsService is null."
             );
-            if (PreplannedMapName != null)
+            if (PreplannedMapName is not null && preplannedMapNameValid)
             {
                 await LocalSettingsService.SaveSettingAsync(
                     PrePlannedMapConfiguration.Item[Key.PreplannedMapName],
                     PreplannedMapName
+                );
+            }
+            else
+            {
+                Logger.LogTrace(
+                    MapConfigurationViewModelLog,
+                    "StorePreplannedMapNameAsync(): PreplannedMapName did not pass validation or is not yet validated via PreplannedMapNameIsChanging(), not saving the value."
                 );
             }
         }
@@ -101,7 +187,7 @@ public partial class MapConfigurationViewModel : ObservableValidator
     {
         try
         {
-            Logger.LogDebug(
+            Logger.LogTrace(
                 MapConfigurationViewModelLog,
                 "UpdateSettingsAsync(): Preplanned Map Name changed to: {preplannedMap}",
                 PreplannedMapName
@@ -114,7 +200,7 @@ public partial class MapConfigurationViewModel : ObservableValidator
                     MapConfigurationViewModelLog,
                     "UpdateSettingsAsync(): HasErrors is true, returning."
                 );
-                SettingsUpdateFailed?.Invoke(this, EventArgs.Empty);
+                //SettingsUpdateFailed?.Invoke(this, EventArgs.Empty);
                 return;
             }
 
@@ -130,7 +216,7 @@ public partial class MapConfigurationViewModel : ObservableValidator
                     PreplannedMapName
                 );
             }
-            SettingsUpdateComplete?.Invoke(this, EventArgs.Empty);
+            //SettingsUpdateComplete?.Invoke(this, EventArgs.Empty);
             // SelectView = "Map";
         }
         catch (Exception exception)
@@ -174,8 +260,8 @@ public partial class MapConfigurationViewModel : ObservableValidator
         Logger = logger;
         LocalSettingsService = localSettingsService;
 
-        ErrorsChanged += MapConfigurationErrorsChanged;
-        PropertyChanged += MapConfigurationPropertyChanged;
+        // ErrorsChanged += MapConfigurationErrorsChanged;
+        // PropertyChanged += MapConfigurationPropertyChanged;
 
         _ = Initialize();
         // Log that the MapConfigurationViewModel is starting.
@@ -304,6 +390,7 @@ public partial class MapConfigurationViewModel : ObservableValidator
                 "MapConfigurationPropertyChanged(), Property in error: {PropertyInError}.",
                 error.PropertyName
             );
+            ClearErrors(nameof(PreplannedMapName));
         }
     }
 
@@ -335,7 +422,7 @@ public partial class MapConfigurationViewModel : ObservableValidator
             Logger.LogTrace(
                 MapConfigurationViewModelLog,
                 "MapConfigurationErrorsChanged(): Errors: {errors}.",
-            Errors
+                Errors
             );
         }
     }
