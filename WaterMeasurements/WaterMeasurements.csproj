@@ -44,6 +44,12 @@
   <ItemGroup>
     <ProjectReference Include="..\WaterMeasurements.Core\WaterMeasurements.Core.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Content Update="Assets\icomoon.ttf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
   <ItemGroup>
     <None Update="appsettings.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>

@@ -7,7 +7,7 @@ namespace WaterMeasurements.Services;
 
 public class ThemeSelectorService : IThemeSelectorService
 {
-    private const string SettingsKey = "AppBackgroundRequestedTheme";
+    public const string SettingsKey = "AppBackgroundRequestedTheme";
 
     public ElementTheme Theme { get; set; } = ElementTheme.Default;
 

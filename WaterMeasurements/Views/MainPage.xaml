@@ -8,6 +8,8 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:ui="using:CommunityToolkit.WinUI"
     xmlns:viewmodels="using:WaterMeasurements.ViewModels"
+    xmlns:helpers="using:WaterMeasurements.Helpers"
+    xmlns:xaml="using:Microsoft.UI.Xaml"
     x:Name="MapPage"
     d:DataContext="{d:DesignInstance Type=viewmodels:MainViewModel}"
     Background="{ThemeResource SolidBackgroundFillColorBaseBrush}"
@@ -46,6 +48,12 @@
             </Grid>
         </ControlTemplate>
 
+        <FontFamily x:Key="AppIconFont">
+            /Assets/icomoon.ttf#icomoon
+        </FontFamily>
+
+        <helpers:EnumToBooleanConverter x:Key="EnumToBooleanConverter" />
+
     </Page.Resources>
 
     <Grid
@@ -82,6 +90,48 @@
                 HorizontalAlignment="Left"
                 VerticalAlignment="Top"
                 Style="{StaticResource TitleTextBlockStyle}" />
+        </Grid>
+        <Grid
+            x:Name="ThemeSelector"
+            Grid.Row="0"
+            Grid.Column="1"
+            HorizontalAlignment="Right"
+            Background="{ThemeResource AcrylicBackgroundFillColorDefaultBrush}">
+            <DropDownButton
+                x:Name="ThemeButton"
+                MinWidth="50"
+                Margin="0,0,0,0"
+                
+                ToolTipService.ToolTip="Select a theme">
+                <DropDownButton.Content>
+                    <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xe793;" />
+                </DropDownButton.Content>
+                <DropDownButton.Flyout>
+                    <MenuFlyout Placement="Bottom">
+                        <RadioMenuFlyoutItem
+                            x:Name="LightThemeRadioMenuItem"
+                            x:Uid="Main_LightTheme"
+                            IsChecked="{x:Bind ViewModel.LightThemeSelected}"
+                            Command="{x:Bind ViewModel.SwitchThemeCommand}"
+                            CommandParameter="{x:Bind xaml:ElementTheme.Light}"
+                            GroupName="AppTheme"/>
+                        <RadioMenuFlyoutItem
+                            x:Name="DarkThemeRadioMenuItem"
+                            x:Uid="Main_DarkTheme"
+                            IsChecked="{x:Bind ViewModel.DarkThemeSelected}"
+                            Command="{x:Bind ViewModel.SwitchThemeCommand}"
+                            CommandParameter="{x:Bind xaml:ElementTheme.Dark}"
+                            GroupName="AppTheme"/>
+                        <RadioMenuFlyoutItem
+                            x:Name="SystemThemeRadioMenuItem"
+                            x:Uid="Main_SystemTheme"
+                            IsChecked="{x:Bind ViewModel.SystemThemeSelected}"
+                            Command="{x:Bind ViewModel.SwitchThemeCommand}"
+                            CommandParameter="{x:Bind xaml:ElementTheme.Default}"
+                            GroupName="AppTheme"/>
+                    </MenuFlyout>
+                </DropDownButton.Flyout>
+            </DropDownButton>
         </Grid>
 
         <Grid
@@ -177,11 +227,6 @@
                                         DefaultLabelPosition="Right"
                                         IsOpen="False"
                                         Style="{ThemeResource DefaultCommandBarStyle}">
-                                        <AppBarButton x:Uid="Settings_Map_Config_Save" Click="{x:Bind MapConfigurationView.UpdateSettingsAsync}">
-                                            <AppBarButton.Icon>
-                                                <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xe74e;" />
-                                            </AppBarButton.Icon>
-                                        </AppBarButton>
                                         <AppBarButton x:Uid="Settings_Map_Config_Exit" Click="{x:Bind MapConfigurationView.SelectMapPage}">
                                             <AppBarButton.Icon>
                                                 <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xe944;" />
@@ -193,8 +238,8 @@
                                 <StackPanel Margin="0,0,0,0">
 
                                     <controls:SettingsExpander
-                                        Description="ArcGIS developer settings"
-                                        Header="Developer Settings"
+                                        Description="Keys for development and production"
+                                        Header="ArcGIS Keys"
                                         HeaderIcon="{ui:FontIcon Glyph=&#xE91B;}">
 
                                         <controls:SettingsExpander.Items>
@@ -223,7 +268,7 @@
                                                     <PasswordBox
                                                         x:Name="ApiKeyArcGIS"
                                                         Grid.Row="1"
-                                                        Width="380"
+                                                        Width="450"
                                                         MaxWidth="500"
                                                         Margin="10,5,0,0"
                                                         HorizontalAlignment="Stretch"
@@ -254,7 +299,7 @@
 
 
                                     <controls:SettingsExpander
-                                        Description="ArcGIS main map settings"
+                                        Description="Main map settings from ArcGIS online"
                                         Header="Web Map Settings"
                                         HeaderIcon="{ui:FontIcon Glyph=&#xE91B;}">
 
@@ -262,7 +307,7 @@
 
                                             <controls:SettingsCard HorizontalAlignment="Stretch">
 
-                                                <StackPanel MinWidth="380" HorizontalAlignment="Stretch">
+                                                <StackPanel MinWidth="450" HorizontalAlignment="Stretch">
                                                     <StackPanel>
                                                         <StackPanel Orientation="Horizontal">
                                                             <TextBlock x:Uid="Settings_WebMapId" />
@@ -296,21 +341,20 @@
                                                                 Click="{x:Bind MapConfigurationView.ArcGISApiKeyHelpClick}"
                                                                 Template="{StaticResource ButtonHelpTemplate}" />
                                                             <ToolTipService.ToolTip>
-                                                                <ToolTip 
-                                                                    Content="Name from Web Map, Settings, OfflineMap areas." 
-                                                                    VerticalOffset="-48"
+                                                                <ToolTip
+                                                                    Content="Name from Web Map, Settings, OfflineMap areas."
                                                                     HorizontalOffset="200"
-                                                                    />
+                                                                    VerticalOffset="-48" />
                                                             </ToolTipService.ToolTip>
                                                         </StackPanel>
                                                         <TextBox
                                                             x:Name="PreplannedMapName"
+                                                            MaxWidth="450"
                                                             Margin="10,5,0,0"
-                                                            MaxWidth="500"
                                                             IsSpellCheckEnabled="False"
-                                                            TextChanged="{x:Bind MapConfigurationView.PreplannedMapNameIsChanging, Mode=OneWay}"
                                                             LostFocus="{x:Bind MapConfigurationView.StorePreplannedMapNameAsync, Mode=OneWay}"
-                                                            Text="{x:Bind MapConfigurationView.PreplannedMapName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                                            Text="{x:Bind MapConfigurationView.PreplannedMapName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                            TextChanged="{x:Bind MapConfigurationView.PreplannedMapNameIsChanging, Mode=OneWay}" />
                                                         <TextBlock
                                                             x:Name="PreplannedMapNameError"
                                                             HorizontalAlignment="right"
@@ -357,10 +401,10 @@
                     <NavigationView.MenuItems>
                         <NavigationViewItem x:Name="CollectionNavSecchi" Content="Secchi">
                             <NavigationViewItem.Icon>
-                                <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xe707;" />
+                                <FontIcon FontFamily="{StaticResource AppIconFont}" Glyph="&#xe901;" />
                             </NavigationViewItem.Icon>
                         </NavigationViewItem>
-                        <NavigationViewItem x:Name="CollectionNavWaterQuality" Content="Water Quality">
+                        <NavigationViewItem x:Name="CollectionNavWaterQuality" Content="Turbidity">
                             <NavigationViewItem.Icon>
                                 <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xe707;" />
                             </NavigationViewItem.Icon>

@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Reflection;
+using System.Windows.Input;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
@@ -12,6 +14,7 @@ using Esri.ArcGISRuntime.Mapping;
 
 using Microsoft.Extensions.Logging;
 
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI;
 using Microsoft.UI.Dispatching;
@@ -45,6 +48,18 @@ public partial class MainViewModel : ObservableRecipient
     public class InstanceChannelRequestMessage : RequestMessage<uint> { }
 
     [ObservableProperty]
+    private ElementTheme elementTheme = ElementTheme.Default;
+
+    [ObservableProperty]
+    private bool lightThemeSelected = false;
+
+    [ObservableProperty]
+    private bool darkThemeSelected = false;
+
+    [ObservableProperty]
+    private bool systemThemeSelected = false;
+
+    [ObservableProperty]
     private Map? currentMap;
 
     [ObservableProperty]
@@ -62,15 +77,17 @@ public partial class MainViewModel : ObservableRecipient
     [ObservableProperty]
     private string uiSelected = "Map";
 
+    // Observable property for the map border.
+    [ObservableProperty]
+    private Brush mapBorderColor = new SolidColorBrush(Colors.Transparent);
+
+    public ICommand SwitchThemeCommand { get; }
+
     // Feature for the current location sent by the GeoTriggerService.
     public ArcGISFeature? feature;
 
     // DispatcherQueue for the UI thread.
     private DispatcherQueue? uiDispatcherQueue;
-
-    // Observable property for the map border.
-    [ObservableProperty]
-    private Brush mapBorderColor = new SolidColorBrush(Colors.Transparent);
 
     private readonly IGetPreplannedMapService? getPreplannedMapService;
 
@@ -82,6 +99,8 @@ public partial class MainViewModel : ObservableRecipient
 
     private readonly ILocalSettingsService? localSettingsService;
 
+    private readonly IThemeSelectorService? themeSelectorService;
+
     // instanceChannel is used to provide a unique identifier for messages associated with geodatabase and geotrigger instances.
     private uint instanceChannel = 0;
 
@@ -91,7 +110,8 @@ public partial class MainViewModel : ObservableRecipient
         IGetPreplannedMapService getPreplannedMapService,
         IGeoDatabaseService geoDatabaseService,
         ILocalSettingsService? localSettingsService,
-        ILogger<MainViewModel> logger
+        ILogger<MainViewModel> logger,
+        IThemeSelectorService themeSelectorService
     )
     {
         this.logger = logger;
@@ -117,6 +137,32 @@ public partial class MainViewModel : ObservableRecipient
         this.getPreplannedMapService = getPreplannedMapService;
         this.geoDatabaseService = geoDatabaseService;
         this.localSettingsService = localSettingsService;
+        this.themeSelectorService = themeSelectorService;
+
+        SwitchThemeCommand = new RelayCommand<ElementTheme>(
+            async (param) =>
+            {
+                // Log the theme change.
+                logger.LogTrace(
+                    MainViewModelLog,
+                    "MainViewModel, SwitchThemeCommand: Theme changed to {param}.",
+                    param
+                );
+
+                Guard.Against.Null(
+                    themeSelectorService,
+                    nameof(themeSelectorService),
+                    "MainViewModel, Initialize(): themeSelectorService is null"
+                );
+
+                if (ElementTheme != param)
+                {
+                    ElementTheme = param;
+                    await themeSelectorService.SetThemeAsync(param);
+                }
+            }
+        );
+
         _ = Initialize();
     }
 
@@ -127,6 +173,7 @@ public partial class MainViewModel : ObservableRecipient
             MainViewModelLog,
             "MainViewModel, Initialize(): MainViewModel created."
         );
+
         try
         {
             Guard.Against.Null(
@@ -158,6 +205,14 @@ public partial class MainViewModel : ObservableRecipient
                 nameof(localSettingsService),
                 "MainViewModel, Initialize(): localSettingsService is null"
             );
+
+            Guard.Against.Null(
+                themeSelectorService,
+                nameof(themeSelectorService),
+                "MainViewModel, Initialize(): themeSelectorService is null"
+            );
+
+            await IndicateCurrentTheme();
 
             WeakReferenceMessenger.Default.Register<NetworkChangedMessage>(
                 this,
@@ -288,9 +343,9 @@ public partial class MainViewModel : ObservableRecipient
             IsNavigationStackEnabled = false,
         };
 
-    // Log to debug that the MapNavView_ItemInvoked event was fired.
-    logger.LogDebug(
-        MainViewModelLog,
+        // Log to debug that the MapNavView_ItemInvoked event was fired.
+        logger.LogDebug(
+            MainViewModelLog,
             "CollectionNavView_ItemInvoked(): CollectionNavView_ItemInvoked event fired."
         );
 
@@ -309,7 +364,7 @@ public partial class MainViewModel : ObservableRecipient
         );
     }
 
-public async Task<dynamic> RetrieveSettingByKeyAsync<T>(string settingKey)
+    public async Task<dynamic> RetrieveSettingByKeyAsync<T>(string settingKey)
     {
         logger.LogTrace(
             MainViewModelLog,
@@ -538,6 +593,62 @@ public async Task<dynamic> RetrieveSettingByKeyAsync<T>(string settingKey)
                 MainViewModelLog,
                 exception,
                 "Exception generated in MainViewModel, RequestArcGISRuntimeInitialize(). {exception}",
+                exception.Message.ToString()
+            );
+        }
+    }
+
+    // Set the theme dropdown one the main page to the current theme.
+    private async Task IndicateCurrentTheme()
+    {
+        logger.LogTrace(
+            MainViewModelLog,
+            "MainViewModel, IndicateCurrentTheme: Indicating current theme."
+        );
+        try
+        {
+            Guard.Against.Null(
+                themeSelectorService,
+                nameof(themeSelectorService),
+                "MainViewModel, IndicateCurrentTheme: themeSelectorService is null."
+            );
+            Guard.Against.Null(
+                localSettingsService,
+                nameof(localSettingsService),
+                "MainViewModel, IndicateCurrentTheme: localSettingsService is null."
+            );
+            var theme = await localSettingsService.ReadSettingAsync<string>(
+                ThemeSelectorService.SettingsKey
+            );
+            // Log the current theme.
+            logger.LogTrace(
+                MainViewModelLog,
+                "MainViewModel, IndicateCurrentTheme: Current theme is {theme}.",
+                theme
+            );
+            // Set the theme dropdown to the current theme.
+            switch (theme)
+            {
+                case "Light":
+                    LightThemeSelected = true;
+                    break;
+                case "Dark":
+                    DarkThemeSelected = true;
+                    break;
+                case "Default":
+                    SystemThemeSelected = true;
+                    break;
+                default:
+                    SystemThemeSelected = true;
+                    break;
+            }
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(
+                MainViewModelLog,
+                exception,
+                "Exception generated in MainViewModel, IndicateCurrentTheme(). {exception}",
                 exception.Message.ToString()
             );
         }

@@ -182,53 +182,7 @@ public partial class MapConfigurationViewModel : ObservableValidator
         }
     }
 
-    [RelayCommand]
-    public async Task UpdateSettingsAsync()
-    {
-        try
-        {
-            Logger.LogTrace(
-                MapConfigurationViewModelLog,
-                "UpdateSettingsAsync(): Preplanned Map Name changed to: {preplannedMap}",
-                PreplannedMapName
-            );
-            ValidateAllProperties();
 
-            if (HasErrors)
-            {
-                Logger.LogDebug(
-                    MapConfigurationViewModelLog,
-                    "UpdateSettingsAsync(): HasErrors is true, returning."
-                );
-                //SettingsUpdateFailed?.Invoke(this, EventArgs.Empty);
-                return;
-            }
-
-            Guard.Against.Null(
-                LocalSettingsService,
-                nameof(LocalSettingsService),
-                "Configuration Service, UpdateSettingsAsync(): LocalSettingsService is null."
-            );
-            if (PreplannedMapName != null)
-            {
-                await LocalSettingsService.SaveSettingAsync(
-                    PrePlannedMapConfiguration.Item[Key.PreplannedMapName],
-                    PreplannedMapName
-                );
-            }
-            //SettingsUpdateComplete?.Invoke(this, EventArgs.Empty);
-            // SelectView = "Map";
-        }
-        catch (Exception exception)
-        {
-            Logger.LogError(
-                MapConfigurationViewModelLog,
-                exception,
-                "Configuration Service, UpdateSettingsAsync(): exception: {exception}.",
-                exception.Message.ToString()
-            );
-        }
-    }
 
     [RelayCommand]
     public void SelectMapPage()
