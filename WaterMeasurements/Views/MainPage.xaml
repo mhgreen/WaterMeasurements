@@ -5,10 +5,10 @@
     xmlns:controls="using:CommunityToolkit.WinUI.Controls"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:esri="using:Esri.ArcGISRuntime.UI.Controls"
+    xmlns:helpers="using:WaterMeasurements.Helpers"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:ui="using:CommunityToolkit.WinUI"
     xmlns:viewmodels="using:WaterMeasurements.ViewModels"
-    xmlns:helpers="using:WaterMeasurements.Helpers"
     xmlns:xaml="using:Microsoft.UI.Xaml"
     x:Name="MapPage"
     d:DataContext="{d:DesignInstance Type=viewmodels:MainViewModel}"
@@ -101,7 +101,6 @@
                 x:Name="ThemeButton"
                 MinWidth="50"
                 Margin="0,0,0,0"
-                
                 ToolTipService.ToolTip="Select a theme">
                 <DropDownButton.Content>
                     <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xe793;" />
@@ -111,24 +110,24 @@
                         <RadioMenuFlyoutItem
                             x:Name="LightThemeRadioMenuItem"
                             x:Uid="Main_LightTheme"
-                            IsChecked="{x:Bind ViewModel.LightThemeSelected}"
                             Command="{x:Bind ViewModel.SwitchThemeCommand}"
                             CommandParameter="{x:Bind xaml:ElementTheme.Light}"
-                            GroupName="AppTheme"/>
+                            GroupName="AppTheme"
+                            IsChecked="{x:Bind ViewModel.LightThemeSelected}" />
                         <RadioMenuFlyoutItem
                             x:Name="DarkThemeRadioMenuItem"
                             x:Uid="Main_DarkTheme"
-                            IsChecked="{x:Bind ViewModel.DarkThemeSelected}"
                             Command="{x:Bind ViewModel.SwitchThemeCommand}"
                             CommandParameter="{x:Bind xaml:ElementTheme.Dark}"
-                            GroupName="AppTheme"/>
+                            GroupName="AppTheme"
+                            IsChecked="{x:Bind ViewModel.DarkThemeSelected}" />
                         <RadioMenuFlyoutItem
                             x:Name="SystemThemeRadioMenuItem"
                             x:Uid="Main_SystemTheme"
-                            IsChecked="{x:Bind ViewModel.SystemThemeSelected}"
                             Command="{x:Bind ViewModel.SwitchThemeCommand}"
                             CommandParameter="{x:Bind xaml:ElementTheme.Default}"
-                            GroupName="AppTheme"/>
+                            GroupName="AppTheme"
+                            IsChecked="{x:Bind ViewModel.SystemThemeSelected}" />
                     </MenuFlyout>
                 </DropDownButton.Flyout>
             </DropDownButton>
@@ -139,7 +138,7 @@
             Grid.Column="0"
             FlowDirection="LeftToRight">
 
-            <controls:SwitchPresenter x:Name="UiViews" Value="{x:Bind MapConfigurationView.SelectView, Mode=TwoWay}">
+            <controls:SwitchPresenter x:Name="MapViews" Value="{x:Bind MapConfigurationView.SelectView, Mode=TwoWay}">
 
                 <controls:Case Value="Map">
 
@@ -165,28 +164,6 @@
                                     </NavigationViewItem>
                                 </NavigationView.MenuItems>
                             </NavigationView>
-                        </StackPanel>
-
-                        <StackPanel Visibility="Collapsed">
-                            <CommandBar
-                                HorizontalAlignment="Left"
-                                DefaultLabelPosition="Right"
-                                IsEnabled="True"
-                                IsOpen="False">
-                                <AppBarButton HorizontalAlignment="Left" Label="Center">
-                                    <AppBarButton.Icon>
-                                        <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE81D;" />
-                                    </AppBarButton.Icon>
-                                </AppBarButton>
-                                <AppBarButton Label="Auto Pan">
-                                    <AppBarButton.Icon>
-                                        <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xe7c2;" />
-                                    </AppBarButton.Icon>
-                                </AppBarButton>
-                                <CommandBar.SecondaryCommands>
-                                    <AppBarButton Icon="Setting" Label="Settings" />
-                                </CommandBar.SecondaryCommands>
-                            </CommandBar>
                         </StackPanel>
 
                         <StackPanel
@@ -386,104 +363,122 @@
         </Grid>
 
         <StackPanel
-            x:Name="Notifications"
+            x:Name="CollectionNavigation"
             Grid.Row="1"
             Grid.Column="1">
 
-            <StackPanel>
-                <NavigationView
-                    x:Name="CollectionNavView"
-                    IsBackButtonVisible="Collapsed"
-                    IsSettingsVisible="False"
-                    ItemInvoked="{x:Bind ViewModel.CollectionNavView_ItemInvoked}"
-                    Loaded="CollectionNavView_Loaded"
-                    PaneDisplayMode="Top">
-                    <NavigationView.MenuItems>
-                        <NavigationViewItem x:Name="CollectionNavSecchi" Content="Secchi">
-                            <NavigationViewItem.Icon>
-                                <FontIcon FontFamily="{StaticResource AppIconFont}" Glyph="&#xe901;" />
-                            </NavigationViewItem.Icon>
-                        </NavigationViewItem>
-                        <NavigationViewItem x:Name="CollectionNavWaterQuality" Content="Turbidity">
-                            <NavigationViewItem.Icon>
-                                <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xe707;" />
-                            </NavigationViewItem.Icon>
-                        </NavigationViewItem>
-                    </NavigationView.MenuItems>
-                </NavigationView>
-            </StackPanel>
+            <NavigationView
+                x:Name="CollectionNavView"
+                IsBackButtonVisible="Collapsed"
+                IsSettingsVisible="False"
+                ItemInvoked="{x:Bind DataCollectionView.CollectionNavView_ItemInvoked}"
+                Loaded="CollectionNavView_Loaded"
+                PaneDisplayMode="Top">
+                <NavigationView.MenuItems>
+                    <NavigationViewItem x:Name="CollectionNavSecchi" Content="Secchi">
+                        <NavigationViewItem.Icon>
+                            <FontIcon FontFamily="{StaticResource AppIconFont}" Glyph="&#xe901;" />
+                        </NavigationViewItem.Icon>
+                    </NavigationViewItem>
+                    <NavigationViewItem x:Name="CollectionNavTurbidity" Content="Turbidity">
+                        <NavigationViewItem.Icon>
+                            <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xe707;" />
+                        </NavigationViewItem.Icon>
+                    </NavigationViewItem>
+                </NavigationView.MenuItems>
+            </NavigationView>
 
-            <StackPanel>
-                <TabView
-                    x:Name="SecchiTab"
-                    MinHeight="475"
-                    Margin="0"
-                    IsAddTabButtonVisible="False"
-                    SelectedIndex="0">
+            <Grid Height="Auto" VerticalAlignment="Top">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="400" />
+                </Grid.ColumnDefinitions>
 
-                    <TabView.Resources>
-                        <ResourceDictionary>
-                            <ResourceDictionary.ThemeDictionaries>
-                                <ResourceDictionary x:Key="Light">
-                                    <SolidColorBrush x:Key="TabViewBackground" Color="{ThemeResource SystemAccentColorLight3}" />
-                                </ResourceDictionary>
-                                <ResourceDictionary x:Key="Dark">
-                                    <SolidColorBrush x:Key="TabViewBackground" Color="{ThemeResource SystemAccentColorDark3}" />
-                                </ResourceDictionary>
-                            </ResourceDictionary.ThemeDictionaries>
-                        </ResourceDictionary>
-                    </TabView.Resources>
+                <Grid
+                    x:Name="SecchiNavigation"
+                    Grid.Row="0"
+                    Grid.Column="0"
+                    Margin="0,0,0,0"
+                    Visibility="Visible">
+                        <NavigationView
+                            x:Name="SecchiNavView"
+                            IsBackButtonVisible="Collapsed"
+                            IsSettingsVisible="True"
+                            ItemInvoked="{x:Bind SecchiView.SecchiNavView_ItemInvoked}"
+                            Loaded="SecchiNavView_Loaded">
+                            <NavigationView.MenuItems>
+                                <NavigationViewItem x:Name="SecchiNavUpload" Content="Upload">
+                                    <NavigationViewItem.Icon>
+                                        <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE898;" />
+                                    </NavigationViewItem.Icon>
+                                </NavigationViewItem>
+                                <NavigationViewItem x:Name="SecchiNavDiscard" Content="Discard">
+                                    <NavigationViewItem.Icon>
+                                        <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE74D;" />
+                                    </NavigationViewItem.Icon>
+                                </NavigationViewItem>
+                            </NavigationView.MenuItems>
+                        </NavigationView>
+                    </Grid>
 
-                    <TabView.TabItems>
-                        <TabViewItem Header="Secchi" IsClosable="False">
-                            <TabViewItem.IconSource>
-                                <SymbolIconSource Symbol="Page" />
-                            </TabViewItem.IconSource>
 
+                <StackPanel
+                    x:Name="Secchi Collection"
+                    Grid.Row="0"
+                    Grid.Column="1"
+                    Margin="0,0,0,0"
+                    Visibility="Visible">
+
+                    <controls:SwitchPresenter x:Name="CollectionViews" Value="{x:Bind DataCollectionView.SelectView, Mode=TwoWay}">
+
+                        <controls:Case Value="Secchi">
                             <StackPanel
-                                x:Name="CollectionStackPanel"
-                                Margin="0,10,0,0"
+                                x:Name="SecchiPanel"
+                                Margin="-50,10,0,0"
                                 HorizontalAlignment="Left"
                                 Visibility="Visible">
 
-                                <StackPanel x:Name="DatatableStackPanel" Margin="{StaticResource SmallTopMargin}">
+                                <StackPanel x:Name="DatatableStackPanel" Margin="0,0,0,0">
 
                                     <ListView Visibility="Visible">
                                         <ListView.Header>
-                                            <controls:DataTable Margin="0,10,0,0" ColumnSpacing="1">
+                                            <controls:DataTable Margin="80,0,0,0" ColumnSpacing="1">
                                                 <controls:DataColumn CanResize="True" DesiredWidth="120">
                                                     <TextBlock
-                                                        FontWeight="Bold"
+                                                        FontWeight="Normal"
                                                         Opacity=".8"
-                                                        Style="{StaticResource BodyTextStyle}"
+                                                        Style="{StaticResource BodyTextBlockStyle}"
                                                         Text="Location" />
                                                 </controls:DataColumn>
                                                 <controls:DataColumn MinWidth="80" CanResize="True">
                                                     <TextBlock
-                                                        FontWeight="Bold"
+                                                        FontWeight="Normal"
                                                         Opacity=".8"
-                                                        Style="{StaticResource BodyTextStyle}"
+                                                        Style="{StaticResource BodyTextBlockStyle}"
                                                         Text="Obs1" />
                                                 </controls:DataColumn>
                                                 <controls:DataColumn MinWidth="80" CanResize="True">
                                                     <TextBlock
-                                                        FontWeight="Bold"
+                                                        FontWeight="Normal"
                                                         Opacity=".8"
-                                                        Style="{StaticResource BodyTextStyle}"
+                                                        Style="{StaticResource BodyTextBlockStyle}"
                                                         Text="Obs2" />
                                                 </controls:DataColumn>
                                                 <controls:DataColumn MinWidth="80" CanResize="True">
                                                     <TextBlock
-                                                        FontWeight="Bold"
+                                                        FontWeight="Normal"
                                                         Opacity=".8"
-                                                        Style="{StaticResource BodyTextStyle}"
+                                                        Style="{StaticResource BodyTextBlockStyle}"
                                                         Text="Obs3" />
                                                 </controls:DataColumn>
                                                 <controls:DataColumn MinWidth="40" CanResize="True">
                                                     <TextBlock
-                                                        FontWeight="Bold"
+                                                        FontWeight="Normal"
                                                         Opacity=".8"
-                                                        Style="{StaticResource BodyTextStyle}"
+                                                        Style="{StaticResource BodyTextBlockStyle}"
                                                         Text="Secchi" />
                                                 </controls:DataColumn>
                                             </controls:DataTable>
@@ -491,33 +486,10 @@
                                     </ListView>
                                 </StackPanel>
 
-                                <StackPanel Background="{ThemeResource AcrylicBackgroundFillColorDefaultBrush}">
-                                    <CommandBar
-                                        Margin="0,0,0,0"
-                                        HorizontalAlignment="Left"
-                                        VerticalAlignment="Bottom"
-                                        DefaultLabelPosition="Right"
-                                        IsOpen="False">
-                                        <AppBarButton Label="Upload">
-                                            <AppBarButton.Icon>
-                                                <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xe898;" />
-                                            </AppBarButton.Icon>
-                                        </AppBarButton>
-                                        <AppBarButton Label="Discard">
-                                            <AppBarButton.Icon>
-                                                <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xe711;" />
-                                            </AppBarButton.Icon>
-                                        </AppBarButton>
-                                        <CommandBar.SecondaryCommands>
-                                            <AppBarButton Icon="Setting" Label="Settings" />
-                                        </CommandBar.SecondaryCommands>
-                                    </CommandBar>
-                                </StackPanel>
-
                                 <StackPanel
-                                    x:Name="ManualCollectionStackPanel"
+                                    x:Name="SecchiEntryStackPanel"
                                     Width="200"
-                                    Margin="0,100,0,0"
+                                    Margin="60,100,0,0"
                                     HorizontalAlignment="Left"
                                     Visibility="Visible">
 
@@ -564,17 +536,12 @@
 
                             </StackPanel>
 
+                        </controls:Case>
 
-                        </TabViewItem>
-                        <TabViewItem Header="Water Quality" IsClosable="False">
-                            <TabViewItem.IconSource>
-                                <SymbolIconSource Symbol="Page" />
-                            </TabViewItem.IconSource>
-                        </TabViewItem>
+                    </controls:SwitchPresenter>
+                </StackPanel>
 
-                    </TabView.TabItems>
-                </TabView>
-            </StackPanel>
+            </Grid>
 
         </StackPanel>
 

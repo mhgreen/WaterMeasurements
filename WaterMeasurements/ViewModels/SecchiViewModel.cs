@@ -24,7 +24,6 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
-
 using Windows.Services.Maps;
 
 using Microsoft.UI.Xaml;
@@ -297,7 +296,7 @@ public partial class SecchiViewModel : ObservableRecipient
                         );
 
                         // If both observations and locations have been received, fire the ObservationAndLocationFeatureTablesReceived trigger.
-                        // Otherwise, wiat for observations to be received before moving to HaveObservationsAndLocations state.
+                        // Otherwise, wait for observations to be received before moving to HaveObservationsAndLocations state.
                         if (haveObservations && haveLocations)
                         {
                             stateMachine.Fire(
@@ -554,7 +553,6 @@ public partial class SecchiViewModel : ObservableRecipient
             );
 
             */
-
         }
         catch (Exception exception)
         {
@@ -767,7 +765,8 @@ public partial class SecchiViewModel : ObservableRecipient
                                 "SecchiViewModel, HandleGeotriggerNotification, FenceNotification: Entered. {fenceInfo}",
                                 fenceInfo.Message
                             );
-                            uiDispatcherQueue.TryEnqueue(() => {
+                            uiDispatcherQueue.TryEnqueue(() =>
+                            {
                                 MapBorderColor = new SolidColorBrush(Colors.SeaGreen);
                             });
                             break;
@@ -777,7 +776,8 @@ public partial class SecchiViewModel : ObservableRecipient
                                 "SecchiViewModel, HandleGeotriggerNotification, FenceNotification: Exited. {fenceInfo}",
                                 fenceInfo.Message
                             );
-                            uiDispatcherQueue.TryEnqueue(() => {
+                            uiDispatcherQueue.TryEnqueue(() =>
+                            {
                                 MapBorderColor = new SolidColorBrush(Colors.Transparent);
                             });
                             break;
@@ -970,6 +970,59 @@ public partial class SecchiViewModel : ObservableRecipient
                 "Exception generated in SecchiViewModel, ProcessSecchiMeasurements: {message}.",
                 exception.Message.ToString()
             );
+        }
+    }
+
+    public void SecchiNavView_ItemInvoked(
+        NavigationView sender,
+        NavigationViewItemInvokedEventArgs args
+    )
+    {
+        // Log to debug that the MapNavView_ItemInvoked event was fired.
+        logger.LogDebug(
+            SecchiViewModelLog,
+            "SecchiViewMode, CollectionNavView_ItemInvoked(): CollectionNavView_ItemInvoked event fired."
+        );
+
+        // Log the name of the invoked item.
+        logger.LogDebug(
+            SecchiViewModelLog,
+            "SecchiViewMode, CollectionNavView_ItemInvoked(): Invoked item name: {invokedItemName}.",
+            args.InvokedItemContainer.Name
+        );
+
+        // Log the sender name.
+        logger.LogDebug(
+            SecchiViewModelLog,
+            "SecchiViewMode, CollectionNavView_ItemInvoked(): Sender name: {senderName}.",
+            sender.Name
+        );
+
+        switch (args.InvokedItemContainer.Name)
+        {
+            case "SecchiNavUpload":
+                // Log that upload was selected.
+                logger.LogDebug(
+                    SecchiViewModelLog,
+                    "SecchiViewMode, CollectionNavView_ItemInvoked(): Upload selected."
+                );
+                break;
+            case "SecchiNavDiscard":
+                // Log that discard was selected.
+                logger.LogDebug(
+                    SecchiViewModelLog,
+                    "SecchiViewMode, CollectionNavView_ItemInvoked(): Discard item selected."
+                );
+                break;
+            case "SettingsItem":
+                // Log that settings was selected.
+                logger.LogDebug(
+                    SecchiViewModelLog,
+                    "SecchiViewMode, CollectionNavView_ItemInvoked(): Settings selected."
+                );
+                break;
+            default:
+                break;
         }
     }
 

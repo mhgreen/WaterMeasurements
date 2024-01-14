@@ -53,6 +53,7 @@ public sealed partial class MainPage : Page
     public MainViewModel ViewModel { get; }
     public SecchiViewModel SecchiView { get; }
     public MapConfigurationViewModel MapConfigurationView { get; }
+    public DataCollectionViewModel DataCollectionView { get; }
 
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
@@ -121,6 +122,8 @@ public sealed partial class MainPage : Page
         ViewModel = App.GetService<MainViewModel>();
         SecchiView = App.GetService<SecchiViewModel>();
         MapConfigurationView = App.GetService<MapConfigurationViewModel>();
+        DataCollectionView = App.GetService<DataCollectionViewModel>();
+
         Logger.Debug("MainPage.xaml.cs, MainPage: Starting");
 
         InitializeComponent();
@@ -377,6 +380,11 @@ public sealed partial class MainPage : Page
     private void CollectionNavView_Loaded(object sender, RoutedEventArgs e)
     {
         CollectionNavView.SelectedItem = CollectionNavView.MenuItems[0];
+    }
+
+    private void SecchiNavView_Loaded(object sender, RoutedEventArgs e)
+    {
+        SecchiNavView.SelectedItem = SecchiNavView.MenuItems[0];
     }
 
     /*

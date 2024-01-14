@@ -141,7 +141,7 @@ public partial class MapConfigurationViewModel : ObservableValidator
     }
 
     [RelayCommand]
-    public async Task StorePreplannedMapNameAsync()
+    public void StorePreplannedMapNameAsync()
     {
         try
         {
@@ -158,10 +158,14 @@ public partial class MapConfigurationViewModel : ObservableValidator
             );
             if (PreplannedMapName is not null && preplannedMapNameValid)
             {
-                await LocalSettingsService.SaveSettingAsync(
-                    PrePlannedMapConfiguration.Item[Key.PreplannedMapName],
-                    PreplannedMapName
-                );
+                Task.Run(async () =>
+                    {
+                        await LocalSettingsService.SaveSettingAsync(
+                            PrePlannedMapConfiguration.Item[Key.PreplannedMapName],
+                            PreplannedMapName
+                        );
+                    })
+                    .Wait();
             }
             else
             {
@@ -181,8 +185,6 @@ public partial class MapConfigurationViewModel : ObservableValidator
             );
         }
     }
-
-
 
     [RelayCommand]
     public void SelectMapPage()
