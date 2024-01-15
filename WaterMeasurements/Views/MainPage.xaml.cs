@@ -400,6 +400,7 @@ public sealed partial class MainPage : Page
         ViewModel.ShowSecchiCollectionPoint = true;
         if (MapView.LocationDisplay.Location is not null)
         {
+            /*
             SecchiMeasurements secchiMeasurements =
                 new(
                     MapView.LocationDisplay.Location.Position,
@@ -408,6 +409,7 @@ public sealed partial class MainPage : Page
                     short.Parse(Measurement3.Text)
                 );
             SecchiView.ProcessSecchiMeasurements(secchiMeasurements);
+            */
         }
         else
         {

@@ -388,27 +388,33 @@
                 </NavigationView.MenuItems>
             </NavigationView>
 
-            <Grid Height="Auto" VerticalAlignment="Top">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="*" />
-                </Grid.RowDefinitions>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="400" />
-                </Grid.ColumnDefinitions>
 
-                <Grid
-                    x:Name="SecchiNavigation"
-                    Grid.Row="0"
-                    Grid.Column="0"
-                    Margin="0,0,0,0"
-                    Visibility="Visible">
+
+            <controls:SwitchPresenter x:Name="CollectionViews" Value="{x:Bind DataCollectionView.SelectView, Mode=TwoWay}">
+
+                <controls:Case Value="Secchi">
+
+                    <StackPanel
+                        x:Name="SecchiNavigation"
+                        Margin="0,0,20,0"
+                        Visibility="Visible">
+                        <TextBlock
+                            Margin="10,10,0,10"
+                            FontWeight="SemiBold"
+                            Opacity=".8"
+                            Style="{StaticResource BodyStrongTextBlockStyle}"
+                            Text="Secchi Measurements By Location" />
+
                         <NavigationView
                             x:Name="SecchiNavView"
+                            MinHeight="200"
                             IsBackButtonVisible="Collapsed"
                             IsSettingsVisible="True"
                             ItemInvoked="{x:Bind SecchiView.SecchiNavView_ItemInvoked}"
-                            Loaded="SecchiNavView_Loaded">
+                            Loaded="SecchiNavView_Loaded"
+                            PaneDisplayMode="LeftMinimal"
+                            PaneTitle="Secchi Data Collection">
+
                             <NavigationView.MenuItems>
                                 <NavigationViewItem x:Name="SecchiNavUpload" Content="Upload">
                                     <NavigationViewItem.Icon>
@@ -421,32 +427,19 @@
                                     </NavigationViewItem.Icon>
                                 </NavigationViewItem>
                             </NavigationView.MenuItems>
-                        </NavigationView>
-                    </Grid>
 
-
-                <StackPanel
-                    x:Name="Secchi Collection"
-                    Grid.Row="0"
-                    Grid.Column="1"
-                    Margin="0,0,0,0"
-                    Visibility="Visible">
-
-                    <controls:SwitchPresenter x:Name="CollectionViews" Value="{x:Bind DataCollectionView.SelectView, Mode=TwoWay}">
-
-                        <controls:Case Value="Secchi">
                             <StackPanel
                                 x:Name="SecchiPanel"
-                                Margin="-50,10,0,0"
-                                HorizontalAlignment="Left"
+                                Margin="0,0,0,0"
+                                HorizontalAlignment="Stretch"
                                 Visibility="Visible">
 
-                                <StackPanel x:Name="DatatableStackPanel" Margin="0,0,0,0">
+                                <StackPanel x:Name="SecchiDatatable" Margin="0,0,0,0">
 
                                     <ListView Visibility="Visible">
                                         <ListView.Header>
-                                            <controls:DataTable Margin="80,0,0,0" ColumnSpacing="1">
-                                                <controls:DataColumn CanResize="True" DesiredWidth="120">
+                                            <controls:DataTable Margin="50,10,0,0" ColumnSpacing="1">
+                                                <controls:DataColumn CanResize="True" DesiredWidth="80">
                                                     <TextBlock
                                                         FontWeight="Normal"
                                                         Opacity=".8"
@@ -458,21 +451,21 @@
                                                         FontWeight="Normal"
                                                         Opacity=".8"
                                                         Style="{StaticResource BodyTextBlockStyle}"
-                                                        Text="Obs1" />
+                                                        Text="cm1" />
                                                 </controls:DataColumn>
                                                 <controls:DataColumn MinWidth="80" CanResize="True">
                                                     <TextBlock
                                                         FontWeight="Normal"
                                                         Opacity=".8"
                                                         Style="{StaticResource BodyTextBlockStyle}"
-                                                        Text="Obs2" />
+                                                        Text="cm2" />
                                                 </controls:DataColumn>
                                                 <controls:DataColumn MinWidth="80" CanResize="True">
                                                     <TextBlock
                                                         FontWeight="Normal"
                                                         Opacity=".8"
                                                         Style="{StaticResource BodyTextBlockStyle}"
-                                                        Text="Obs3" />
+                                                        Text="cm3" />
                                                 </controls:DataColumn>
                                                 <controls:DataColumn MinWidth="40" CanResize="True">
                                                     <TextBlock
@@ -489,9 +482,10 @@
                                 <StackPanel
                                     x:Name="SecchiEntryStackPanel"
                                     Width="200"
-                                    Margin="60,100,0,0"
-                                    HorizontalAlignment="Left"
-                                    Visibility="Visible">
+                                    Margin="0,0,0,0"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    Visibility="Collapsed">
 
                                     <TextBlock
                                         Opacity="0.8"
@@ -531,17 +525,20 @@
                                         <Button x:Name="SecchiSaveButton" x:Uid="Main_SecchiSaveButton" />
                                         <Button x:Name="SecchiCancelButton" x:Uid="Main_SecchiCancelButton" />
                                     </StackPanel>
-
                                 </StackPanel>
 
                             </StackPanel>
 
-                        </controls:Case>
+                        </NavigationView>
+                    </StackPanel>
 
-                    </controls:SwitchPresenter>
-                </StackPanel>
 
-            </Grid>
+
+
+                </controls:Case>
+                <controls:Case Value="Turbidity" />
+
+            </controls:SwitchPresenter>
 
         </StackPanel>
 
