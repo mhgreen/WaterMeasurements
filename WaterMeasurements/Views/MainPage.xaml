@@ -216,8 +216,10 @@
 
                                     <controls:SettingsExpander
                                         Description="Keys for development and production"
-                                        Header="ArcGIS Keys"
-                                        HeaderIcon="{ui:FontIcon Glyph=&#xE91B;}">
+                                        Header="ArcGIS Keys">
+                                        <controls:SettingsExpander.HeaderIcon>
+                                            <FontIcon FontFamily="{StaticResource AppIconFont}" Glyph="&#xE904;"/>
+                                        </controls:SettingsExpander.HeaderIcon>
 
                                         <controls:SettingsExpander.Items>
 
@@ -382,7 +384,7 @@
                     </NavigationViewItem>
                     <NavigationViewItem x:Name="CollectionNavTurbidity" Content="Turbidity">
                         <NavigationViewItem.Icon>
-                            <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xe707;" />
+                            <FontIcon FontFamily="{StaticResource AppIconFont}" Glyph="&#xe900;" />
                         </NavigationViewItem.Icon>
                     </NavigationViewItem>
                 </NavigationView.MenuItems>
@@ -407,7 +409,7 @@
 
                         <NavigationView
                             x:Name="SecchiNavView"
-                            MinHeight="200"
+                            MinHeight="350"
                             IsBackButtonVisible="Collapsed"
                             IsSettingsVisible="True"
                             ItemInvoked="{x:Bind SecchiView.SecchiNavView_ItemInvoked}"
@@ -416,9 +418,14 @@
                             PaneTitle="Secchi Data Collection">
 
                             <NavigationView.MenuItems>
-                                <NavigationViewItem x:Name="SecchiNavUpload" Content="Upload">
+                                <NavigationViewItem x:Name="SecchiNavAdd" Content="Add">
                                     <NavigationViewItem.Icon>
-                                        <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE898;" />
+                                        <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE710;" />
+                                    </NavigationViewItem.Icon>
+                                </NavigationViewItem>
+                                <NavigationViewItem x:Name="SecchiNavCollected" Content="Collected">
+                                    <NavigationViewItem.Icon>
+                                        <FontIcon FontFamily="{StaticResource AppIconFont}" Glyph="&#xE903;" />
                                     </NavigationViewItem.Icon>
                                 </NavigationViewItem>
                                 <NavigationViewItem x:Name="SecchiNavDiscard" Content="Discard">
@@ -426,7 +433,20 @@
                                         <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE74D;" />
                                     </NavigationViewItem.Icon>
                                 </NavigationViewItem>
+                                <NavigationViewItem x:Name="SecchiNavUpload" Content="Upload">
+                                    <NavigationViewItem.Icon>
+                                        <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE898;" />
+                                    </NavigationViewItem.Icon>
+                                </NavigationViewItem>
                             </NavigationView.MenuItems>
+
+                            <NavigationView.FooterMenuItems>
+                                <NavigationViewItem x:Name="SecchiNavInfo" Content="About">
+                                    <NavigationViewItem.Icon>
+                                        <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE946;" />
+                                    </NavigationViewItem.Icon>
+                                </NavigationViewItem>
+                            </NavigationView.FooterMenuItems>
 
                             <StackPanel
                                 x:Name="SecchiPanel"
@@ -436,7 +456,7 @@
 
                                 <StackPanel x:Name="SecchiDatatable" Margin="0,0,0,0">
 
-                                    <ListView Visibility="Visible">
+                                    <ListView Visibility="Collapsed">
                                         <ListView.Header>
                                             <controls:DataTable Margin="50,10,0,0" ColumnSpacing="1">
                                                 <controls:DataColumn CanResize="True" DesiredWidth="80">
@@ -482,10 +502,10 @@
                                 <StackPanel
                                     x:Name="SecchiEntryStackPanel"
                                     Width="200"
-                                    Margin="0,0,0,0"
+                                    Margin="0,60,0,0"
                                     HorizontalAlignment="Center"
                                     VerticalAlignment="Center"
-                                    Visibility="Collapsed">
+                                    Visibility="Visible">
 
                                     <TextBlock
                                         Opacity="0.8"
@@ -531,9 +551,6 @@
 
                         </NavigationView>
                     </StackPanel>
-
-
-
 
                 </controls:Case>
                 <controls:Case Value="Turbidity" />
