@@ -36,8 +36,9 @@
             <Grid>
                 <Ellipse
                     Fill="{ThemeResource AccentAcrylicInAppFillColorBaseBrush}"
+                    Opacity=".6"
                     Stroke="{ThemeResource TextBoxBorderThemeBrush}"
-                    StrokeThickness=".5" />
+                    StrokeThickness="0.7" />
                 <TextBlock
                     Margin="0,-2,0,0"
                     HorizontalAlignment="Center"
@@ -214,11 +215,9 @@
 
                                 <StackPanel Margin="0,0,0,0">
 
-                                    <controls:SettingsExpander
-                                        Description="Keys for development and production"
-                                        Header="ArcGIS Keys">
+                                    <controls:SettingsExpander Description="Keys for development and production" Header="ArcGIS Keys">
                                         <controls:SettingsExpander.HeaderIcon>
-                                            <FontIcon FontFamily="{StaticResource AppIconFont}" Glyph="&#xE904;"/>
+                                            <FontIcon FontFamily="{StaticResource AppIconFont}" Glyph="&#xE904;" />
                                         </controls:SettingsExpander.HeaderIcon>
 
                                         <controls:SettingsExpander.Items>
@@ -293,7 +292,7 @@
                                                             <Button
                                                                 Width="12"
                                                                 Height="12"
-                                                                Margin="5,0,0,0"
+                                                                Margin="5,-5,0,0"
                                                                 Click="{x:Bind MapConfigurationView.ArcGISApiKeyHelpClick}"
                                                                 Template="{StaticResource ButtonHelpTemplate}" />
                                                         </StackPanel>
@@ -316,7 +315,7 @@
                                                             <Button
                                                                 Width="12"
                                                                 Height="12"
-                                                                Margin="5,0,0,0"
+                                                                Margin="5,-5,0,0"
                                                                 Click="{x:Bind MapConfigurationView.ArcGISApiKeyHelpClick}"
                                                                 Template="{StaticResource ButtonHelpTemplate}" />
                                                             <ToolTipService.ToolTip>
@@ -403,7 +402,6 @@
                         <TextBlock
                             Margin="10,10,0,10"
                             FontWeight="SemiBold"
-                            Opacity=".8"
                             Style="{StaticResource BodyStrongTextBlockStyle}"
                             Text="Secchi Measurements By Location" />
 
@@ -454,98 +452,138 @@
                                 HorizontalAlignment="Stretch"
                                 Visibility="Visible">
 
-                                <StackPanel x:Name="SecchiDatatable" Margin="0,0,0,0">
+                                <controls:SwitchPresenter x:Name="SecchiViews" Value="{x:Bind SecchiView.SelectView, Mode=TwoWay}">
 
-                                    <ListView Visibility="Collapsed">
-                                        <ListView.Header>
-                                            <controls:DataTable Margin="50,10,0,0" ColumnSpacing="1">
-                                                <controls:DataColumn CanResize="True" DesiredWidth="80">
-                                                    <TextBlock
-                                                        FontWeight="Normal"
-                                                        Opacity=".8"
-                                                        Style="{StaticResource BodyTextBlockStyle}"
-                                                        Text="Location" />
-                                                </controls:DataColumn>
-                                                <controls:DataColumn MinWidth="80" CanResize="True">
-                                                    <TextBlock
-                                                        FontWeight="Normal"
-                                                        Opacity=".8"
-                                                        Style="{StaticResource BodyTextBlockStyle}"
-                                                        Text="cm1" />
-                                                </controls:DataColumn>
-                                                <controls:DataColumn MinWidth="80" CanResize="True">
-                                                    <TextBlock
-                                                        FontWeight="Normal"
-                                                        Opacity=".8"
-                                                        Style="{StaticResource BodyTextBlockStyle}"
-                                                        Text="cm2" />
-                                                </controls:DataColumn>
-                                                <controls:DataColumn MinWidth="80" CanResize="True">
-                                                    <TextBlock
-                                                        FontWeight="Normal"
-                                                        Opacity=".8"
-                                                        Style="{StaticResource BodyTextBlockStyle}"
-                                                        Text="cm3" />
-                                                </controls:DataColumn>
-                                                <controls:DataColumn MinWidth="40" CanResize="True">
-                                                    <TextBlock
-                                                        FontWeight="Normal"
-                                                        Opacity=".8"
-                                                        Style="{StaticResource BodyTextBlockStyle}"
-                                                        Text="Secchi" />
-                                                </controls:DataColumn>
-                                            </controls:DataTable>
-                                        </ListView.Header>
-                                    </ListView>
-                                </StackPanel>
+                                    <controls:Case Value="SecchiCollectionTable">
 
-                                <StackPanel
-                                    x:Name="SecchiEntryStackPanel"
-                                    Width="200"
-                                    Margin="0,60,0,0"
-                                    HorizontalAlignment="Center"
-                                    VerticalAlignment="Center"
-                                    Visibility="Visible">
+                                        <StackPanel x:Name="SecchiDatatable" Margin="0,0,0,0">
 
-                                    <TextBlock
-                                        Opacity="0.8"
-                                        Style="{StaticResource TitleTextBlockStyle}"
-                                        Text="HOA Test"
-                                        TextAlignment="Left" />
+                                            <ListView Visibility="Collapsed">
+                                                <ListView.Header>
+                                                    <controls:DataTable Margin="50,10,0,0" ColumnSpacing="1">
+                                                        <controls:DataColumn CanResize="True" DesiredWidth="80">
+                                                            <TextBlock
+                                                                FontWeight="Normal"
+                                                                Opacity=".8"
+                                                                Style="{StaticResource BodyTextBlockStyle}"
+                                                                Text="Location" />
+                                                        </controls:DataColumn>
+                                                        <controls:DataColumn MinWidth="80" CanResize="True">
+                                                            <TextBlock
+                                                                FontWeight="Normal"
+                                                                Opacity=".8"
+                                                                Style="{StaticResource BodyTextBlockStyle}"
+                                                                Text="cm1" />
+                                                        </controls:DataColumn>
+                                                        <controls:DataColumn MinWidth="80" CanResize="True">
+                                                            <TextBlock
+                                                                FontWeight="Normal"
+                                                                Opacity=".8"
+                                                                Style="{StaticResource BodyTextBlockStyle}"
+                                                                Text="cm2" />
+                                                        </controls:DataColumn>
+                                                        <controls:DataColumn MinWidth="80" CanResize="True">
+                                                            <TextBlock
+                                                                FontWeight="Normal"
+                                                                Opacity=".8"
+                                                                Style="{StaticResource BodyTextBlockStyle}"
+                                                                Text="cm3" />
+                                                        </controls:DataColumn>
+                                                        <controls:DataColumn MinWidth="40" CanResize="True">
+                                                            <TextBlock
+                                                                FontWeight="Normal"
+                                                                Opacity=".8"
+                                                                Style="{StaticResource BodyTextBlockStyle}"
+                                                                Text="Secchi" />
+                                                        </controls:DataColumn>
+                                                    </controls:DataTable>
+                                                </ListView.Header>
+                                            </ListView>
 
-                                    <TextBlock
-                                        x:Uid="Main_SecchiValues"
-                                        HorizontalAlignment="Left"
-                                        Opacity=".5"
-                                        Style="{StaticResource SubtitleTextBlockStyle}" />
-                                    <TextBox
-                                        x:Name="Measurement1"
-                                        Margin="{StaticResource SmallTopMargin}"
-                                        ui:TextBoxExtensions.ValidationMode="Dynamic"
-                                        ui:TextBoxExtensions.ValidationType="Number"
-                                        InputScope="Digits" />
-                                    <TextBox
-                                        x:Name="Measurement2"
-                                        ui:TextBoxExtensions.ValidationMode="Dynamic"
-                                        ui:TextBoxExtensions.ValidationType="Number"
-                                        InputScope="Digits" />
-                                    <TextBox
-                                        x:Name="Measurement3"
-                                        ui:TextBoxExtensions.ValidationMode="Dynamic"
-                                        ui:TextBoxExtensions.ValidationType="Number"
-                                        InputScope="Digits" />
+                                            <StackPanel
+                                                x:Name="SecchiNotYetCollected"
+                                                Margin="0,60,0,0"
+                                                HorizontalAlignment="Center"
+                                                VerticalAlignment="Center"
+                                                Visibility="Visible">
+                                                <TextBlock
+                                                    Margin="10,10,0,10"
+                                                    Opacity="0.7"
+                                                    Style="{StaticResource BodyTextBlockStyle}"
+                                                    Text="Measurements will appear here when available."
+                                                    TextWrapping="WrapWholeWords" />
+                                            </StackPanel>
 
-                                    <StackPanel
-                                        x:Name="ButtonStackPanel"
-                                        Margin="{StaticResource SmallTopMargin}"
-                                        HorizontalAlignment="Right"
-                                        VerticalAlignment="Bottom"
-                                        Orientation="Horizontal"
-                                        Spacing="5">
-                                        <Button x:Name="SecchiSaveButton" x:Uid="Main_SecchiSaveButton" />
-                                        <Button x:Name="SecchiCancelButton" x:Uid="Main_SecchiCancelButton" />
-                                    </StackPanel>
-                                </StackPanel>
+                                        </StackPanel>
+
+                                    </controls:Case>
+
+                                    <controls:Case Value="SecchiDataEntry">
+                                        <StackPanel
+                                            x:Name="SecchiEntryStackPanel"
+                                            Width="200"
+                                            Margin="0,60,0,0"
+                                            HorizontalAlignment="Center"
+                                            VerticalAlignment="Center"
+                                            Visibility="Visible">
+
+                                            <TextBlock
+                                                Opacity="0.8"
+                                                Style="{StaticResource TitleTextBlockStyle}"
+                                                Text="HOA Test"
+                                                TextAlignment="Left" />
+
+                                            <StackPanel HorizontalAlignment="Stretch" Orientation="Horizontal">
+                                                <TextBlock
+                                                    x:Uid="Main_SecchiValues"
+                                                    HorizontalAlignment="Left"
+                                                    Opacity=".5"
+                                                    Style="{StaticResource SubtitleTextBlockStyle}" />
+                                                <Button
+                                                    Width="12"
+                                                    Height="12"
+                                                    Margin="5,-5,0,0"
+                                                    Click="{x:Bind MapConfigurationView.ArcGISApiKeyHelpClick}"
+                                                    Template="{StaticResource ButtonHelpTemplate}" />
+                                                <ToolTipService.ToolTip>
+                                                    <ToolTip
+                                                        Content="Take three readings out of direct sunlight. Measure in centimeters where disc can no longer be seen."
+                                                        HorizontalOffset="200"
+                                                        VerticalOffset="-48" />
+                                                </ToolTipService.ToolTip>
+
+                                            </StackPanel>
+                                            <TextBox
+                                                x:Name="Measurement1"
+                                                Margin="{StaticResource SmallTopMargin}"
+                                                ui:TextBoxExtensions.ValidationMode="Dynamic"
+                                                ui:TextBoxExtensions.ValidationType="Number"
+                                                InputScope="Digits" />
+                                            <TextBox
+                                                x:Name="Measurement2"
+                                                ui:TextBoxExtensions.ValidationMode="Dynamic"
+                                                ui:TextBoxExtensions.ValidationType="Number"
+                                                InputScope="Digits" />
+                                            <TextBox
+                                                x:Name="Measurement3"
+                                                ui:TextBoxExtensions.ValidationMode="Dynamic"
+                                                ui:TextBoxExtensions.ValidationType="Number"
+                                                InputScope="Digits" />
+
+                                            <StackPanel
+                                                x:Name="ButtonStackPanel"
+                                                Margin="{StaticResource SmallTopMargin}"
+                                                HorizontalAlignment="Right"
+                                                VerticalAlignment="Bottom"
+                                                Orientation="Horizontal"
+                                                Spacing="5">
+                                                <Button x:Name="SecchiSaveButton" x:Uid="Main_SecchiSaveButton" />
+                                                <Button x:Name="SecchiCancelButton" x:Uid="Main_SecchiCancelButton" />
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </controls:Case>
+
+                                </controls:SwitchPresenter>
 
                             </StackPanel>
 

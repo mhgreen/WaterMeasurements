@@ -1003,12 +1003,21 @@ public partial class SecchiViewModel : ObservableRecipient
 
         switch (args.InvokedItemContainer.Name)
         {
-            case "SecchiNavUpload":
+            case "SecchiNavAdd":
                 // Log that upload was selected.
                 logger.LogDebug(
                     SecchiViewModelLog,
-                    "SecchiViewMode, CollectionNavView_ItemInvoked(): Upload selected."
+                    "SecchiViewMode, CollectionNavView_ItemInvoked(): Add selected."
                 );
+                SelectView = "SecchiDataEntry";
+                break;
+            case "SecchiNavCollected":
+                // Log that upload was selected.
+                logger.LogDebug(
+                    SecchiViewModelLog,
+                    "SecchiViewMode, CollectionNavView_ItemInvoked(): Collected selected."
+                );
+                SelectView = "SecchiCollectionTable";
                 break;
             case "SecchiNavDiscard":
                 // Log that discard was selected.
@@ -1017,6 +1026,22 @@ public partial class SecchiViewModel : ObservableRecipient
                     "SecchiViewMode, CollectionNavView_ItemInvoked(): Discard item selected."
                 );
                 break;
+            case "SecchiNavUpload":
+                // Log that upload was selected.
+                logger.LogDebug(
+                    SecchiViewModelLog,
+                    "SecchiViewMode, CollectionNavView_ItemInvoked(): Upload selected."
+                );
+                break;
+            case "SecchiNavInfo":
+                // Log that discard was selected.
+                logger.LogDebug(
+                    SecchiViewModelLog,
+                    "SecchiViewMode, CollectionNavView_ItemInvoked(): Info item selected."
+                );
+                break;
+
+
             case "SettingsItem":
                 // Log that settings was selected.
                 logger.LogDebug(
