@@ -29,11 +29,7 @@ using Windows.Security.Cryptography.Core;
 namespace WaterMeasurements.Views;
 
 // Message to notify modules that the UIQueue has been set.
-public class UIQueueSetMessage : ValueChangedMessage<UIQueue>
-{
-    public UIQueueSetMessage(UIQueue uiQueue)
-        : base(uiQueue) { }
-}
+public class UIQueueSetMessage(UIQueue uiQueue) : ValueChangedMessage<UIQueue>(uiQueue) { }
 
 // Message to notify modules that the MapPage has been unloaded.
 public class MapPageUnloaded : ValueChangedMessage<MapPageUnloadedMessage>
@@ -54,6 +50,7 @@ public sealed partial class MainPage : Page
     public SecchiViewModel SecchiView { get; }
     public MapConfigurationViewModel MapConfigurationView { get; }
     public DataCollectionViewModel DataCollectionView { get; }
+    public SecchiConfigurationViewModel SecchiConfigurationView { get; }
 
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 

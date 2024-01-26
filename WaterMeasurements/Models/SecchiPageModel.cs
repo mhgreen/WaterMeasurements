@@ -31,3 +31,26 @@ public enum SecchiServiceTrigger
     UiThreadRecievedorPresent,
     Cancel
 }
+
+public static class SecchiConfiguration
+{
+    public enum Key
+    {
+        InitialRun,
+        SecchiObservationsGeodatabase,
+        SecchiLocationsGeodatabase,
+        GeoTriggerDistanceMeters
+    }
+
+    public static Dictionary<Key, string> Item
+    {
+        get; private set;
+    } =
+        new()
+        {
+            { Key.InitialRun, "SecchiInitialRun" },
+            { Key.SecchiObservationsGeodatabase, "SecchiObservationsURL" },
+            { Key.SecchiLocationsGeodatabase, "SecchiLocationsURL" },
+            { Key.GeoTriggerDistanceMeters, "SecchiGeoTriggerDistance" }
+        };
+}

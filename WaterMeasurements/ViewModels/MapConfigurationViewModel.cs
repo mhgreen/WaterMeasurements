@@ -108,7 +108,7 @@ public partial class MapConfigurationViewModel : ObservableValidator
             {
                 Logger.LogDebug(
                     MapConfigurationViewModelLog,
-                    "StorePreplannedMapNameAsync(): firstValidationResult: {firstValidationResult}.",
+                    "PreplannedMapNameIsChanging(): firstValidationResult: {firstValidationResult}.",
                     firstValidationResult
                 );
             }
@@ -161,7 +161,7 @@ public partial class MapConfigurationViewModel : ObservableValidator
                 Task.Run(async () =>
                     {
                         await LocalSettingsService.SaveSettingAsync(
-                            PrePlannedMapConfiguration.Item[Key.PreplannedMapName],
+                            PrePlannedMapConfiguration.Item[PrePlannedMapConfiguration.Key.PreplannedMapName],
                             PreplannedMapName
                         );
                     })
@@ -233,9 +233,9 @@ public partial class MapConfigurationViewModel : ObservableValidator
                 nameof(LocalSettingsService),
                 "Configuration Service, Initialize(): LocalSettingsService is null."
             );
-            // Get the preplanned map name from the local settings.
+            // Get the preplanned map name from local settings.
             PreplannedMapName = await LocalSettingsService.ReadSettingAsync<string>(
-                PrePlannedMapConfiguration.Item[Key.PreplannedMapName]
+                PrePlannedMapConfiguration.Item[PrePlannedMapConfiguration.Key.PreplannedMapName]
             );
         }
         catch (Exception exception)

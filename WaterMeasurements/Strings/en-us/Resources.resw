@@ -186,4 +186,19 @@
   <data name="Error_NotBetweenOneAndHundred" xml:space="preserve">
     <value>Name has a maximum length of 100 characters.</value>
   </data>
+  <data name="Error_DistanceNotBetweenOneAndTwenty" xml:space="preserve">
+    <value>Distance must be between 1 and 20 meters.</value>
+  </data>
+  <data name="Error_NotBetweenOneAndTwoHundred" xml:space="preserve">
+    <value>URL has a maximum length of 200 characters.</value>
+  </data>
+  <data name="Error_UnableWithoutURL" xml:space="preserve">
+    <value>Unable to get geodatabase without URL.</value>
+  </data>
+  <data name="Settings_Secchi_Geodatabase.Text" xml:space="preserve">
+    <value>URL for Secchi observations geodatabase.</value>
+  </data>
+  <data name="Settings_Secchi_ObservationsAndLocations.Text" xml:space="preserve">
+    <value>Settings for Secchi Observations and Locations</value>
+  </data>
 </root>

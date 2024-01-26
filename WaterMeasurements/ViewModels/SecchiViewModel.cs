@@ -56,6 +56,8 @@ using WaterMeasurements.Services.Instances;
 using Windows.ApplicationModel.Store;
 using static WaterMeasurements.ViewModels.MainViewModel;
 using NLog;
+using WaterMeasurements.Helpers;
+using System.ComponentModel.DataAnnotations;
 
 namespace WaterMeasurements.ViewModels;
 
@@ -65,6 +67,7 @@ public partial class SecchiViewModel : ObservableRecipient
 
     // Set the EventId for logging messages.
     internal EventId SecchiViewModelLog = new(7, "SecchiViewModel");
+
 
     [ObservableProperty]
     private bool showSecchiCollectionPoint = true;
@@ -984,20 +987,20 @@ public partial class SecchiViewModel : ObservableRecipient
         // Log to debug that the MapNavView_ItemInvoked event was fired.
         logger.LogDebug(
             SecchiViewModelLog,
-            "SecchiViewMode, CollectionNavView_ItemInvoked(): CollectionNavView_ItemInvoked event fired."
+            "SecchiViewModel, CollectionNavView_ItemInvoked(): CollectionNavView_ItemInvoked event fired."
         );
 
         // Log the name of the invoked item.
         logger.LogDebug(
             SecchiViewModelLog,
-            "SecchiViewMode, CollectionNavView_ItemInvoked(): Invoked item name: {invokedItemName}.",
+            "SecchiViewModel, CollectionNavView_ItemInvoked(): Invoked item name: {invokedItemName}.",
             args.InvokedItemContainer.Name
         );
 
         // Log the sender name.
         logger.LogDebug(
             SecchiViewModelLog,
-            "SecchiViewMode, CollectionNavView_ItemInvoked(): Sender name: {senderName}.",
+            "SecchiViewModel, CollectionNavView_ItemInvoked(): Sender name: {senderName}.",
             sender.Name
         );
 
@@ -1007,7 +1010,7 @@ public partial class SecchiViewModel : ObservableRecipient
                 // Log that upload was selected.
                 logger.LogDebug(
                     SecchiViewModelLog,
-                    "SecchiViewMode, CollectionNavView_ItemInvoked(): Add selected."
+                    "SecchiViewModel, CollectionNavView_ItemInvoked(): Add selected."
                 );
                 SelectView = "SecchiDataEntry";
                 break;
@@ -1015,7 +1018,7 @@ public partial class SecchiViewModel : ObservableRecipient
                 // Log that upload was selected.
                 logger.LogDebug(
                     SecchiViewModelLog,
-                    "SecchiViewMode, CollectionNavView_ItemInvoked(): Collected selected."
+                    "SecchiViewModel, CollectionNavView_ItemInvoked(): Collected selected."
                 );
                 SelectView = "SecchiCollectionTable";
                 break;
@@ -1023,21 +1026,21 @@ public partial class SecchiViewModel : ObservableRecipient
                 // Log that discard was selected.
                 logger.LogDebug(
                     SecchiViewModelLog,
-                    "SecchiViewMode, CollectionNavView_ItemInvoked(): Discard item selected."
+                    "SecchiViewModel, CollectionNavView_ItemInvoked(): Discard item selected."
                 );
                 break;
             case "SecchiNavUpload":
                 // Log that upload was selected.
                 logger.LogDebug(
                     SecchiViewModelLog,
-                    "SecchiViewMode, CollectionNavView_ItemInvoked(): Upload selected."
+                    "SecchiViewModel, CollectionNavView_ItemInvoked(): Upload selected."
                 );
                 break;
             case "SecchiNavInfo":
                 // Log that discard was selected.
                 logger.LogDebug(
                     SecchiViewModelLog,
-                    "SecchiViewMode, CollectionNavView_ItemInvoked(): Info item selected."
+                    "SecchiViewModel, CollectionNavView_ItemInvoked(): Info item selected."
                 );
                 break;
 
@@ -1046,8 +1049,9 @@ public partial class SecchiViewModel : ObservableRecipient
                 // Log that settings was selected.
                 logger.LogDebug(
                     SecchiViewModelLog,
-                    "SecchiViewMode, CollectionNavView_ItemInvoked(): Settings selected."
+                    "SecchiViewModel, CollectionNavView_ItemInvoked(): Settings selected."
                 );
+                SelectView = "SecchiSettings";
                 break;
             default:
                 break;
