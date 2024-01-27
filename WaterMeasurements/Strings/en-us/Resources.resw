@@ -189,16 +189,40 @@
   <data name="Error_DistanceNotBetweenOneAndTwenty" xml:space="preserve">
     <value>Distance must be between 1 and 20 meters.</value>
   </data>
-  <data name="Error_NotBetweenOneAndTwoHundred" xml:space="preserve">
-    <value>URL has a maximum length of 200 characters.</value>
+  <data name="Error_InvalidURL" xml:space="preserve">
+    <value>URL is not valid</value>
+  </data>
+  <data name="Error_NotBetweenOneAndOneHundredFifty" xml:space="preserve">
+    <value>URL has a maximum length of 150 characters.</value>
   </data>
   <data name="Error_UnableWithoutURL" xml:space="preserve">
     <value>Unable to get geodatabase without URL.</value>
   </data>
-  <data name="Settings_Secchi_Geodatabase.Text" xml:space="preserve">
-    <value>URL for Secchi observations geodatabase.</value>
+  <data name="Settings_Secchi_Collection.Text" xml:space="preserve">
+    <value>Adding a Measurement for a Secchi Location</value>
+  </data>
+  <data name="Settings_Secchi_Locations.Description" xml:space="preserve">
+    <value>URL for Secchi locations geodatabase and geotrigger distance</value>
+  </data>
+  <data name="Settings_Secchi_Locations.Header" xml:space="preserve">
+    <value>Secchi Locations</value>
+  </data>
+  <data name="Settings_Secchi_Locations_Geodatabase.Text" xml:space="preserve">
+    <value>URL for Secchi locations geodatabase.</value>
+  </data>
+  <data name="Settings_Secchi_Locations_Geotrigger.Text" xml:space="preserve">
+    <value>Geotrigger distance in meters from a defined location</value>
+  </data>
+  <data name="Settings_Secchi_Observations.Description" xml:space="preserve">
+    <value>URL for Secchi observations geodatabase</value>
+  </data>
+  <data name="Settings_Secchi_Observations.Header" xml:space="preserve">
+    <value>Secchi Observations</value>
   </data>
   <data name="Settings_Secchi_ObservationsAndLocations.Text" xml:space="preserve">
     <value>Settings for Secchi Observations and Locations</value>
+  </data>
+  <data name="Settings_Secchi_Observations_Geodatabase.Text" xml:space="preserve">
+    <value>URL for Secchi observations geodatabase.</value>
   </data>
 </root>

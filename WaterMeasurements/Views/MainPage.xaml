@@ -157,11 +157,25 @@
                                         <NavigationViewItem.Icon>
                                             <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xe81D;" />
                                         </NavigationViewItem.Icon>
+                                        <ToolTipService.ToolTip>
+                                            <ToolTip
+                                                Width="100"
+                                                Content="Center map on current location."
+                                                HorizontalOffset="200"
+                                                VerticalOffset="-95" />
+                                        </ToolTipService.ToolTip>
                                     </NavigationViewItem>
                                     <NavigationViewItem x:Name="MapNavAutoPan" Content="Auto Pan">
                                         <NavigationViewItem.Icon>
                                             <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xe7c2;" />
                                         </NavigationViewItem.Icon>
+                                        <ToolTipService.ToolTip>
+                                            <ToolTip
+                                                Width="100"
+                                                Content="Map changes based on current location."
+                                                HorizontalOffset="200"
+                                                VerticalOffset="-115" />
+                                        </ToolTipService.ToolTip>
                                     </NavigationViewItem>
                                 </NavigationView.MenuItems>
                             </NavigationView>
@@ -413,15 +427,15 @@
                             ItemInvoked="{x:Bind SecchiView.SecchiNavView_ItemInvoked}"
                             Loaded="SecchiNavView_Loaded"
                             PaneDisplayMode="LeftMinimal"
-                            PaneTitle="Secchi Data Collection">
+                            PaneTitle="Secchi Location Measurements">
 
                             <NavigationView.MenuItems>
-                                <NavigationViewItem x:Name="SecchiNavAdd" Content="Add">
+                                <NavigationViewItem x:Name="SecchiNavAdd" Content="Collect New">
                                     <NavigationViewItem.Icon>
                                         <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE710;" />
                                     </NavigationViewItem.Icon>
                                 </NavigationViewItem>
-                                <NavigationViewItem x:Name="SecchiNavCollected" Content="Collected">
+                                <NavigationViewItem x:Name="SecchiNavCollected" Content="Show Collected">
                                     <NavigationViewItem.Icon>
                                         <FontIcon FontFamily="{StaticResource AppIconFont}" Glyph="&#xE903;" />
                                     </NavigationViewItem.Icon>
@@ -520,68 +534,79 @@
                                     </controls:Case>
 
                                     <controls:Case Value="SecchiDataEntry">
-                                        <StackPanel
-                                            x:Name="SecchiEntryStackPanel"
-                                            Width="200"
-                                            Margin="0,60,0,0"
-                                            HorizontalAlignment="Center"
-                                            VerticalAlignment="Center"
-                                            Visibility="Visible">
-
-                                            <TextBlock
-                                                Opacity="0.8"
-                                                Style="{StaticResource TitleTextBlockStyle}"
-                                                Text="HOA Test"
-                                                TextAlignment="Left" />
-
-                                            <StackPanel HorizontalAlignment="Stretch" Orientation="Horizontal">
+                                        <Grid>
+                                            <StackPanel>
                                                 <TextBlock
-                                                    x:Uid="Main_SecchiValues"
-                                                    HorizontalAlignment="Left"
-                                                    Opacity=".5"
-                                                    Style="{StaticResource SubtitleTextBlockStyle}" />
-                                                <Button
-                                                    Width="12"
-                                                    Height="12"
-                                                    Margin="5,-5,0,0"
-                                                    Click="{x:Bind MapConfigurationView.ArcGISApiKeyHelpClick}"
-                                                    Template="{StaticResource ButtonHelpTemplate}" />
-                                                <ToolTipService.ToolTip>
-                                                    <ToolTip
-                                                        Content="Take three readings out of direct sunlight. Lower the disc until it can not be seen. Raise the disc just until it is visible. Average the two depths. Record the results in centimeters."
-                                                        HorizontalOffset="200"
-                                                        VerticalOffset="-48" />
-                                                </ToolTipService.ToolTip>
-
+                                                    x:Uid="Settings_Secchi_Collection"
+                                                    Margin="0,12,0,5"
+                                                    HorizontalAlignment="Center"
+                                                    Opacity="0.7"
+                                                    Style="{ThemeResource BodyStrongTextBlockStyle}" />
                                             </StackPanel>
-                                            <TextBox
-                                                x:Name="Measurement1"
-                                                Margin="{StaticResource SmallTopMargin}"
-                                                ui:TextBoxExtensions.ValidationMode="Dynamic"
-                                                ui:TextBoxExtensions.ValidationType="Number"
-                                                InputScope="Digits" />
-                                            <TextBox
-                                                x:Name="Measurement2"
-                                                ui:TextBoxExtensions.ValidationMode="Dynamic"
-                                                ui:TextBoxExtensions.ValidationType="Number"
-                                                InputScope="Digits" />
-                                            <TextBox
-                                                x:Name="Measurement3"
-                                                ui:TextBoxExtensions.ValidationMode="Dynamic"
-                                                ui:TextBoxExtensions.ValidationType="Number"
-                                                InputScope="Digits" />
 
                                             <StackPanel
-                                                x:Name="ButtonStackPanel"
-                                                Margin="{StaticResource SmallTopMargin}"
-                                                HorizontalAlignment="Right"
-                                                VerticalAlignment="Bottom"
-                                                Orientation="Horizontal"
-                                                Spacing="5">
-                                                <Button x:Name="SecchiSaveButton" x:Uid="Main_SecchiSaveButton" />
-                                                <Button x:Name="SecchiCancelButton" x:Uid="Main_SecchiCancelButton" />
+                                                x:Name="SecchiEntryStackPanel"
+                                                Width="200"
+                                                Margin="0,60,0,0"
+                                                HorizontalAlignment="Center"
+                                                VerticalAlignment="Center"
+                                                Visibility="Visible">
+
+                                                <TextBlock
+                                                    Opacity="0.8"
+                                                    Style="{StaticResource TitleTextBlockStyle}"
+                                                    Text="HOA Test"
+                                                    TextAlignment="Left" />
+
+                                                <StackPanel HorizontalAlignment="Stretch" Orientation="Horizontal">
+                                                    <TextBlock
+                                                        x:Uid="Main_SecchiValues"
+                                                        HorizontalAlignment="Left"
+                                                        Opacity=".5"
+                                                        Style="{StaticResource SubtitleTextBlockStyle}" />
+                                                    <Button
+                                                        Width="12"
+                                                        Height="12"
+                                                        Margin="5,-5,0,0"
+                                                        Click="{x:Bind MapConfigurationView.ArcGISApiKeyHelpClick}"
+                                                        Template="{StaticResource ButtonHelpTemplate}" />
+                                                    <ToolTipService.ToolTip>
+                                                        <ToolTip
+                                                            Content="Take three readings out of direct sunlight. Lower the disc until it can not be seen. Raise the disc just until it is visible. Average the two depths. Record the results in centimeters."
+                                                            HorizontalOffset="200"
+                                                            VerticalOffset="-48" />
+                                                    </ToolTipService.ToolTip>
+
+                                                </StackPanel>
+                                                <TextBox
+                                                    x:Name="Measurement1"
+                                                    Margin="{StaticResource SmallTopMargin}"
+                                                    ui:TextBoxExtensions.ValidationMode="Dynamic"
+                                                    ui:TextBoxExtensions.ValidationType="Number"
+                                                    InputScope="Digits" />
+                                                <TextBox
+                                                    x:Name="Measurement2"
+                                                    ui:TextBoxExtensions.ValidationMode="Dynamic"
+                                                    ui:TextBoxExtensions.ValidationType="Number"
+                                                    InputScope="Digits" />
+                                                <TextBox
+                                                    x:Name="Measurement3"
+                                                    ui:TextBoxExtensions.ValidationMode="Dynamic"
+                                                    ui:TextBoxExtensions.ValidationType="Number"
+                                                    InputScope="Digits" />
+
+                                                <StackPanel
+                                                    x:Name="ButtonStackPanel"
+                                                    Margin="{StaticResource SmallTopMargin}"
+                                                    HorizontalAlignment="Right"
+                                                    VerticalAlignment="Bottom"
+                                                    Orientation="Horizontal"
+                                                    Spacing="5">
+                                                    <Button x:Name="SecchiSaveButton" x:Uid="Main_SecchiSaveButton" />
+                                                    <Button x:Name="SecchiCancelButton" x:Uid="Main_SecchiCancelButton" />
+                                                </StackPanel>
                                             </StackPanel>
-                                        </StackPanel>
+                                        </Grid>
                                     </controls:Case>
 
                                     <controls:Case Value="SecchiSettings">
@@ -594,26 +619,21 @@
                                                     <StackPanel>
                                                         <TextBlock
                                                             x:Uid="Settings_Secchi_ObservationsAndLocations"
+                                                            Margin="0,12,0,5"
                                                             HorizontalAlignment="Center"
-                                                            Margin="0,10,0,5"
-                                                            Style="{ThemeResource BodyTextBlockStyle}" />
+                                                            Opacity="0.7"
+                                                            Style="{ThemeResource BodyStrongTextBlockStyle}" />
                                                     </StackPanel>
 
                                                     <StackPanel Margin="0,20,0,0">
 
-                                                        <controls:SettingsExpander
-                                                            Description="URL for Secchi observations geodatabase"
-                                                            Header="Secchi Observations">
-
+                                                        <controls:SettingsExpander x:Uid="Settings_Secchi_Observations">
                                                             <controls:SettingsExpander.Items>
-
                                                                 <controls:SettingsCard HorizontalAlignment="Stretch">
-
                                                                     <StackPanel MinWidth="450" HorizontalAlignment="Stretch">
-                                                                        
                                                                         <StackPanel Margin="0,15,0,0">
                                                                             <StackPanel HorizontalAlignment="Stretch" Orientation="Horizontal">
-                                                                                <TextBlock x:Uid="Settings_Secchi_Geodatabase" />
+                                                                                <TextBlock x:Uid="Settings_Secchi_Observations_Geodatabase" />
                                                                                 <Button
                                                                                     Width="12"
                                                                                     Height="12"
@@ -622,9 +642,9 @@
                                                                                     Template="{StaticResource ButtonHelpTemplate}" />
                                                                                 <ToolTipService.ToolTip>
                                                                                     <ToolTip
-                                                                                        Content="Add where this is from."
+                                                                                        Content="Feature layer(hosted), URL field."
                                                                                         HorizontalOffset="200"
-                                                                                        VerticalOffset="-48" />
+                                                                                        VerticalOffset="15" />
                                                                                 </ToolTipService.ToolTip>
                                                                             </StackPanel>
                                                                             <TextBox
@@ -642,14 +662,86 @@
                                                                                 Text="{x:Bind SecchiConfigurationView.SecchiObservationsError, Mode=OneWay}"
                                                                                 Visibility="{x:Bind SecchiConfigurationView.SecchiObservationsErrorVisibility, Mode=OneWay}" />
                                                                         </StackPanel>
+                                                                    </StackPanel>
+                                                                </controls:SettingsCard>
+                                                            </controls:SettingsExpander.Items>
+                                                        </controls:SettingsExpander>
+
+                                                        <controls:SettingsExpander x:Uid="Settings_Secchi_Locations">
+                                                            <controls:SettingsExpander.Items>
+                                                                <controls:SettingsCard HorizontalAlignment="Stretch">
+                                                                    <StackPanel MinWidth="450" HorizontalAlignment="Stretch">
+                                                                        <StackPanel Margin="0,15,0,0">
+                                                                            <StackPanel HorizontalAlignment="Stretch" Orientation="Horizontal">
+                                                                                <TextBlock x:Uid="Settings_Secchi_Locations_Geodatabase" />
+                                                                                <Button
+                                                                                    Width="12"
+                                                                                    Height="12"
+                                                                                    Margin="5,-5,0,0"
+                                                                                    Click="{x:Bind SecchiConfigurationView.SecchiKeyHelpClick, Mode=OneWay}"
+                                                                                    Template="{StaticResource ButtonHelpTemplate}" />
+                                                                                <ToolTipService.ToolTip>
+                                                                                    <ToolTip
+                                                                                        Content="Feature layer(hosted), URL field."
+                                                                                        HorizontalOffset="200"
+                                                                                        VerticalOffset="15" />
+                                                                                </ToolTipService.ToolTip>
+                                                                            </StackPanel>
+                                                                            <TextBox
+                                                                                x:Name="SecchiLocationsGeodatabase"
+                                                                                MaxWidth="450"
+                                                                                Margin="10,5,0,0"
+                                                                                IsSpellCheckEnabled="False"
+                                                                                LostFocus="{x:Bind SecchiConfigurationView.StoreSecchiObservationsAsync, Mode=OneWay}"
+                                                                                Text="{x:Bind SecchiConfigurationView.SecchiObservations, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                                TextChanged="{x:Bind SecchiConfigurationView.SecchiObservationsIsChanging, Mode=OneWay}" />
+                                                                            <TextBlock
+                                                                                x:Name="SecchiLocationsError"
+                                                                                HorizontalAlignment="right"
+                                                                                Foreground="{ThemeResource SystemFillColorCriticalBrush}"
+                                                                                Text="{x:Bind SecchiConfigurationView.SecchiObservationsError, Mode=OneWay}"
+                                                                                Visibility="{x:Bind SecchiConfigurationView.SecchiObservationsErrorVisibility, Mode=OneWay}" />
+                                                                        </StackPanel>
+
+                                                                        <StackPanel Margin="0,15,0,0">
+                                                                            <StackPanel HorizontalAlignment="Stretch" Orientation="Horizontal">
+                                                                                <TextBlock x:Uid="Settings_Secchi_Locations_Geotrigger" />
+                                                                                <Button
+                                                                                    Width="12"
+                                                                                    Height="12"
+                                                                                    Margin="5,-5,0,0"
+                                                                                    Click="{x:Bind SecchiConfigurationView.SecchiKeyHelpClick, Mode=OneWay}"
+                                                                                    Template="{StaticResource ButtonHelpTemplate}" />
+                                                                                <ToolTipService.ToolTip>
+                                                                                    <ToolTip
+                                                                                        Content="Trigger data collection 1 to 10 meters from location points in the geodatabase."
+                                                                                        HorizontalOffset="200"
+                                                                                        VerticalOffset="15" />
+                                                                                </ToolTipService.ToolTip>
+                                                                            </StackPanel>
+                                                                            <TextBox
+                                                                                x:Name="SecchiLocationsGeotriggerDistance"
+                                                                                HorizontalAlignment="Left"
+                                                                                MaxWidth="10"
+                                                                                Margin="10,5,0,0"
+                                                                                IsSpellCheckEnabled="False"
+                                                                                LostFocus="{x:Bind SecchiConfigurationView.StoreSecchiObservationsAsync, Mode=OneWay}"
+                                                                                Text="{x:Bind SecchiConfigurationView.SecchiObservations, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                                TextChanged="{x:Bind SecchiConfigurationView.SecchiObservationsIsChanging, Mode=OneWay}" />
+                                                                            <TextBlock
+                                                                                x:Name="SecchiGeoTriggerDistanceError"
+                                                                                HorizontalAlignment="right"
+                                                                                Foreground="{ThemeResource SystemFillColorCriticalBrush}"
+                                                                                Text="{x:Bind SecchiConfigurationView.SecchiObservationsError, Mode=OneWay}"
+                                                                                Visibility="{x:Bind SecchiConfigurationView.SecchiObservationsErrorVisibility, Mode=OneWay}" />
+                                                                        </StackPanel>
 
                                                                     </StackPanel>
 
                                                                 </controls:SettingsCard>
-
                                                             </controls:SettingsExpander.Items>
-
                                                         </controls:SettingsExpander>
+
 
                                                     </StackPanel>
 

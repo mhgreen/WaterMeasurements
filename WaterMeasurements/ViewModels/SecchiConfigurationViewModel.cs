@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Resources;
 using System.Collections.Generic;
+using System.Globalization;
 using System.ComponentModel.DataAnnotations;
 
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -38,6 +39,21 @@ using NLog;
 
 namespace WaterMeasurements.ViewModels;
 
+public class UrlAttribute : ValidationAttribute
+{
+    public override bool IsValid(object? value)
+    {
+        var stringValue = value as string;
+        return Uri.TryCreate(stringValue, UriKind.Absolute, out var uriResult)
+            && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
+    }
+
+    public override string FormatErrorMessage(string name)
+    {
+        return string.Format(CultureInfo.CurrentCulture, ErrorMessageString, name);
+    }
+}
+
 public partial class SecchiConfigurationViewModel : ObservableValidator
 {
     private readonly ILogger<SecchiConfigurationViewModel> Logger;
@@ -52,27 +68,23 @@ public partial class SecchiConfigurationViewModel : ObservableValidator
     // It does not seem possible to localize the error messages in the DataAnnotations.
     // Using the ResourceExtensions.GetLocalized() method to get the localized strings.
 
-    private static readonly string unableToValide = ResourceExtensions.GetLocalized(
-        "Error_UnableWithoutName"
+    private static readonly string unableWithoutURL = ResourceExtensions.GetLocalized(
+        "Error_UnableWithoutURL"
     );
-    private static readonly string stringNotOneToHundred = ResourceExtensions.GetLocalized(
-        "Error_NotBetweenOneAndHundred"
+    private static readonly string stringNotOneToHundredFifty = ResourceExtensions.GetLocalized(
+        "Error_NotBetweenOneAndOneHundredFifty"
     );
-    private static readonly string stringNotOneToTwoHundred = ResourceExtensions.GetLocalized(
-        "Error_NotBetweenOneAndTwoHundred"
-    );
-    private static readonly string distanceNotBetweenOneAndTwenty = ResourceExtensions.GetLocalized(
-        "DistanceNotBetweenOneAndTwenty"
-    );
+    private static readonly string urlInvalid = ResourceExtensions.GetLocalized("Error_InvalidURL");
 
     [ObservableProperty]
     [Required(ErrorMessage = "NeedURL")]
-    [StringLength(100, MinimumLength = 1, ErrorMessage = "NotOneToHundred")]
+    [Url(ErrorMessage = "InvalidURL")]
+    [StringLength(150, MinimumLength = 1, ErrorMessage = "NotOneToHundredFifty")]
     private string? secchiObservations;
 
     [ObservableProperty]
     [Required(ErrorMessage = "NeedURL")]
-    [StringLength(100, MinimumLength = 1, ErrorMessage = "NotOneToHundred")]
+    [StringLength(150, MinimumLength = 1, ErrorMessage = "NotOneToHundredFifty")]
     private string? secchiLocations;
 
     [ObservableProperty]
@@ -126,22 +138,31 @@ public partial class SecchiConfigurationViewModel : ObservableValidator
             }
             if (firstValidationResult is not null)
             {
-                if (firstValidationResult.ToString() == "NeedName")
+                if (firstValidationResult.ToString() == "NeedURL")
                 {
                     Logger.LogTrace(
                         SecchiConfigurationViewModelLog,
-                        "SecchiObservationsIsChanging(): NeedName error."
+                        "SecchiObservationsIsChanging(): NeedURL error."
                     );
-                    SecchiObservationsError = unableToValide;
+                    SecchiObservationsError = unableWithoutURL;
                     SecchiObservationsErrorVisibility = "Visible";
                 }
-                if (firstValidationResult.ToString() == "NotOneToHundred")
+                if (firstValidationResult.ToString() == "NotOneToHundredFifty")
                 {
                     Logger.LogTrace(
                         SecchiConfigurationViewModelLog,
-                        "SecchiObservationsIsChanging(): NotOneToHundred error."
+                        "SecchiObservationsIsChanging(): NotOneToHundredFifty error."
                     );
-                    SecchiObservationsError = stringNotOneToHundred;
+                    SecchiObservationsError = stringNotOneToHundredFifty;
+                    SecchiObservationsErrorVisibility = "Visible";
+                }
+                if (firstValidationResult.ToString() == "InvalidURL")
+                {
+                    Logger.LogTrace(
+                        SecchiConfigurationViewModelLog,
+                        "SecchiObservationsIsChanging(): InvalidURL error."
+                    );
+                    SecchiObservationsError = urlInvalid;
                     SecchiObservationsErrorVisibility = "Visible";
                 }
             }

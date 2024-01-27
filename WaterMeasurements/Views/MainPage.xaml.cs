@@ -120,6 +120,7 @@ public sealed partial class MainPage : Page
         SecchiView = App.GetService<SecchiViewModel>();
         MapConfigurationView = App.GetService<MapConfigurationViewModel>();
         DataCollectionView = App.GetService<DataCollectionViewModel>();
+        SecchiConfigurationView = App.GetService<SecchiConfigurationViewModel>();
 
         Logger.Debug("MainPage.xaml.cs, MainPage: Starting");
 
