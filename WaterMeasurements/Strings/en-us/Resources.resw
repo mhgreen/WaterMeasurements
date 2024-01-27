@@ -190,7 +190,7 @@
     <value>Distance must be between 1 and 20 meters.</value>
   </data>
   <data name="Error_InvalidURL" xml:space="preserve">
-    <value>URL is not valid</value>
+    <value>Should start with https:// include arcgis.com and end with FeatureServer</value>
   </data>
   <data name="Error_NotBetweenOneAndOneHundredFifty" xml:space="preserve">
     <value>URL has a maximum length of 150 characters.</value>
@@ -224,5 +224,14 @@
   </data>
   <data name="Settings_Secchi_Observations_Geodatabase.Text" xml:space="preserve">
     <value>URL for Secchi observations geodatabase.</value>
+  </data>
+  <data name="Error_UnableWithoutDistance" xml:space="preserve">
+    <value>Unable to validate without distance.</value>
+  </data>
+  <data name="Settings_Secchi_Collected.Text" xml:space="preserve">
+    <value>Collected Secchi Measurements to be Uploaded</value>
+  </data>
+  <data name="Settings_Secchi_Not_Collected.Text" xml:space="preserve">
+    <value>Secchi measurements will appear here once collected.</value>
   </data>
 </root>

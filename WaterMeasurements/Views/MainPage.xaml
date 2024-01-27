@@ -470,66 +470,80 @@
 
                                     <controls:Case Value="SecchiCollectionTable">
 
-                                        <StackPanel x:Name="SecchiDatatable" Margin="0,0,0,0">
-
-                                            <ListView Visibility="Collapsed">
-                                                <ListView.Header>
-                                                    <controls:DataTable Margin="50,10,0,0" ColumnSpacing="1">
-                                                        <controls:DataColumn CanResize="True" DesiredWidth="80">
-                                                            <TextBlock
-                                                                FontWeight="Normal"
-                                                                Opacity=".8"
-                                                                Style="{StaticResource BodyTextBlockStyle}"
-                                                                Text="Location" />
-                                                        </controls:DataColumn>
-                                                        <controls:DataColumn MinWidth="80" CanResize="True">
-                                                            <TextBlock
-                                                                FontWeight="Normal"
-                                                                Opacity=".8"
-                                                                Style="{StaticResource BodyTextBlockStyle}"
-                                                                Text="cm1" />
-                                                        </controls:DataColumn>
-                                                        <controls:DataColumn MinWidth="80" CanResize="True">
-                                                            <TextBlock
-                                                                FontWeight="Normal"
-                                                                Opacity=".8"
-                                                                Style="{StaticResource BodyTextBlockStyle}"
-                                                                Text="cm2" />
-                                                        </controls:DataColumn>
-                                                        <controls:DataColumn MinWidth="80" CanResize="True">
-                                                            <TextBlock
-                                                                FontWeight="Normal"
-                                                                Opacity=".8"
-                                                                Style="{StaticResource BodyTextBlockStyle}"
-                                                                Text="cm3" />
-                                                        </controls:DataColumn>
-                                                        <controls:DataColumn MinWidth="40" CanResize="True">
-                                                            <TextBlock
-                                                                FontWeight="Normal"
-                                                                Opacity=".8"
-                                                                Style="{StaticResource BodyTextBlockStyle}"
-                                                                Text="Secchi" />
-                                                        </controls:DataColumn>
-                                                    </controls:DataTable>
-                                                </ListView.Header>
-                                            </ListView>
-
-                                            <StackPanel
-                                                x:Name="SecchiNotYetCollected"
-                                                Margin="0,60,0,0"
-                                                HorizontalAlignment="Center"
-                                                VerticalAlignment="Center"
-                                                Visibility="Visible">
+                                        <Grid>
+                                            <StackPanel>
                                                 <TextBlock
-                                                    Margin="10,10,0,10"
+                                                    x:Uid="Settings_Secchi_Collected"
+                                                    Margin="0,12,0,5"
+                                                    HorizontalAlignment="Center"
                                                     Opacity="0.7"
-                                                    Style="{StaticResource BodyTextBlockStyle}"
-                                                    Text="Measurements will appear here when available."
-                                                    TextWrapping="WrapWholeWords" />
+                                                    Style="{ThemeResource BodyStrongTextBlockStyle}" />
+                                            </StackPanel>
+
+                                            <StackPanel x:Name="SecchiDatatable" Margin="0,0,0,0">
+
+                                                <ListView Visibility="Collapsed">
+                                                    <ListView.Header>
+                                                        <controls:DataTable Margin="50,10,0,0" ColumnSpacing="1">
+                                                            <controls:DataColumn CanResize="True" DesiredWidth="80">
+                                                                <TextBlock
+                                                                    FontWeight="Normal"
+                                                                    Opacity=".8"
+                                                                    Style="{StaticResource BodyTextBlockStyle}"
+                                                                    Text="Location" />
+                                                            </controls:DataColumn>
+                                                            <controls:DataColumn MinWidth="80" CanResize="True">
+                                                                <TextBlock
+                                                                    FontWeight="Normal"
+                                                                    Opacity=".8"
+                                                                    Style="{StaticResource BodyTextBlockStyle}"
+                                                                    Text="cm1" />
+                                                            </controls:DataColumn>
+                                                            <controls:DataColumn MinWidth="80" CanResize="True">
+                                                                <TextBlock
+                                                                    FontWeight="Normal"
+                                                                    Opacity=".8"
+                                                                    Style="{StaticResource BodyTextBlockStyle}"
+                                                                    Text="cm2" />
+                                                            </controls:DataColumn>
+                                                            <controls:DataColumn MinWidth="80" CanResize="True">
+                                                                <TextBlock
+                                                                    FontWeight="Normal"
+                                                                    Opacity=".8"
+                                                                    Style="{StaticResource BodyTextBlockStyle}"
+                                                                    Text="cm3" />
+                                                            </controls:DataColumn>
+                                                            <controls:DataColumn MinWidth="40" CanResize="True">
+                                                                <TextBlock
+                                                                    FontWeight="Normal"
+                                                                    Opacity=".8"
+                                                                    Style="{StaticResource BodyTextBlockStyle}"
+                                                                    Text="Secchi" />
+                                                            </controls:DataColumn>
+                                                        </controls:DataTable>
+                                                    </ListView.Header>
+                                                </ListView>
+
+                                                <StackPanel
+                                                    x:Name="SecchiNotYetCollected"
+                                                    Margin="0,140,0,0"
+                                                    HorizontalAlignment="Center"
+                                                    VerticalAlignment="Center"
+                                                    Visibility="Visible"
+                                                    BorderBrush="SlateGray"
+                                                    BorderThickness="1">
+                                                    <TextBlock
+                                                        x:Uid="Settings_Secchi_Not_Collected"
+                                                        Margin="10,10,10,10"
+                                                        Opacity="0.9"
+                                                        Style="{StaticResource BodyTextBlockStyle}"
+                                                        TextWrapping="WrapWholeWords" />
+
+                                                </StackPanel>
 
                                             </StackPanel>
 
-                                        </StackPanel>
+                                        </Grid>
 
                                     </controls:Case>
 
@@ -612,7 +626,11 @@
                                     <controls:Case Value="SecchiSettings">
 
                                         <ScrollViewer>
-                                            <Grid>
+                                            <Grid
+                                                Width="580"
+                                                MinWidth="480"
+                                                Margin="0,0,0,0"
+                                                HorizontalAlignment="Left">
 
                                                 <StackPanel x:Name="SecchiSettingsPanel">
 
@@ -692,15 +710,15 @@
                                                                                 MaxWidth="450"
                                                                                 Margin="10,5,0,0"
                                                                                 IsSpellCheckEnabled="False"
-                                                                                LostFocus="{x:Bind SecchiConfigurationView.StoreSecchiObservationsAsync, Mode=OneWay}"
-                                                                                Text="{x:Bind SecchiConfigurationView.SecchiObservations, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                                                TextChanged="{x:Bind SecchiConfigurationView.SecchiObservationsIsChanging, Mode=OneWay}" />
+                                                                                LostFocus="{x:Bind SecchiConfigurationView.StoreSecchiLocationsAsync, Mode=OneWay}"
+                                                                                Text="{x:Bind SecchiConfigurationView.SecchiLocations, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                                TextChanged="{x:Bind SecchiConfigurationView.SecchiLocationsIsChanging, Mode=OneWay}" />
                                                                             <TextBlock
                                                                                 x:Name="SecchiLocationsError"
                                                                                 HorizontalAlignment="right"
                                                                                 Foreground="{ThemeResource SystemFillColorCriticalBrush}"
-                                                                                Text="{x:Bind SecchiConfigurationView.SecchiObservationsError, Mode=OneWay}"
-                                                                                Visibility="{x:Bind SecchiConfigurationView.SecchiObservationsErrorVisibility, Mode=OneWay}" />
+                                                                                Text="{x:Bind SecchiConfigurationView.SecchiLocationsError, Mode=OneWay}"
+                                                                                Visibility="{x:Bind SecchiConfigurationView.SecchiLocationsErrorVisibility, Mode=OneWay}" />
                                                                         </StackPanel>
 
                                                                         <StackPanel Margin="0,15,0,0">
@@ -714,26 +732,29 @@
                                                                                     Template="{StaticResource ButtonHelpTemplate}" />
                                                                                 <ToolTipService.ToolTip>
                                                                                     <ToolTip
-                                                                                        Content="Trigger data collection 1 to 10 meters from location points in the geodatabase."
+                                                                                        Content="Trigger data collection 1 to 20 meters from location points in the geodatabase."
                                                                                         HorizontalOffset="200"
                                                                                         VerticalOffset="15" />
                                                                                 </ToolTipService.ToolTip>
                                                                             </StackPanel>
                                                                             <TextBox
                                                                                 x:Name="SecchiLocationsGeotriggerDistance"
-                                                                                HorizontalAlignment="Left"
                                                                                 MaxWidth="10"
                                                                                 Margin="10,5,0,0"
+                                                                                HorizontalAlignment="Left"
+                                                                                ui:TextBoxExtensions.ValidationMode="Dynamic"
+                                                                                ui:TextBoxExtensions.ValidationType="Number"
+                                                                                InputScope="Digits"
                                                                                 IsSpellCheckEnabled="False"
-                                                                                LostFocus="{x:Bind SecchiConfigurationView.StoreSecchiObservationsAsync, Mode=OneWay}"
-                                                                                Text="{x:Bind SecchiConfigurationView.SecchiObservations, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                                                TextChanged="{x:Bind SecchiConfigurationView.SecchiObservationsIsChanging, Mode=OneWay}" />
+                                                                                LostFocus="{x:Bind SecchiConfigurationView.StoreSecchiGeoTriggerDistanceAsync, Mode=OneWay}"
+                                                                                Text="{x:Bind SecchiConfigurationView.SecchiGeoTriggerDistance, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                                TextChanged="{x:Bind SecchiConfigurationView.SecchiGeoTriggerDistanceIsChanging, Mode=OneWay}" />
                                                                             <TextBlock
                                                                                 x:Name="SecchiGeoTriggerDistanceError"
                                                                                 HorizontalAlignment="right"
                                                                                 Foreground="{ThemeResource SystemFillColorCriticalBrush}"
-                                                                                Text="{x:Bind SecchiConfigurationView.SecchiObservationsError, Mode=OneWay}"
-                                                                                Visibility="{x:Bind SecchiConfigurationView.SecchiObservationsErrorVisibility, Mode=OneWay}" />
+                                                                                Text="{x:Bind SecchiConfigurationView.SecchiGeotriggerDistanceError, Mode=OneWay}"
+                                                                                Visibility="{x:Bind SecchiConfigurationView.SecchiGeotriggerDistanceErrorVisibility, Mode=OneWay}" />
                                                                         </StackPanel>
 
                                                                     </StackPanel>

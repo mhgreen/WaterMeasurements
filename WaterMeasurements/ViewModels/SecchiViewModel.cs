@@ -80,7 +80,7 @@ public partial class SecchiViewModel : ObservableRecipient
     private Brush mapBorderColor = new SolidColorBrush(Colors.Transparent);
 
     [ObservableProperty]
-    private string selectView = "NewObservation";
+    private string selectView = "SecchiCollectionTable";
 
     // Feature for the current location sent by the GeoTriggerService.
     public ArcGISFeature? feature;
