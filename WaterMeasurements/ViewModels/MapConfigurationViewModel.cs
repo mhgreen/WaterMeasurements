@@ -254,11 +254,14 @@ public partial class MapConfigurationViewModel : ObservableValidator
         NavigationViewItemInvokedEventArgs args
     )
     {
+        /*
         var navOptions = new FrameNavigationOptions
         {
             TransitionInfoOverride = args.RecommendedNavigationTransitionInfo,
             IsNavigationStackEnabled = false,
         };
+        */
+
 
         // Log to debug that the MapNavView_ItemInvoked event was fired.
         Logger.LogDebug(
@@ -313,7 +316,7 @@ public partial class MapConfigurationViewModel : ObservableValidator
         }
     }
 
-    public void ArcGISApiKeyHelpClick(object sender, RoutedEventArgs e)
+    public void ArcGISApiKeyHelpClick()
     {
         // Log that the ArcGISApiKeyHelpClick event was fired.
         Logger.LogDebug(

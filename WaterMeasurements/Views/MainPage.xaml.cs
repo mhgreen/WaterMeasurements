@@ -1,6 +1,4 @@
-﻿using System.Diagnostics;
-
-using CommunityToolkit.Mvvm.Input;
+﻿using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.Mvvm.Messaging.Messages;
 
@@ -22,9 +20,7 @@ using NLog.Fluent;
 using WaterMeasurements.Services;
 using WaterMeasurements.Contracts.Services;
 using static WaterMeasurements.Models.PrePlannedMapConfiguration;
-using Windows.ApplicationModel.VoiceCommands;
 using Esri.ArcGISRuntime.UI.Controls;
-using Windows.Security.Cryptography.Core;
 
 namespace WaterMeasurements.Views;
 
@@ -81,21 +77,26 @@ public sealed partial class MainPage : Page
     }
 
     [RelayCommand]
-    public async Task StoreDeveloperKeyAsync()
+    public void StoreDeveloperKeyAsync()
     {
         apiKey = ApiKeyArcGIS.Password;
         Logger.Debug("API key changed to: " + apiKey);
-        await ViewModel.StoreSettingByKeyAsync(
-            PrePlannedMapConfiguration.Item[Key.ArcgisApiKey],
-            apiKey
-        );
-        // await ViewModel.InitializeArcGISRuntimeAsync();
+
+        Task.Run(async () =>
+            {
+                await ViewModel.StoreSettingByKeyAsync(
+                    PrePlannedMapConfiguration.Item[Key.ArcgisApiKey],
+                    apiKey
+                );
+            })
+            .Wait();
     }
 
     [RelayCommand]
     public async Task StoreWebMapIdAsync()
     {
         Logger.Debug("webMapId changed to: " + WebMapId.Text);
+
         await ViewModel.StoreSettingByKeyAsync(
             PrePlannedMapConfiguration.Item[Key.OfflineMapIdentifier],
             WebMapId.Text
@@ -301,25 +302,6 @@ public sealed partial class MainPage : Page
                 await systemLocation.StopAsync();
             };
 
-            /*
-            CollectionStackPanel.Visibility = Visibility.Visible;
-            var integer4TextBox = new TextBox();
-            var transparentBrush = new Microsoft.UI.Xaml.Media.SolidColorBrush() { Opacity = 0 };
-            integer4TextBox.Background = transparentBrush;
-            integer4TextBox.Name = "Integer4TextBox";
-            TextBoxExtensions.SetValidationMode(integer4TextBox, TextBoxExtensions.ValidationMode.Dynamic);
-            TextBoxExtensions.SetValidationType(integer4TextBox, TextBoxExtensions.ValidationType.Number);
-            CollectionStackPanel.Children.Add(integer4TextBox);
-            var undecidedButton = new Button();
-            undecidedButton.Name = "UndecidedButton";
-            undecidedButton.Content = "Undecided";
-            undecidedButton.Background = transparentBrush;
-            undecidedButton.Click += OkButton_Click;
-            ButtonStackPanel.Children.Add(undecidedButton);
-            */
-
-            // await DataCollectionDialog.ShowAsync();
-
             // When the map view unloads, try to clean up existing output data folders.
             MapView.Unloaded += (s, e) =>
             {
@@ -385,20 +367,11 @@ public sealed partial class MainPage : Page
         SecchiNavView.SelectedItem = SecchiNavView.MenuItems[0];
     }
 
-    /*
-    private void MainPage_Loaded(object sender, RoutedEventArgs routedEventArgs)
-    {
-        // CollectionStackPanel.UpdateLayout();
-    }
-    */
-
     private void SaveSecchiMeasurements_Click(object sender, RoutedEventArgs e)
     {
         // Collect the integers here
-        ViewModel.ShowSecchiCollectionPoint = true;
         if (MapView.LocationDisplay.Location is not null)
         {
-            /*
             SecchiMeasurements secchiMeasurements =
                 new(
                     MapView.LocationDisplay.Location.Position,
@@ -407,14 +380,21 @@ public sealed partial class MainPage : Page
                     short.Parse(Measurement3.Text)
                 );
             SecchiView.ProcessSecchiMeasurements(secchiMeasurements);
-            */
         }
         else
         {
-            // ActionStatus.IsOpen = true;
-            // ActionStatus.Severity = InfoBarSeverity.Error;
-            // ActionStatus.Title = "Location not available";
-            // ActionStatus.Content = "Location is not available, there is a problem with system location services.";
+            // Write to debug that Location is not available, there is a problem with system location services.
+            Logger.Debug(
+                "MainPage.xaml.cs, SaveSecchiMeasurements_Click: Location is not available, there is a problem with system location services."
+            );
+
+            /*
+            ActionStatus.IsOpen = true;
+            ActionStatus.Severity = InfoBarSeverity.Error;
+            ActionStatus.Title = "Location not available";
+            ActionStatus.Content =
+                "Location is not available, there is a problem with system location services.";
+            */
         }
     }
 

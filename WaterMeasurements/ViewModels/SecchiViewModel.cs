@@ -68,9 +68,7 @@ public partial class SecchiViewModel : ObservableRecipient
     // Set the EventId for logging messages.
     internal EventId SecchiViewModelLog = new(7, "SecchiViewModel");
 
-
-    [ObservableProperty]
-    private bool showSecchiCollectionPoint = true;
+    private readonly ILocalSettingsService? LocalSettingsService;
 
     [ObservableProperty]
     private string secchiCollectionPointName = "Default Location";
@@ -95,15 +93,24 @@ public partial class SecchiViewModel : ObservableRecipient
     private readonly uint secchiLocationsChannel = 0;
     private readonly uint secchiGeotriggerChannel = 0;
 
+    private double? geoTriggerDistance = 0;
+    private string? observationsURL = string.Empty;
+    private string? locationsURL = string.Empty;
+
     private bool haveObservations;
     private bool haveLocations;
 
     private readonly StateMachine<SecchiServiceState, SecchiServiceTrigger> stateMachine;
 
-    public SecchiViewModel(ILogger<SecchiViewModel> logger)
+    public SecchiViewModel(
+        ILogger<SecchiViewModel> logger,
+        ILocalSettingsService? localSettingsService
+    )
     {
         this.logger = logger;
         logger.LogDebug(SecchiViewModelLog, "SecchiViewModel, Constructor.");
+
+        LocalSettingsService = localSettingsService;
 
         // Get the next instance channel and use that for the secchiObservationsChannel.
         secchiObservationsChannel =
@@ -129,7 +136,36 @@ public partial class SecchiViewModel : ObservableRecipient
             SecchiServiceState.WaitingForObservations
         );
 
-        Initialize();
+        var isConfigured = CheckConfiguration();
+        if (isConfigured)
+        {
+            // Log that the SecchiViewModel is configured.
+            logger.LogDebug(SecchiViewModelLog, "SecchiViewModel, Constructor: Configured.");
+            // Log the value of observationsURL.
+            logger.LogDebug(
+                SecchiViewModelLog,
+                "SecchiViewModel, Constructor: ObservationsURL: {observationsURL}.",
+                observationsURL
+            );
+            // Log the value of locationsURL.
+            logger.LogDebug(
+                SecchiViewModelLog,
+                "SecchiViewModel, Constructor: LocationsURL: {locationsURL}.",
+                locationsURL
+            );
+            // Log the value of geoTriggerDistance.
+            logger.LogDebug(
+                SecchiViewModelLog,
+                "SecchiViewModel, Constructor: GeoTriggerDistance: {geoTriggerDistance}.",
+                geoTriggerDistance
+            );
+
+            Initialize();
+        }
+        else
+        {
+            logger.LogDebug(SecchiViewModelLog, "SecchiViewModel, Constructor: Not configured.");
+        }
     }
 
     private void Initialize()
@@ -289,6 +325,12 @@ public partial class SecchiViewModel : ObservableRecipient
                         // Locations have been received.
                         haveLocations = true;
 
+                        Guard.Against.Null(
+                            geoTriggerDistance,
+                            nameof(geoTriggerDistance),
+                            "SecchiViewModel, StateMachine, SecchiServiceState.WaitingForLocations: geoTriggerDistance can not be null."
+                        );
+
                         // Create a geotrigger fence for each location by sending a geotrigger add message to the GeoTriggerService.
                         WeakReferenceMessenger.Default.Send<GeoTriggerAddMessage>(
                             new GeoTriggerAddMessage(
@@ -296,7 +338,7 @@ public partial class SecchiViewModel : ObservableRecipient
                                     featureTable,
                                     "SecchiLocations2",
                                     secchiGeotriggerChannel,
-                                    10
+                                    (double)geoTriggerDistance
                                 )
                             )
                         );
@@ -530,7 +572,11 @@ public partial class SecchiViewModel : ObservableRecipient
                 }
             );
 
-            /*
+            Guard.Against.Null(
+                observationsURL,
+                nameof(observationsURL),
+                "SecchiViewModel, Initialize(): observationsURL can not be null."
+            );
 
             // Submit a geodatabase request to the GeoDatabaseService to get SecchObservations.
             WeakReferenceMessenger.Default.Send<GeoDatabaseRequestMessage>(
@@ -539,10 +585,16 @@ public partial class SecchiViewModel : ObservableRecipient
                         "SecchiObservations",
                         GeoDatabaseType.Observations,
                         secchiObservationsChannel,
-                        "https://services2.arcgis.com/iq8zYa0SRsvIFFKz/arcgis/rest/services/SecchiObservations/FeatureServer",
+                        observationsURL,
                         false
                     )
                 )
+            );
+
+            Guard.Against.Null(
+                locationsURL,
+                nameof(locationsURL),
+                "SecchiViewModel, Initialize(): locationsURL can not be null."
             );
 
             // Submit a geodatabase request to the GeoDatabaseService to get Locations.
@@ -552,13 +604,11 @@ public partial class SecchiViewModel : ObservableRecipient
                         "SecchiLocations",
                         GeoDatabaseType.Locations,
                         secchiLocationsChannel,
-                        "https://services2.arcgis.com/iq8zYa0SRsvIFFKz/arcgis/rest/services/SecchiLocations/FeatureServer",
+                        locationsURL,
                         false
                     )
                 )
             );
-
-            */
         }
         catch (Exception exception)
         {
@@ -824,9 +874,9 @@ public partial class SecchiViewModel : ObservableRecipient
                                     locationId,
                                     locationName
                                 );
+                                SelectView = "SecchiDataEntry";
                                 uiDispatcherQueue.TryEnqueue(() =>
                                 {
-                                    ShowSecchiCollectionPoint = true;
                                     SecchiCollectionPointName = locationName.ToString()!;
                                 });
                             }
@@ -887,8 +937,8 @@ public partial class SecchiViewModel : ObservableRecipient
                 "SecchiViewModel, ProcessSecchiMeasurements: secchiMeasurements can not be null."
             );
 
-            // Once the locations have been collected, hide the secchi collection point.
-            ShowSecchiCollectionPoint = true;
+            // Once the location have been collected, move to the results panel.
+            SelectView = "SecchiCollectionTable";
 
             // Log to debug the type of notification.
             logger.LogDebug(
@@ -1044,7 +1094,6 @@ public partial class SecchiViewModel : ObservableRecipient
                 );
                 break;
 
-
             case "SettingsItem":
                 // Log that settings was selected.
                 logger.LogDebug(
@@ -1055,6 +1104,69 @@ public partial class SecchiViewModel : ObservableRecipient
                 break;
             default:
                 break;
+        }
+    }
+
+    private bool CheckConfiguration()
+    {
+        // Log to debug that CheckConfiguraation was called.
+        logger.LogDebug(
+            SecchiViewModelLog,
+            "SecchiViewModel, CheckConfiguration(): CheckConfiguration called."
+        );
+
+        Guard.Against.Null(
+            LocalSettingsService,
+            nameof(LocalSettingsService),
+            "SecchiViewModel, CheckConfiguration(): LocalSettingsService can not be null."
+        );
+
+        // Get the URL for Secchi observations from local settings.
+        Task.Run(async () =>
+            {
+                observationsURL = await LocalSettingsService.ReadSettingAsync<string>(
+                    SecchiConfiguration.Item[SecchiConfiguration.Key.SecchiObservationsGeodatabase]
+                );
+            })
+            .Wait();
+
+        // Get the URL for Secchi locations from local settings.
+        Task.Run(async () =>
+            {
+                locationsURL = await LocalSettingsService.ReadSettingAsync<string>(
+                    SecchiConfiguration.Item[SecchiConfiguration.Key.SecchiLocationsGeodatabase]
+                );
+            })
+            .Wait();
+
+        // Get the GeoTriggerDistance from local settings.
+        Task.Run(async () =>
+            {
+                geoTriggerDistance = await LocalSettingsService.ReadSettingAsync<double>(
+                    SecchiConfiguration.Item[SecchiConfiguration.Key.GeoTriggerDistanceMeters]
+                );
+            })
+            .Wait();
+
+        if (
+            string.IsNullOrEmpty(observationsURL)
+            || string.IsNullOrEmpty(locationsURL)
+            || geoTriggerDistance == 0
+        )
+        {
+            logger.LogDebug(
+                SecchiViewModelLog,
+                "SecchiViewModel, CheckConfiguration(): observationsURL is null or empty or locationsURL is null or empty or geoTriggerDistance is 0."
+            );
+            return false;
+        }
+        else
+        {
+            logger.LogDebug(
+                SecchiViewModelLog,
+                "SecchiViewModel, CheckConfiguration(): ObservationsURL, LocationsURL, and geoTriggerDistance have been configured."
+            );
+            return true;
         }
     }
 

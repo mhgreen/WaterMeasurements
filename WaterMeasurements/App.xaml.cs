@@ -53,9 +53,6 @@ public partial class App : Application
         .Current
         .LocalSettings;
 
-    // Current ArcGIS API key
-    private readonly string? apiKey;
-
     public App()
     {
         var logger = LogManager.GetCurrentClassLogger();
@@ -132,11 +129,6 @@ public partial class App : Application
     {
         var logger = LogManager.GetCurrentClassLogger();
         logger.Error(
-            "Error in App.xaml.cs: Sender: {sender}, Exception: {exception}.",
-            sender,
-            exception
-        );
-        Debug.WriteLine(
             "Error in App.xaml.cs: Sender: {sender}, Exception: {exception}.",
             sender,
             exception

@@ -616,8 +616,8 @@
                                                     VerticalAlignment="Bottom"
                                                     Orientation="Horizontal"
                                                     Spacing="5">
-                                                    <Button x:Name="SecchiSaveButton" x:Uid="Main_SecchiSaveButton" />
-                                                    <Button x:Name="SecchiCancelButton" x:Uid="Main_SecchiCancelButton" />
+                                                    <Button x:Name="SecchiSaveButton" x:Uid="Main_SecchiSaveButton" Click="{x:Bind SaveSecchiMeasurements_Click}" />
+                                                    <Button x:Name="SecchiCancelButton" x:Uid="Main_SecchiCancelButton" Click="{x:Bind CancelSecchiMeasurements_Click}"/>
                                                 </StackPanel>
                                             </StackPanel>
                                         </Grid>

@@ -33,11 +33,8 @@ using System.Xml.Linq;
 namespace WaterMeasurements.Services;
 
 // Message to notify modules that the extent of the main map has changed.
-public class MapExtentChangedMessage : ValueChangedMessage<MainMapExtent>
-{
-    public MapExtentChangedMessage(MainMapExtent mapEnvelope)
-        : base(mapEnvelope) { }
-}
+public class MapExtentChangedMessage(MainMapExtent mapEnvelope)
+    : ValueChangedMessage<MainMapExtent>(mapEnvelope) { }
 
 // Message to notify modules that the GetPreplannedMapService has a valid configuration.
 public class PreplannedMapConfigurationStatusMessage(bool configurationStatus)
@@ -751,13 +748,6 @@ public partial class GetPreplannedMapService : IGetPreplannedMapService
 
             if (selectedArea.Count() == 1)
             {
-                // The expectation is that there will be one area selected.
-                var numberOfSelectedAreas = Guard.Against.AgainstExpression(
-                    x => x == 1,
-                    selectedArea.Count(),
-                    "GetPreplannedMapService, InitializeOnlineAsync: the number of selected areas should be one."
-                );
-
                 // Get the preplanned area (should be the only item in the list).
                 var offlineMapArea = selectedArea.First();
 
