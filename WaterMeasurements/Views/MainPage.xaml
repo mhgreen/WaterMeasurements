@@ -482,41 +482,41 @@
 
                                             <StackPanel x:Name="SecchiDatatable" Margin="0,0,0,0">
 
-                                                <ListView Visibility="Collapsed">
+                                                <ListView Visibility="Visible" CanDragItems="True">
                                                     <ListView.Header>
-                                                        <controls:DataTable Margin="50,10,0,0" ColumnSpacing="1">
+                                                        <controls:DataTable Margin="50,50,0,0" ColumnSpacing="1">
                                                             <controls:DataColumn CanResize="True" DesiredWidth="80">
                                                                 <TextBlock
-                                                                    FontWeight="Normal"
-                                                                    Opacity=".8"
+                                                                    FontWeight="SemiBold"
+                                                                    Opacity="1"
                                                                     Style="{StaticResource BodyTextBlockStyle}"
                                                                     Text="Location" />
                                                             </controls:DataColumn>
                                                             <controls:DataColumn MinWidth="80" CanResize="True">
                                                                 <TextBlock
-                                                                    FontWeight="Normal"
-                                                                    Opacity=".8"
+                                                                    FontWeight="SemiBold"
+                                                                    Opacity="1"
                                                                     Style="{StaticResource BodyTextBlockStyle}"
                                                                     Text="cm1" />
                                                             </controls:DataColumn>
                                                             <controls:DataColumn MinWidth="80" CanResize="True">
                                                                 <TextBlock
-                                                                    FontWeight="Normal"
-                                                                    Opacity=".8"
+                                                                    FontWeight="SemiBold"
+                                                                    Opacity="1"
                                                                     Style="{StaticResource BodyTextBlockStyle}"
                                                                     Text="cm2" />
                                                             </controls:DataColumn>
                                                             <controls:DataColumn MinWidth="80" CanResize="True">
                                                                 <TextBlock
-                                                                    FontWeight="Normal"
-                                                                    Opacity=".8"
+                                                                    FontWeight="SemiBold"
+                                                                    Opacity="1"
                                                                     Style="{StaticResource BodyTextBlockStyle}"
                                                                     Text="cm3" />
                                                             </controls:DataColumn>
                                                             <controls:DataColumn MinWidth="40" CanResize="True">
                                                                 <TextBlock
-                                                                    FontWeight="Normal"
-                                                                    Opacity=".8"
+                                                                    FontWeight="SemiBold"
+                                                                    Opacity="1"
                                                                     Style="{StaticResource BodyTextBlockStyle}"
                                                                     Text="Secchi" />
                                                             </controls:DataColumn>
@@ -529,7 +529,7 @@
                                                     Margin="0,140,0,0"
                                                     HorizontalAlignment="Center"
                                                     VerticalAlignment="Center"
-                                                    Visibility="Visible"
+                                                    Visibility="Collapsed"
                                                     BorderBrush="SlateGray"
                                                     BorderThickness="1">
                                                     <TextBlock
@@ -537,7 +537,7 @@
                                                         Margin="10,10,10,10"
                                                         Opacity="0.9"
                                                         Style="{StaticResource BodyTextBlockStyle}"
-                                                        TextWrapping="WrapWholeWords" />
+                                                        TextWrapping="WrapWholeWords"/>
 
                                                 </StackPanel>
 

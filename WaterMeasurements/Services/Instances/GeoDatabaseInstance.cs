@@ -821,6 +821,9 @@ public partial class GeoDatabaseInstance : IGeoDatabaseInstance
             );
 
             await featureTable.AddFeatureAsync(featureMessage.FeatureToAdd);
+
+            ListGeodatabaseContents(currentGeodatabase);
+
         }
         catch (Exception exception)
         {
