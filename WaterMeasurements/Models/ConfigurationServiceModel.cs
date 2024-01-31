@@ -20,4 +20,7 @@ public class ConfigurationServiceConfiguration
         "Map",
         "DownloadPreplannedMapAreas"
     );
+
+    // Set the folder for sqlite databases.
+    public static readonly string SqliteFolder = Path.Combine(WaterMeasurementsFolder, "Sqlite");
 }

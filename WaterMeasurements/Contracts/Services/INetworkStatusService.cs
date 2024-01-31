@@ -8,5 +8,4 @@ namespace WaterMeasurements.Contracts.Services;
 
 public interface INetworkStatusService
 {
-    // void Initialize();
 }

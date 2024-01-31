@@ -172,7 +172,7 @@ public partial class SecchiViewModel : ObservableRecipient
     {
         try
         {
-            // Trigger for feature table received with feature table as a parameter.
+            // Trigger for location feature table received with feature table as a parameter.
             var locationsFeatureTableReceived = stateMachine.SetTriggerParameters<FeatureTable>(
                 SecchiServiceTrigger.LocationFeatureTableReceived
             );
