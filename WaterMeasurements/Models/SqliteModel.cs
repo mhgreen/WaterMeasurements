@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace WaterMeasurements.Models;
 
-public static class SqliteModel
+public static class SqliteConversion
 {
 
     public static Dictionary<string, string> GeodatabaseSqliteTypeConversion
@@ -30,4 +30,18 @@ public static class SqliteModel
     {"Raster", "BLOB"},
     {"Blob", "BLOB"}
     };
+}
+
+public enum DbType
+{
+    SecchiObservations,
+    SecchiLocations
+}
+
+public enum  ObservationStatus
+{
+    WorkingSet,
+    GeodatabaseCommitted,
+    FromArcGISOnline,
+    LocalOnly
 }

@@ -104,7 +104,7 @@ public partial class GeoDatabaseService : IGeoDatabaseService
     private static readonly Dictionary<
         string,
         GeoDatabaseInstance
-    > geoDatabaseInstances = new();
+    > geoDatabaseInstances = [];
 
     public GeoDatabaseService(
         ILogger<GeoDatabaseService> logger,

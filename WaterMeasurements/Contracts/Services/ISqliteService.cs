@@ -4,10 +4,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+using WaterMeasurements.Models;
+
 using Esri.ArcGISRuntime.Data;
 
 namespace WaterMeasurements.Contracts.Services;
 public interface ISqliteService
 {
-    Task FeaturetableToDatabase(FeatureTable featureTable);
+    Task FeaturetableToDatabase(FeatureTable featureTable, DbType dbType);
 }

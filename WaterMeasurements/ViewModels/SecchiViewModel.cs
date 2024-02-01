@@ -102,15 +102,20 @@ public partial class SecchiViewModel : ObservableRecipient
 
     private readonly StateMachine<SecchiServiceState, SecchiServiceTrigger> stateMachine;
 
+    private readonly ISqliteService? sqliteService;
+
     public SecchiViewModel(
         ILogger<SecchiViewModel> logger,
-        ILocalSettingsService? localSettingsService
+        ILocalSettingsService? localSettingsService,
+        ISqliteService? sqliteService
     )
     {
         this.logger = logger;
         logger.LogDebug(SecchiViewModelLog, "SecchiViewModel, Constructor.");
 
         LocalSettingsService = localSettingsService;
+
+        this.sqliteService = sqliteService;
 
         // Get the next instance channel and use that for the secchiObservationsChannel.
         secchiObservationsChannel =
@@ -172,6 +177,12 @@ public partial class SecchiViewModel : ObservableRecipient
     {
         try
         {
+            Guard.Against.Null(
+                sqliteService,
+                nameof(sqliteService),
+                "SecchiViewModel, Initialize(): sqliteService can not be null."
+            );
+
             // Trigger for location feature table received with feature table as a parameter.
             var locationsFeatureTableReceived = stateMachine.SetTriggerParameters<FeatureTable>(
                 SecchiServiceTrigger.LocationFeatureTableReceived
@@ -192,7 +203,7 @@ public partial class SecchiViewModel : ObservableRecipient
                 // Wait for a feature table message to be returned in response to the request for SecchiObservations.
                 .OnEntryFrom(
                     observationsFeatureTableReceived,
-                    featureTable =>
+                    async featureTable =>
                     {
                         logger.LogTrace(
                             SecchiViewModelLog,
@@ -214,6 +225,11 @@ public partial class SecchiViewModel : ObservableRecipient
                                 field.FieldType.ToString()
                             );
                         }
+
+                        await sqliteService.FeaturetableToDatabase(
+                            currentObservationsTable,
+                            DbType.SecchiObservations
+                        );
 
                         // create a where clause to get all the features
                         var queryParameters = new QueryParameters() { WhereClause = "1=1" };
@@ -279,7 +295,7 @@ public partial class SecchiViewModel : ObservableRecipient
                 // Wait for a feature table message to be returned in response to the request for SecchiLocations.
                 .OnEntryFrom(
                     locationsFeatureTableReceived,
-                    featureTable =>
+                    async featureTable =>
                     {
                         logger.LogDebug(
                             SecchiViewModelLog,
@@ -322,6 +338,13 @@ public partial class SecchiViewModel : ObservableRecipient
                             }
                         }
 
+                        
+                        await sqliteService.FeaturetableToDatabase(
+                            featureTable,
+                            DbType.SecchiLocations
+                        );
+                        
+
                         // Locations have been received.
                         haveLocations = true;
 
@@ -336,7 +359,7 @@ public partial class SecchiViewModel : ObservableRecipient
                             new GeoTriggerAddMessage(
                                 new GeoTriggerAdd(
                                     featureTable,
-                                    "SecchiLocations2",
+                                    "SecchiGeotrigger",
                                     secchiGeotriggerChannel,
                                     (double)geoTriggerDistance
                                 )

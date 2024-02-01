@@ -63,6 +63,10 @@ public partial class GeoTriggerService : IGeoTriggerService
     {
         this.logger = logger;
         this.geoTriggerInstanceLogger = geoTriggerInstanceLogger;
+
+        // Log the service initialization.
+        logger.LogInformation(GeoTriggerLog, "GeoTriggerService created.");
+
         Initialize();        
     }
 

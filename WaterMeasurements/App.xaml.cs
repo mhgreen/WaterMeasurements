@@ -108,8 +108,8 @@ public partial class App : Application
                     services.AddSingleton<IGeoDatabaseService, GeoDatabaseService>();
                     services.AddSingleton<IGetPreplannedMapService, GetPreplannedMapService>();
                     services.AddSingleton<IConfigurationService, ConfigurationService>();
-
-                    services.AddScoped<IGeoTriggerService, GeoTriggerService>();
+                    services.AddSingleton<ISqliteService, SqliteService>();
+                    services.AddSingleton<IGeoTriggerService, GeoTriggerService>();
 
                     // Configuration
                     services.Configure<LocalSettingsOptions>(
