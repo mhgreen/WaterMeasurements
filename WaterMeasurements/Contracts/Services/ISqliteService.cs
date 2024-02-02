@@ -11,5 +11,5 @@ using Esri.ArcGISRuntime.Data;
 namespace WaterMeasurements.Contracts.Services;
 public interface ISqliteService
 {
-    Task FeaturetableToDatabase(FeatureTable featureTable, DbType dbType);
+    Task FeatureToTable(FeatureTable featureTable, DbType dbType);
 }

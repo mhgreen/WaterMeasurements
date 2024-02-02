@@ -22,5 +22,5 @@ public class ConfigurationServiceConfiguration
     );
 
     // Set the folder for sqlite databases.
-    public static readonly string SqliteFolder = Path.Combine(WaterMeasurementsFolder, "Sqlite");
+    public static readonly string SqliteFolder = "Sqlite";
 }

@@ -226,10 +226,12 @@ public partial class SecchiViewModel : ObservableRecipient
                             );
                         }
 
-                        await sqliteService.FeaturetableToDatabase(
+                        
+                        await sqliteService.FeatureToTable(
                             currentObservationsTable,
                             DbType.SecchiObservations
                         );
+                        
 
                         // create a where clause to get all the features
                         var queryParameters = new QueryParameters() { WhereClause = "1=1" };
@@ -339,7 +341,7 @@ public partial class SecchiViewModel : ObservableRecipient
                         }
 
                         
-                        await sqliteService.FeaturetableToDatabase(
+                        await sqliteService.FeatureToTable(
                             featureTable,
                             DbType.SecchiLocations
                         );
