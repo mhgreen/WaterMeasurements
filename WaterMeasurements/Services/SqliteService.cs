@@ -91,9 +91,8 @@ public partial class SqliteService : ISqliteService
                     "INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL";
                 // Add a field to track the status of the observation (values are in enum ObservationStatus).
                 featureTableFieldsDictionary["Status"] = "INTEGER NOT NULL";
-                featureTableFieldsDictionary["CONSTRAINT"] = "fk_locations";
-                featureTableFieldsDictionary["FOREIGN KEY"] = "LocationId";
-                featureTableFieldsDictionary["REFERENCES"] = "SecchiLocations(LocationId)";
+                featureTableFieldsDictionary["CONSTRAINT"] =
+                    "fk_locations FOREIGN KEY(LocationId) REFERENCES SecchiLocations(LocationId)";
             }
             else if (dbType == DbType.SecchiLocations)
             {
@@ -126,6 +125,7 @@ public partial class SqliteService : ISqliteService
                 "Feature table create statement: {featureTableCreateStatement}",
                 featureTableCreateStatement
             );
+
             // Open the connection to the sqlite database.
             using var db = await GetOpenConnectionAsync();
             // Create the Sqlite table using the featureTableCreateStatement.
@@ -139,9 +139,7 @@ public partial class SqliteService : ISqliteService
             );
             // create a where clause to get all the features
             var queryParameters = new QueryParameters() { WhereClause = "1=1" };
-            // Get the number of records in the feature table.
-            // var numberOfRecords = await featureTable.QueryFeatureCountAsync(queryParameters);
-            // Get the features from the feature table.
+            // Get the number of features from the feature table.
             var features = await featureTable.QueryFeaturesAsync(queryParameters);
             logger.LogTrace(
                 SqliteLog,
@@ -150,10 +148,11 @@ public partial class SqliteService : ISqliteService
                 features.Count()
             );
             // If there are no records in the feature table, then return.
-            if (features.Count() == 0)
+            if (!features.Any())
             {
                 return;
             }
+
             // Log the number of features in the feature table to trace.
             logger.LogTrace(
                 SqliteLog,
@@ -161,8 +160,66 @@ public partial class SqliteService : ISqliteService
                 features.Count(),
                 featureTableName
             );
-            
 
+            // Insert the features into the sqlite table.
+            // Iterate over the features in the feature table.
+            foreach (var feature in features)
+            {
+                // Create a dictionary to store the field values for the feature.
+                var fieldValues = new Dictionary<string, object>();
+
+                // Iterate over the fields in the feature table.
+                foreach (var field in featureTable.Fields)
+                {
+                    // Get the field name and value for the current field.
+                    var fieldName = field.Name;
+                    var fieldValue = feature.GetAttributeValue(field);
+
+                    // Add the field name and value to the fieldValues dictionary.
+                    if (fieldValue != null)
+                    {
+                        // In the featureTableFieldsDictionary, Check if the field value contains "TEXT".
+                        if (featureTableFieldsDictionary[fieldName].Contains("TEXT"))
+                        {
+                            // If it does, then add double quotes around the field value.
+                            fieldValue = $"\"{fieldValue}\"";
+                        }
+                        // Add the field name and value to the fieldValues dictionary.
+                        fieldValues[fieldName] = fieldValue;
+                    }
+                }
+                // Indicate that the feature is from the geodatabase and has been committed.
+                fieldValues["Status"] = (int)ObservationStatus.GeodatabaseCommitted;
+
+                // Create the sqlite insert statement.
+                var insertStatement =
+                    $"INSERT INTO {featureTableName} ({string.Join(", ", fieldValues.Keys)}) VALUES ({string.Join(", ", fieldValues.Values)});";
+                logger.LogTrace(
+                    SqliteLog,
+                    "Sqlite insert statement: {insertStatement}",
+                    insertStatement
+                );
+
+                // Execute the insert statement.
+                using var insertCommand = db.CreateCommand();
+                insertCommand.CommandText = insertStatement;
+                insertCommand.ExecuteNonQuery();
+                logger.LogTrace(
+                    SqliteLog,
+                    "Feature inserted into {featureTableName}.",
+                    featureTableName
+                );
+            }
+        }
+        catch (SqliteException sqliteException)
+        {
+            logger.LogError(
+                SqliteLog,
+                "Error creating Sqlite table from DbType {dbType}, Sqlite exception: {sqliteException}, with an error code of {SqliteErrorCode}",
+                dbType.ToString(),
+                sqliteException.ToString(),
+                sqliteException.SqliteErrorCode
+            );
         }
         catch (Exception exception)
         {

@@ -42,6 +42,5 @@ public enum  ObservationStatus
 {
     WorkingSet,
     GeodatabaseCommitted,
-    FromArcGISOnline,
     LocalOnly
 }
