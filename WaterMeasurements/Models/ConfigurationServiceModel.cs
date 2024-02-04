@@ -20,7 +20,4 @@ public class ConfigurationServiceConfiguration
         "Map",
         "DownloadPreplannedMapAreas"
     );
-
-    // Set the folder for sqlite databases.
-    public static readonly string SqliteFolder = "Sqlite";
 }

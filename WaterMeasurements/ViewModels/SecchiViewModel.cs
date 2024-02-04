@@ -55,6 +55,7 @@ using System.Xml.Linq;
 using WaterMeasurements.Services.Instances;
 using Windows.ApplicationModel.Store;
 using static WaterMeasurements.ViewModels.MainViewModel;
+using static WaterMeasurements.Models.SecchiConfiguration;
 using NLog;
 using WaterMeasurements.Helpers;
 using System.ComponentModel.DataAnnotations;
@@ -1150,7 +1151,7 @@ public partial class SecchiViewModel : ObservableRecipient
         Task.Run(async () =>
             {
                 observationsURL = await LocalSettingsService.ReadSettingAsync<string>(
-                    SecchiConfiguration.Item[SecchiConfiguration.Key.SecchiObservationsGeodatabase]
+                    SecchiConfiguration.Item[Key.SecchiObservationsGeodatabase]
                 );
             })
             .Wait();
@@ -1159,7 +1160,7 @@ public partial class SecchiViewModel : ObservableRecipient
         Task.Run(async () =>
             {
                 locationsURL = await LocalSettingsService.ReadSettingAsync<string>(
-                    SecchiConfiguration.Item[SecchiConfiguration.Key.SecchiLocationsGeodatabase]
+                    SecchiConfiguration.Item[Key.SecchiLocationsGeodatabase]
                 );
             })
             .Wait();
@@ -1168,7 +1169,7 @@ public partial class SecchiViewModel : ObservableRecipient
         Task.Run(async () =>
             {
                 geoTriggerDistance = await LocalSettingsService.ReadSettingAsync<double>(
-                    SecchiConfiguration.Item[SecchiConfiguration.Key.GeoTriggerDistanceMeters]
+                    SecchiConfiguration.Item[Key.GeoTriggerDistanceMeters]
                 );
             })
             .Wait();

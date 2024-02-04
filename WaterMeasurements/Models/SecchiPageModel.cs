@@ -32,14 +32,18 @@ public enum SecchiServiceTrigger
     Cancel
 }
 
+// The strings in the dictionary could easily be used instead of the enum.
+// This class is used to document the configuration settings and make their use in code obvious.
 public static class SecchiConfiguration
 {
     public enum Key
     {
-        InitialRun,
+        SecchiInitialRun,
         SecchiObservationsGeodatabase,
         SecchiLocationsGeodatabase,
-        GeoTriggerDistanceMeters
+        GeoTriggerDistanceMeters,
+        SecchiObservationsSqliteLoaded,
+        SecchiLocationsSqliteLoaded
     }
 
     public static Dictionary<Key, string> Item
@@ -48,9 +52,11 @@ public static class SecchiConfiguration
     } =
         new()
         {
-            { Key.InitialRun, "SecchiInitialRun" },
+            { Key.SecchiInitialRun, "SecchiInitialRun" },
             { Key.SecchiObservationsGeodatabase, "SecchiObservationsURL" },
             { Key.SecchiLocationsGeodatabase, "SecchiLocationsURL" },
-            { Key.GeoTriggerDistanceMeters, "SecchiGeoTriggerDistance" }
+            { Key.GeoTriggerDistanceMeters, "SecchiGeoTriggerDistance" },
+            { Key.SecchiObservationsSqliteLoaded, "SecchiObservationsSqliteLoaded" },
+            { Key.SecchiLocationsSqliteLoaded, "SecchiLocationsSqliteLoaded" }
         };
 }

@@ -22,7 +22,7 @@ using WaterMeasurements.Models;
 using WaterMeasurements.Views;
 using WaterMeasurements.Helpers;
 using WaterMeasurements.Services;
-using static WaterMeasurements.Models.PrePlannedMapConfiguration;
+using static WaterMeasurements.Models.SecchiConfiguration;
 
 using Ardalis.GuardClauses;
 using Newtonsoft.Json.Linq;
@@ -227,9 +227,7 @@ public partial class SecchiConfigurationViewModel : ObservableValidator
                 Task.Run(async () =>
                     {
                         await LocalSettingsService.SaveSettingAsync(
-                            SecchiConfiguration.Item[
-                                SecchiConfiguration.Key.SecchiObservationsGeodatabase
-                            ],
+                            SecchiConfiguration.Item[Key.SecchiObservationsGeodatabase],
                             SecchiObservations
                         );
                     })
@@ -350,9 +348,7 @@ public partial class SecchiConfigurationViewModel : ObservableValidator
                 Task.Run(async () =>
                     {
                         await LocalSettingsService.SaveSettingAsync(
-                            SecchiConfiguration.Item[
-                                SecchiConfiguration.Key.SecchiLocationsGeodatabase
-                            ],
+                            SecchiConfiguration.Item[Key.SecchiLocationsGeodatabase],
                             SecchiLocations
                         );
                     })
@@ -467,9 +463,7 @@ public partial class SecchiConfigurationViewModel : ObservableValidator
                 Task.Run(async () =>
                     {
                         await LocalSettingsService.SaveSettingAsync(
-                            SecchiConfiguration.Item[
-                                SecchiConfiguration.Key.GeoTriggerDistanceMeters
-                            ],
+                            SecchiConfiguration.Item[Key.GeoTriggerDistanceMeters],
                             SecchiGeoTriggerDistance
                         );
                     })
@@ -543,17 +537,17 @@ public partial class SecchiConfigurationViewModel : ObservableValidator
 
             // Get the URL for Secchi observations from local settings.
             SecchiObservations = await LocalSettingsService.ReadSettingAsync<string>(
-                SecchiConfiguration.Item[SecchiConfiguration.Key.SecchiObservationsGeodatabase]
+                SecchiConfiguration.Item[Key.SecchiObservationsGeodatabase]
             );
-
+            
             // Get the URL for Secchi locations from local settings.
             SecchiLocations = await LocalSettingsService.ReadSettingAsync<string>(
-                SecchiConfiguration.Item[SecchiConfiguration.Key.SecchiLocationsGeodatabase]
+                SecchiConfiguration.Item[Key.SecchiLocationsGeodatabase]
             );
 
             // Get the GeoTriggerDistance from local settings.
             SecchiGeoTriggerDistance = await LocalSettingsService.ReadSettingAsync<double>(
-                SecchiConfiguration.Item[SecchiConfiguration.Key.GeoTriggerDistanceMeters]
+                SecchiConfiguration.Item[Key.GeoTriggerDistanceMeters]
             );
 
             // Log to trace the value of unableWithoutURL.

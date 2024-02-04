@@ -44,3 +44,28 @@ public enum  ObservationStatus
     GeodatabaseCommitted,
     LocalOnly
 }
+
+// The strings in the dictionary could easily be used instead of the enum.
+// This class is used to document the configuration settings and make their use in code obvious.
+public static class SqliteConfiguration
+{
+    public enum Key
+    {
+        SqliteInitialRun,
+        SqliteFolder,
+        SecchiObservationsLoaded,
+        SecchiLocationsLoaded
+    }
+
+    public static Dictionary<Key, string> Item
+    {
+        get; private set;
+    } =
+        new()
+        {
+            { Key.SqliteInitialRun, "SqliteInitialRun" },
+            { Key.SqliteFolder, "SqliteFolder" },
+            { Key.SecchiObservationsLoaded, "SecchiObservationsSqliteLoaded" },
+            { Key.SecchiLocationsLoaded, "SecchiLocationsSqliteLoaded" }
+        };
+}

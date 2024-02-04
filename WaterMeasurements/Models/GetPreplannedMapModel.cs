@@ -29,11 +29,13 @@ public partial class GetPreplannedMapModel : ObservableRecipient
 // Record for Map extent subscription.
 public readonly record struct MainMapExtent(Envelope Extent);
 
+// The strings in the dictionary could easily be used instead of the enum.
+// // This class is used to document the configuration settings and make their use in code obvious.
 public static class PrePlannedMapConfiguration
 {
     public enum Key
     {
-        InitialRun,
+        PreplannedMapInitialRun,
         PreplannedMapName,
         PackagePath,
         MapLastCheckedforUpdate,
@@ -50,7 +52,7 @@ public static class PrePlannedMapConfiguration
     } =
         new()
         {
-            { Key.InitialRun, "PreplannedMapInitialRun" },
+            { Key.PreplannedMapInitialRun, "PreplannedMapInitialRun" },
             { Key.PreplannedMapName, "PreplannedMapName" },
             { Key.PackagePath, "MapPakagePath" },
             { Key.MapLastCheckedforUpdate, "MapLastCheckedforUpdate" },

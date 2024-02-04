@@ -14,9 +14,16 @@ using WaterMeasurements.Views;
 using WaterMeasurements.Services;
 using WaterMeasurements.Contracts.Services;
 using static WaterMeasurements.Models.SqliteConversion;
+using static WaterMeasurements.Models.SqliteConfiguration;
+
+using Ardalis.GuardClauses;
+
+using FluentResults;
+using FluentAssertions;
 
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace WaterMeasurements.Services;
 
@@ -27,18 +34,93 @@ public partial class SqliteService : ISqliteService
     // Set the event id for the logger.
     private readonly EventId SqliteLog = new(15, "SqliteService");
 
+    private readonly ILocalSettingsService? localSettingsService;
+
     // Set the name of the sqlite database.
-    private const string DbName = "WaterMeasurements.db";
+    private const string DbName = "WaterMeasurements.database";
 
-    // Set the path for the sqlite database from the configuration service.
-    private readonly string sqliteFolderName = ConfigurationServiceConfiguration.SqliteFolder;
+    // Set the name of the sqlite folder which is the default unless there is a setting in Key.SqliteFolder.
+    private readonly string sqliteFolderName = "Sqlite";
 
-    public SqliteService(ILogger<SqliteService> logger)
+    public SqliteService(ILogger<SqliteService> logger, ILocalSettingsService? localSettingsService)
     {
         this.logger = logger;
+        this.localSettingsService = localSettingsService;
 
         // Log the service initialization.
         logger.LogInformation(SqliteLog, "SqliteService created.");
+        this.localSettingsService = localSettingsService;
+
+        InitializeSqliteService();
+    }
+
+    private async void InitializeSqliteService()
+    {
+        Guard.Against.Null(
+            localSettingsService,
+            nameof(localSettingsService),
+            "Sqlite Service, InitializeSqliteService(): localSettingsService is null."
+        );
+
+        // Retrieve the value of SqliteInitialRun from localSettingsService.
+        var sqliteInitialRun = await localSettingsService.ReadSettingAsync<bool?>(
+            SqliteConfiguration.Item[Key.SqliteInitialRun]
+        );
+
+        // If the boolean is null or true, call InitialRun().
+        if (sqliteInitialRun ?? true)
+        {
+            await InitialRun();
+        }
+    }
+
+    private async Task InitialRun()
+    {
+        try
+        {
+            Guard.Against.Null(
+                localSettingsService,
+                nameof(localSettingsService),
+                "Sqlite Service, InitialRun(): localSettingsService is null."
+            );
+
+            // Check if the sqlite folder has been set in the local settings.
+            if (
+                string.IsNullOrEmpty(
+                    await localSettingsService.ReadSettingAsync<string>(
+                        SqliteConfiguration.Item[Key.SqliteFolder]
+                    )
+                )
+            )
+            {
+                // If not, then set the sqlite folder to the default folder.
+                await localSettingsService.SaveSettingAsync(
+                    SqliteConfiguration.Item[Key.SqliteFolder],
+                    sqliteFolderName
+                );
+            }
+
+            // Set SecchiObservationsLoaded to false.
+            await localSettingsService.SaveSettingAsync(
+                SqliteConfiguration.Item[Key.SecchiObservationsLoaded],
+                false
+            );
+            // Set SecchiLocationsLoaded to false.
+            await localSettingsService.SaveSettingAsync(
+                SqliteConfiguration.Item[Key.SecchiLocationsLoaded],
+                false
+            );
+
+            // Set sqliteInitialRun to false.
+            await localSettingsService.SaveSettingAsync(
+                SqliteConfiguration.Item[Key.SqliteInitialRun],
+                false
+            );
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(SqliteLog, "Error in InitialRun: {exception}.", exception.ToString());
+        }
     }
 
     // Open the connection to the sqlite database.
@@ -73,7 +155,7 @@ public partial class SqliteService : ISqliteService
     {
         try
         {
-            // Prepend the prefix to the feature table name.
+            // Get the feature table name from the enum.
             var featureTableName = dbType.ToString();
 
             // Log the feature table name to trace.
@@ -127,9 +209,9 @@ public partial class SqliteService : ISqliteService
             );
 
             // Open the connection to the sqlite database.
-            using var db = await GetOpenConnectionAsync();
+            using var database = await GetOpenConnectionAsync();
             // Create the Sqlite table using the featureTableCreateStatement.
-            using var createTableCommand = db.CreateCommand();
+            using var createTableCommand = database.CreateCommand();
             createTableCommand.CommandText = featureTableCreateStatement;
             createTableCommand.ExecuteNonQuery();
             logger.LogTrace(
@@ -150,6 +232,11 @@ public partial class SqliteService : ISqliteService
             // If there are no records in the feature table, then return.
             if (!features.Any())
             {
+                var resultMetadata = $"{featureTableName}, " + "0";
+                var actualResult = Result.Ok(1);
+                actualResult.IsSuccess.Should().BeTrue();
+                actualResult.Value.Should().Be(1);
+
                 return;
             }
 
@@ -161,6 +248,8 @@ public partial class SqliteService : ISqliteService
                 featureTableName
             );
 
+            // Insert the features into the sqlite table.
+            // Iterate over the features in the feature table.
             // Insert the features into the sqlite table.
             // Iterate over the features in the feature table.
             foreach (var feature in features)
@@ -201,7 +290,7 @@ public partial class SqliteService : ISqliteService
                 );
 
                 // Execute the insert statement.
-                using var insertCommand = db.CreateCommand();
+                using var insertCommand = database.CreateCommand();
                 insertCommand.CommandText = insertStatement;
                 insertCommand.ExecuteNonQuery();
                 logger.LogTrace(
@@ -210,6 +299,7 @@ public partial class SqliteService : ISqliteService
                     featureTableName
                 );
             }
+
         }
         catch (SqliteException sqliteException)
         {
