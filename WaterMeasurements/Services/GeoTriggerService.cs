@@ -27,24 +27,18 @@ using Windows.Networking.Connectivity;
 namespace WaterMeasurements.Services;
 
 // Message to notify modules of a GeoTrigger event.
-public class GeoTriggerMessage : ValueChangedMessage<GeoTriggerNotification>
+public class GeoTriggerMessage(GeoTriggerNotification geoTriggerNotification) : ValueChangedMessage<GeoTriggerNotification>(geoTriggerNotification)
 {
-    public GeoTriggerMessage(GeoTriggerNotification geoTriggerNotification)
-        : base(geoTriggerNotification) { }
 }
 
 // Message to request the addition of a GeoTrigger.
-public class GeoTriggerAddMessage : ValueChangedMessage<GeoTriggerAdd>
+public class GeoTriggerAddMessage(GeoTriggerAdd geoTriggerAdd) : ValueChangedMessage<GeoTriggerAdd>(geoTriggerAdd)
 {
-    public GeoTriggerAddMessage(GeoTriggerAdd geoTriggerAdd)
-        : base(geoTriggerAdd) { }
 }
 
 // Message to request the deletion of a GeoTrigger by name.
-public class GeoTriggerDeleteMessage : ValueChangedMessage<string>
+public class GeoTriggerDeleteMessage(string name) : ValueChangedMessage<string>(name)
 {
-    public GeoTriggerDeleteMessage(string name)
-        : base(name) { }
 }
 
 public partial class GeoTriggerService : IGeoTriggerService
@@ -54,7 +48,7 @@ public partial class GeoTriggerService : IGeoTriggerService
     private readonly ILogger<GeoTriggerInstance> geoTriggerInstanceLogger;
 
     // Static dictionary to keep track of instances by name.
-    private static readonly Dictionary<string, GeoTriggerInstance> geoTriggerInstances = new();
+    private static readonly Dictionary<string, GeoTriggerInstance> geoTriggerInstances = [];
 
     public GeoTriggerService(
         ILogger<GeoTriggerService> logger,

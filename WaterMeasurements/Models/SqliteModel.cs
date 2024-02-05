@@ -28,17 +28,19 @@ public readonly record struct FeatureToTable(FeatureTable FeatureTable, DbType D
 public enum FeatureToTableStatus
 {
     Success,
-    SuccessWithRecords,
+    SuccessWithPartialRecords,
     SuccessNoRecords,
     Failure
 }
 
 // Record with the result of a table creation.
+// In the case of a failure, the return code and error are from Sqlite.
+// Where the return code is negative, that and the error message are from the application.
 public readonly record struct FeatureToTableResult(
     DbType TableType,
     int RecordsInserted,
-    int  SqliteReturnCode,
-    string SqliteErrorMessage,
+    int  ReturnCode,
+    string ErrorMessage,
     FeatureToTableStatus Status
 );
 
@@ -72,6 +74,7 @@ public static class SqliteConfiguration
     {
         SqliteInitialRun,
         SqliteFolder,
+        SqliteSetToInitialRun,
         SecchiObservationsLoaded,
         SecchiLocationsLoaded
     }
@@ -81,6 +84,7 @@ public static class SqliteConfiguration
         {
             { Key.SqliteInitialRun, "SqliteInitialRun" },
             { Key.SqliteFolder, "SqliteFolder" },
+            { Key.SqliteSetToInitialRun, "SqliteSetToInitialRun" },
             { Key.SecchiObservationsLoaded, "SecchiObservationsSqliteLoaded" },
             { Key.SecchiLocationsLoaded, "SecchiLocationsSqliteLoaded" }
         };

@@ -42,54 +42,40 @@ using static System.Net.Mime.MediaTypeNames;
 namespace WaterMeasurements.Services;
 
 // GeoDatabase retrieve message.
-public class GeoDatabaseRequestMessage : ValueChangedMessage<GeoDatabaseRetrieveRequest>
+public class GeoDatabaseRequestMessage(GeoDatabaseRetrieveRequest geoDatabaseRetrieveRequest) : ValueChangedMessage<GeoDatabaseRetrieveRequest>(geoDatabaseRetrieveRequest)
 {
-    public GeoDatabaseRequestMessage(GeoDatabaseRetrieveRequest geoDatabaseRetrieveRequest)
-        : base(geoDatabaseRetrieveRequest) { }
 }
 
-public class FeatureTableRequestMessage : ValueChangedMessage<string>
+public class FeatureTableRequestMessage(string featureTable) : ValueChangedMessage<string>(featureTable)
 {
-    public FeatureTableRequestMessage(string featureTable)
-               : base(featureTable) { }
 }
 
 // GeoDatabase delete message.
-public class GeoDatabaseDeleteMessage : ValueChangedMessage<GeoDatabaseDeleteRequest>
+public class GeoDatabaseDeleteMessage(GeoDatabaseDeleteRequest geoDatabaseDeleteRequest) : ValueChangedMessage<GeoDatabaseDeleteRequest>(geoDatabaseDeleteRequest)
 {
-    public GeoDatabaseDeleteMessage(GeoDatabaseDeleteRequest geoDatabaseDeleteRequest)
-        : base(geoDatabaseDeleteRequest) { }
 }
 
 // Message for geodatabase download progress.
-public class GeoDatabaseDownloadProgressMessage
-    : ValueChangedMessage<GeoDatabaseDownloadInstanceProgress>
-{
-    public GeoDatabaseDownloadProgressMessage(
-        GeoDatabaseDownloadInstanceProgress geoDatabaseDownloadProgress
+public class GeoDatabaseDownloadProgressMessage(
+    GeoDatabaseDownloadInstanceProgress geoDatabaseDownloadProgress
     )
-        : base(geoDatabaseDownloadProgress) { }
+        : ValueChangedMessage<GeoDatabaseDownloadInstanceProgress>(geoDatabaseDownloadProgress)
+{
 }
 
 // Notification that the feature table has changed.
-public class FeatureTableMessage : ValueChangedMessage<FeatureTable>
+public class FeatureTableMessage(FeatureTable featureTable) : ValueChangedMessage<FeatureTable>(featureTable)
 {
-    public FeatureTableMessage(FeatureTable featureTable)
-        : base(featureTable) { }
 }
 
 // Message to request a Geodatabase state change.
-public class GeodatabaseStateChangeMessage : ValueChangedMessage<GeodatabaseStateChange>
+public class GeodatabaseStateChangeMessage(GeodatabaseStateChange geodatabaseStateChange) : ValueChangedMessage<GeodatabaseStateChange>(geodatabaseStateChange)
 {
-    public GeodatabaseStateChangeMessage(GeodatabaseStateChange geodatabaseStateChange)
-        : base(geodatabaseStateChange) { }
 }
 
 // Message to send a feature to the geodatabase service.
-public class AddFeatureMessage : ValueChangedMessage<FeatureMessage>
+public class AddFeatureMessage(FeatureMessage featureMessage) : ValueChangedMessage<FeatureMessage>(featureMessage)
 {
-    public AddFeatureMessage(FeatureMessage featureMessage)
-        : base(featureMessage) { }
 }
 
 public partial class GeoDatabaseService : IGeoDatabaseService

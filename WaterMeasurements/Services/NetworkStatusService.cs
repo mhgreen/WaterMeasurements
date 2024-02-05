@@ -23,10 +23,8 @@ using WaterMeasurements.Views;
 namespace WaterMeasurements.Services;
 
 // Message to notify modules that the status of the network has changed.
-public class NetworkChangedMessage : ValueChangedMessage<NetworkStatus>
+public class NetworkChangedMessage(NetworkStatus networkStatus) : ValueChangedMessage<NetworkStatus>(networkStatus)
 {
-    public NetworkChangedMessage(NetworkStatus networkStatus)
-        : base(networkStatus) { }
 }
 
 // Message for requesting the current network status.
@@ -37,7 +35,7 @@ public partial class NetworkStatusService : INetworkStatusService
     private readonly ILogger<NetworkStatusService> logger;
     internal EventId NetworkStatusEvent = new(1, "NetworkStatusService");
 
-    private readonly List<string> networkNames = new();
+    private readonly List<string> networkNames = [];
     private bool IsInternetAvailable { get; set; }
     private ConnectionType ConnectionType { get; set; }
     private NetworkConnectivityLevel ConnectivityLevel { get; set; }
