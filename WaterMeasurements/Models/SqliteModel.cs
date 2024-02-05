@@ -4,33 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+using Esri.ArcGISRuntime.Data;
+
 namespace WaterMeasurements.Models;
-
-public static class SqliteConversion
-{
-
-    public static Dictionary<string, string> GeodatabaseSqliteTypeConversion
-    {
-        get; private set;
-    }
-        = new()
-    {
-    {"Int16", "INTEGER"},
-    {"Int32", "INTEGER"},
-    {"Int64", "INTEGER"},
-    {"Float32", "REAL"},
-    {"Float64", "REAL"},
-    {"Date", "NUMERIC"},
-    {"Text", "TEXT"},
-    {"OID", "NUMERIC"},
-    {"GlobalID", "TEXT"},
-    {"Guid", "TEXT"},
-    {"XML", "TEXT"},
-    {"Geometry", "BLOB"},
-    {"Raster", "BLOB"},
-    {"Blob", "BLOB"}
-    };
-}
 
 public enum DbType
 {
@@ -38,11 +14,54 @@ public enum DbType
     SecchiLocations
 }
 
-public enum  ObservationStatus
+public enum RecordStatus
 {
     WorkingSet,
     GeodatabaseCommitted,
     LocalOnly
+}
+
+// Record to create a table from a feature table.
+public readonly record struct FeatureToTable(FeatureTable FeatureTable, DbType DbType);
+
+
+public enum FeatureToTableStatus
+{
+    Success,
+    SuccessWithRecords,
+    SuccessNoRecords,
+    Failure
+}
+
+// Record with the result of a table creation.
+public readonly record struct FeatureToTableResult(
+    DbType TableType,
+    int RecordsInserted,
+    int  SqliteReturnCode,
+    string SqliteErrorMessage,
+    FeatureToTableStatus Status
+);
+
+public static class SqliteConversion
+{
+    public static Dictionary<string, string> GeodatabaseSqliteTypeConversion { get; private set; } =
+        new()
+        {
+            { "Int16", "INTEGER" },
+            { "Int32", "INTEGER" },
+            { "Int64", "INTEGER" },
+            { "Float32", "REAL" },
+            { "Float64", "REAL" },
+            { "Date", "NUMERIC" },
+            { "Text", "TEXT" },
+            { "OID", "NUMERIC" },
+            { "GlobalID", "TEXT" },
+            { "Guid", "TEXT" },
+            { "XML", "TEXT" },
+            { "Geometry", "BLOB" },
+            { "Raster", "BLOB" },
+            { "Blob", "BLOB" }
+        };
 }
 
 // The strings in the dictionary could easily be used instead of the enum.
@@ -57,10 +76,7 @@ public static class SqliteConfiguration
         SecchiLocationsLoaded
     }
 
-    public static Dictionary<Key, string> Item
-    {
-        get; private set;
-    } =
+    public static Dictionary<Key, string> Item { get; private set; } =
         new()
         {
             { Key.SqliteInitialRun, "SqliteInitialRun" },
