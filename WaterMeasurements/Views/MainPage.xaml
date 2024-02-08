@@ -430,9 +430,14 @@
                             PaneTitle="Secchi Location Measurements">
 
                             <NavigationView.MenuItems>
-                                <NavigationViewItem x:Name="SecchiNavAdd" Content="Collect New">
+                                <NavigationViewItem x:Name="SecchiNavMeasurementAdd" Content="Collect New">
                                     <NavigationViewItem.Icon>
                                         <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE710;" />
+                                    </NavigationViewItem.Icon>
+                                </NavigationViewItem>
+                                <NavigationViewItem x:Name="SecchiNavLocationAdd" Content="New Location">
+                                    <NavigationViewItem.Icon>
+                                        <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE707;" />
                                     </NavigationViewItem.Icon>
                                 </NavigationViewItem>
                                 <NavigationViewItem x:Name="SecchiNavCollected" Content="Show Collected">
@@ -440,7 +445,7 @@
                                         <FontIcon FontFamily="{StaticResource AppIconFont}" Glyph="&#xE903;" />
                                     </NavigationViewItem.Icon>
                                 </NavigationViewItem>
-                                <NavigationViewItem x:Name="SecchiNavDiscard" Content="Discard">
+                                <NavigationViewItem x:Name="SecchiNavDiscard" Content="Discard Collected">
                                     <NavigationViewItem.Icon>
                                         <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE74D;" />
                                     </NavigationViewItem.Icon>
@@ -482,7 +487,7 @@
 
                                             <StackPanel x:Name="SecchiDatatable" Margin="0,0,0,0">
 
-                                                <ListView Visibility="Visible" CanDragItems="True">
+                                                <ListView CanDragItems="True" Visibility="Visible">
                                                     <ListView.Header>
                                                         <controls:DataTable Margin="50,50,0,0" ColumnSpacing="1">
                                                             <controls:DataColumn CanResize="True" DesiredWidth="80">
@@ -529,15 +534,15 @@
                                                     Margin="0,140,0,0"
                                                     HorizontalAlignment="Center"
                                                     VerticalAlignment="Center"
-                                                    Visibility="Collapsed"
                                                     BorderBrush="SlateGray"
-                                                    BorderThickness="1">
+                                                    BorderThickness="1"
+                                                    Visibility="Collapsed">
                                                     <TextBlock
                                                         x:Uid="Settings_Secchi_Not_Collected"
                                                         Margin="10,10,10,10"
                                                         Opacity="0.9"
                                                         Style="{StaticResource BodyTextBlockStyle}"
-                                                        TextWrapping="WrapWholeWords"/>
+                                                        TextWrapping="WrapWholeWords" />
 
                                                 </StackPanel>
 
@@ -616,8 +621,87 @@
                                                     VerticalAlignment="Bottom"
                                                     Orientation="Horizontal"
                                                     Spacing="5">
-                                                    <Button x:Name="SecchiSaveButton" x:Uid="Main_SecchiSaveButton" Click="{x:Bind SaveSecchiMeasurements_Click}" />
-                                                    <Button x:Name="SecchiCancelButton" x:Uid="Main_SecchiCancelButton" Click="{x:Bind CancelSecchiMeasurements_Click}"/>
+                                                    <Button
+                                                        x:Name="SecchiSaveButton"
+                                                        x:Uid="Main_SecchiSaveButton"
+                                                        Click="{x:Bind SaveSecchiMeasurements_Click}" />
+                                                    <Button
+                                                        x:Name="SecchiCancelButton"
+                                                        x:Uid="Main_SecchiCancelButton"
+                                                        Click="{x:Bind CancelSecchiMeasurements_Click}" />
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </Grid>
+                                    </controls:Case>
+
+                                    <controls:Case Value="SecchiAddLocation">
+                                        <Grid>
+                                            <StackPanel>
+                                                <TextBlock
+                                                    x:Uid="Settings_Secchi_Add_Location"
+                                                    Margin="0,12,0,5"
+                                                    HorizontalAlignment="Center"
+                                                    Opacity="0.7"
+                                                    Style="{ThemeResource BodyStrongTextBlockStyle}" />
+                                            </StackPanel>
+
+                                            <StackPanel
+                                                x:Name="SecchiAddLocationStackPanel"
+                                                Width="200"
+                                                Margin="0,60,0,0"
+                                                HorizontalAlignment="Center"
+                                                VerticalAlignment="Center"
+                                                Visibility="Visible">
+
+                                                <TextBlock
+                                                    Opacity="0.8"
+                                                    Style="{StaticResource TitleTextBlockStyle}"
+                                                    Text="HOA Test"
+                                                    TextAlignment="Left" />
+
+                                                <StackPanel HorizontalAlignment="Stretch" Orientation="Horizontal">
+                                                    <TextBlock
+                                                        x:Uid="Main_SecchiValues"
+                                                        HorizontalAlignment="Left"
+                                                        Opacity=".5"
+                                                        Style="{StaticResource SubtitleTextBlockStyle}" />
+                                                    <Button
+                                                        Width="12"
+                                                        Height="12"
+                                                        Margin="5,-5,0,0"
+                                                        Click="{x:Bind MapConfigurationView.ArcGISApiKeyHelpClick}"
+                                                        Template="{StaticResource ButtonHelpTemplate}" />
+                                                    <ToolTipService.ToolTip>
+                                                        <ToolTip
+                                                            Content="Add a location to collect Secchi measurements. A location may be permanent, and will be uploaded for ongoing measurements, or may be a one-time measurement."
+                                                            HorizontalOffset="200"
+                                                            VerticalOffset="-48" />
+                                                    </ToolTipService.ToolTip>
+
+                                                </StackPanel>
+                                                <TextBox
+                                                    x:Name="Location1"
+                                                    Margin="{StaticResource SmallTopMargin}"
+                                                    ui:TextBoxExtensions.ValidationMode="Dynamic"
+                                                    ui:TextBoxExtensions.ValidationType="Number"
+                                                    InputScope="Digits" />
+
+
+                                                <StackPanel
+                                                    x:Name="LocationButtonStackPanel"
+                                                    Margin="{StaticResource SmallTopMargin}"
+                                                    HorizontalAlignment="Right"
+                                                    VerticalAlignment="Bottom"
+                                                    Orientation="Horizontal"
+                                                    Spacing="5">
+                                                    <Button
+                                                        x:Name="LocationSaveButton"
+                                                        x:Uid="Main_SecchiSaveButton"
+                                                        Click="{x:Bind SaveSecchiLocation_Click}" />
+                                                    <Button
+                                                        x:Name="LocationCancelButton"
+                                                        x:Uid="Main_SecchiCancelButton"
+                                                        Click="{x:Bind CancelSecchiLocation_Click}" />
                                                 </StackPanel>
                                             </StackPanel>
                                         </Grid>

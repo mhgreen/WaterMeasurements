@@ -25,6 +25,9 @@ using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.DependencyInjection;
 using Windows.Media.Core;
+using Dapper.SimpleSqlBuilder;
+using Microsoft.UI.Xaml.Controls;
+using Windows.System;
 
 namespace WaterMeasurements.Services;
 
@@ -35,6 +38,17 @@ public class FeatureToTableMessage(FeatureToTable featureToTable)
 // Message to notify modules of the result of a table creation.
 public class FeatureToTableResultMessage(FeatureToTableResult featureToTableResult)
     : ValueChangedMessage<FeatureToTableResult>(featureToTableResult) { }
+
+// Message to nofify modules that a table is available.
+public class TableAvailableMessage(DbType dbType) : ValueChangedMessage<DbType>(dbType) { }
+
+// Message to add a SecchiObservation to the Sqlite database.
+public class AddSecchiObservationMessage(SecchiObservation secchiObservation)
+    : ValueChangedMessage<SecchiObservation>(secchiObservation) { }
+
+// Message to add a SecchiLocation to the Sqlite database.
+public class AddSecchiLocationMessage(SecchiLocation secchiLocation)
+    : ValueChangedMessage<SecchiLocation>(secchiLocation) { }
 
 public partial class SqliteService : ISqliteService
 {
@@ -122,6 +136,23 @@ public partial class SqliteService : ISqliteService
                     await FeatureToTable(message.Value.FeatureTable, message.Value.DbType);
                 }
             );
+
+            // Register a message handler for AddSecchiLocationMessage.
+            WeakReferenceMessenger.Default.Register<AddSecchiLocationMessage>(
+                this,
+                (recipient, message) =>
+                {
+                    // Log the AddSecchiLocationMessage.
+                    logger.LogDebug(
+                        SqliteLog,
+                        "SqliteService, AddSecchiLocationMessage: {message}.",
+                        message
+                    );
+
+                    // Call AddSecchiLocation with the extracted secchiLocation.
+                    AddSecchiLocation(message.Value);
+                }
+            );
         }
         catch (Exception exception)
         {
@@ -198,6 +229,7 @@ public partial class SqliteService : ISqliteService
                             "Feature table {SecchiObservations} has already been loaded, returning from FeatureToTable().",
                             DbType.SecchiObservations.ToString()
                         );
+                        SendTableAvailableMessage(DbType.SecchiObservations);
                         return;
                     }
                     else
@@ -222,6 +254,7 @@ public partial class SqliteService : ISqliteService
                             "Feature table {SecchiLocations} has already been loaded, returning from FeatureToTable().",
                             DbType.SecchiLocations.ToString()
                         );
+                        SendTableAvailableMessage(DbType.SecchiLocations);
                         return;
                     }
                     else
@@ -316,6 +349,9 @@ public partial class SqliteService : ISqliteService
                 // Set the previouslyLoaded setting to true.
                 await SetPreviouslyLoadedState(dbType);
 
+                // Send a message that the table is available.
+                SendTableAvailableMessage(dbType);
+
                 // Send a FeatureToTableResultMessage with the number of records inserted and the return code.
                 WeakReferenceMessenger.Default.Send(
                     new FeatureToTableResultMessage(
@@ -397,6 +433,9 @@ public partial class SqliteService : ISqliteService
                 );
             }
 
+            // Send a message that the table is available.
+            SendTableAvailableMessage(dbType);
+
             // Set the previouslyLoaded setting to true.
             await SetPreviouslyLoadedState(dbType);
 
@@ -466,6 +505,73 @@ public partial class SqliteService : ISqliteService
                 SqliteLog,
                 "Error creating Sqlite table from DbType {dbType}: {exception}.",
                 dbType.ToString(),
+                exception.ToString()
+            );
+        }
+    }
+
+    private void AddSecchiLocation(SecchiLocation secchiLocation)
+    {
+        try
+        {
+            logger.LogTrace(SqliteLog, "AddSecchiLocation called.");
+
+            // Log the SecchiLocation to trace.
+            logger.LogTrace(SqliteLog, "SecchiLocation: {secchiLocation}", secchiLocation);
+
+            // Create the sqlite insert statement.
+            var insertStatement =
+                $"INSERT INTO SecchiLocations (Latitude, Longitude, LocationId, Location, LocationType) VALUES ({secchiLocation.Latitude}, {secchiLocation.Longitude}, {secchiLocation.LocationId}, \"{secchiLocation.Location}\", {(int)secchiLocation.LocationType});";
+            logger.LogTrace(
+                SqliteLog,
+                "Sqlite insert statement: {insertStatement}",
+                insertStatement
+            );
+            var builder = SimpleBuilder.Create(
+                $"""
+                    INSERT INTO SecchiLocations (Latitude, Longitude, LocationId, Location, LocationType)
+                    VALUES ({secchiLocation.Latitude}, {secchiLocation.Longitude}, {secchiLocation.LocationId}, \"{secchiLocation.Location}\", {(int)secchiLocation.LocationType})
+                """
+            );
+
+            // Log builder.sql to trace.
+            logger.LogTrace(SqliteLog, "Sqlite insert statement: {builder.Sql}", builder.Sql);
+
+            builder = SimpleBuilder.Create(
+                $@"
+                    INSERT INTO SecchiLocations (Latitude, Longitude, LocationId, Location, LocationType)
+                    VALUES ({secchiLocation.Latitude}, {secchiLocation.Longitude}, {secchiLocation.LocationId}, \""{secchiLocation.Location}\"", {(int)secchiLocation.LocationType})
+                "
+            );
+
+            // Log builder.sql to trace.
+            logger.LogTrace(SqliteLog, "Sqlite insert statement: {builder.Sql}", builder.Sql);
+
+            /*
+            // Open the connection to the sqlite database.
+            using var database = await GetOpenConnectionAsync();
+
+            // Execute the insert statement.
+            using var insertCommand = database.CreateCommand();
+            insertCommand.CommandText = insertStatement;
+            var insertedRecords = insertCommand.ExecuteNonQuery();
+
+            // Log the number of inserted records to trace.
+            logger.LogTrace(
+                SqliteLog,
+                "Inserted {insertedRecords} records into SecchiLocations table.",
+                insertedRecords
+            );
+
+            // Send a message that the table is available.
+            SendTableAvailableMessage(DbType.SecchiLocations);
+            */
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(
+                SqliteLog,
+                "Error adding SecchiLocation: {exception}.",
                 exception.ToString()
             );
         }
@@ -577,6 +683,19 @@ public partial class SqliteService : ISqliteService
         {
             logger.LogError(SqliteLog, "Error in InitialRun: {exception}.", exception.ToString());
         }
+    }
+
+    private void SendTableAvailableMessage(DbType dbType)
+    {
+        // Log the table available message to trace.
+        logger.LogTrace(
+            SqliteLog,
+            "Sending TableAvailableMessage for {dbType}.",
+            dbType.ToString()
+        );
+
+        // Send a TableAvailableMessage with the dbType.
+        WeakReferenceMessenger.Default.Send(new TableAvailableMessage(dbType));
     }
 
     private async Task SetPreviouslyLoadedState(DbType dbType)

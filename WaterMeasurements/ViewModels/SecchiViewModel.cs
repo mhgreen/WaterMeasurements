@@ -101,6 +101,9 @@ public partial class SecchiViewModel : ObservableRecipient
     private bool haveObservations;
     private bool haveLocations;
 
+    private bool haveLocationsTable = false;
+    private bool haveObservationsTable = false;
+
     private readonly StateMachine<SecchiServiceState, SecchiServiceTrigger> stateMachine;
 
     private readonly ISqliteService? sqliteService;
@@ -231,10 +234,7 @@ public partial class SecchiViewModel : ObservableRecipient
                         // Send the FeatureToTableMessage to the SqliteService to convert the feature table to a table.
                         WeakReferenceMessenger.Default.Send<FeatureToTableMessage>(
                             new FeatureToTableMessage(
-                                new FeatureToTable(
-                                    featureTable,
-                                    DbType.SecchiObservations
-                                )
+                                new FeatureToTable(featureTable, DbType.SecchiObservations)
                             )
                         );
 
@@ -344,14 +344,11 @@ public partial class SecchiViewModel : ObservableRecipient
                                 );
                             }
                         }
-                        
+
                         // Send the FeatureToTableMessage to the SqliteService to convert the feature table to a table.
                         WeakReferenceMessenger.Default.Send<FeatureToTableMessage>(
                             new FeatureToTableMessage(
-                                new FeatureToTable(
-                                    featureTable,
-                                    DbType.SecchiLocations
-                                )
+                                new FeatureToTable(featureTable, DbType.SecchiLocations)
                             )
                         );
 
@@ -735,6 +732,52 @@ public partial class SecchiViewModel : ObservableRecipient
                 );
             }
         );
+
+        WeakReferenceMessenger.Default.Register<TableAvailableMessage>(
+            this,
+            (recipient, message) =>
+            {
+                logger.LogDebug(
+                    SecchiViewModelLog,
+                    "SecchiViewModel, TableAvailableMessage: TableAvailable: {tableAvailable}.",
+                    message.Value.ToString()
+                );
+                WaitForObservationsAndLocations(message.Value);
+            }
+        );
+    }
+
+    private void WaitForObservationsAndLocations(DbType dbType)
+    {
+        try
+        {
+            if (dbType == DbType.SecchiLocations)
+            {
+                haveLocationsTable = true;
+            }
+            else if (dbType == DbType.SecchiObservations)
+            {
+                haveObservationsTable = true;
+            }
+
+            if (haveLocations && haveObservations)
+            {
+                // Log that the SecchiViewModel has both locations and observations.
+                logger.LogDebug(
+                    SecchiViewModelLog,
+                    "SecchiViewModel, WaitForObservationsAndLocations: SecchiViewModel has both locations and observations."
+                );
+            }
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(
+                SecchiViewModelLog,
+                exception,
+                "Exception generated in SecchiViewModel, WaitForObservationsAndLocations(DbType dbType): {message}.",
+                exception.Message.ToString()
+            );
+        }
     }
 
     // Get the current network status and use that to trigger InternetAvailableRecieved and InternetUnavailableRecieved.
@@ -1105,13 +1148,21 @@ public partial class SecchiViewModel : ObservableRecipient
 
         switch (args.InvokedItemContainer.Name)
         {
-            case "SecchiNavAdd":
+            case "SecchiNavMeasurementAdd":
                 // Log that upload was selected.
                 logger.LogDebug(
                     SecchiViewModelLog,
-                    "SecchiViewModel, CollectionNavView_ItemInvoked(): Add selected."
+                    "SecchiViewModel, CollectionNavView_ItemInvoked(): Add Measurement selected."
                 );
                 SelectView = "SecchiDataEntry";
+                break;
+            case "SecchiNavLocationAdd":
+                // Log that upload was selected.
+                logger.LogDebug(
+                    SecchiViewModelLog,
+                    "SecchiViewModel, CollectionNavView_ItemInvoked(): Add Location selected."
+                );
+                SelectView = "SecchiAddLocation";
                 break;
             case "SecchiNavCollected":
                 // Log that upload was selected.

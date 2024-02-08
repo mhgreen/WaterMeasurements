@@ -367,7 +367,7 @@ public sealed partial class MainPage : Page
         SecchiNavView.SelectedItem = SecchiNavView.MenuItems[0];
     }
 
-    private void SaveSecchiMeasurements_Click(object sender, RoutedEventArgs e)
+    private void SaveSecchiMeasurements_Click()
     {
         // Collect the integers here
         if (MapView.LocationDisplay.Location is not null)
@@ -398,8 +398,20 @@ public sealed partial class MainPage : Page
         }
     }
 
-    private void CancelSecchiMeasurements_Click(object sender, RoutedEventArgs e)
+    private void CancelSecchiMeasurements_Click()
     {
         ViewModel.ShowSecchiCollectionPoint = true;
+    }
+
+    private void SaveSecchiLocation_Click()
+    {
+        // Log to trace that the SaveSecchiLocation_Click method was called.
+        Logger.Trace("MainPage.xaml.cs, SaveSecchiLocation_Click: SaveSecchiLocation_Click method called.");
+    }
+
+    private void CancelSecchiLocation_Click()
+    {
+        // Log to trace that the CancelSecchiLocation_Click method was called.
+        Logger.Trace("MainPage.xaml.cs, CancelSecchiLocation_Click: CancelSecchiLocation_Click method called.");
     }
 }

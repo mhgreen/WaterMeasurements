@@ -234,4 +234,7 @@
   <data name="Settings_Secchi_Not_Collected.Text" xml:space="preserve">
     <value>Secchi measurements will appear here once collected.</value>
   </data>
+  <data name="Settings_Secchi_Add_Location.Text" xml:space="preserve">
+    <value>Adding a location for Secchi data collection</value>
+  </data>
 </root>

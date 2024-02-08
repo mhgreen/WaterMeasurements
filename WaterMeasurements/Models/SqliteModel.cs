@@ -17,13 +17,38 @@ public enum DbType
 public enum RecordStatus
 {
     WorkingSet,
-    GeodatabaseCommitted,
-    LocalOnly
+    GeodatabaseCommitted
+}
+
+public enum LocationType
+{
+    Permanent,
+    OneTime
 }
 
 // Record to create a table from a feature table.
 public readonly record struct FeatureToTable(FeatureTable FeatureTable, DbType DbType);
 
+// Record for Secchi observation.
+public readonly record struct SecchiObservation(
+    int Measurement1,
+    int Measurement2,
+    int Measurement3,
+    double Secchi,
+    int LocationId,
+    DateTime DateCollected,
+    double Latitude,
+    double Longitude
+);
+
+// Record for Secchi location.
+public readonly record struct SecchiLocation(
+    double Latitude,
+    double Longitude,
+    int LocationId,
+    string Location,
+    LocationType LocationType
+);
 
 public enum FeatureToTableStatus
 {
@@ -39,7 +64,7 @@ public enum FeatureToTableStatus
 public readonly record struct FeatureToTableResult(
     DbType TableType,
     int RecordsInserted,
-    int  ReturnCode,
+    int ReturnCode,
     string ErrorMessage,
     FeatureToTableStatus Status
 );
