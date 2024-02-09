@@ -21,6 +21,8 @@ using WaterMeasurements.Services;
 using WaterMeasurements.Contracts.Services;
 using static WaterMeasurements.Models.PrePlannedMapConfiguration;
 using Esri.ArcGISRuntime.UI.Controls;
+using Esri.ArcGISRuntime.Geometry;
+using WinRT;
 
 namespace WaterMeasurements.Views;
 
@@ -57,6 +59,15 @@ public sealed partial class MainPage : Page
 
     // Current WebMapId
     public string? webMapId;
+
+    // Source of the location
+    private LocationSource locationSource;
+
+    // Type of location
+    private LocationType locationType;
+
+    // Extent of current map
+    private Geometry? extent;
 
     [RelayCommand]
     private void ReCenter()
@@ -168,6 +179,29 @@ public sealed partial class MainPage : Page
                     .UI
                     .LocationDisplayAutoPanMode
                     .Recenter;
+            }
+        );
+
+        // Handle the MapExtentChangedMessage.
+        WeakReferenceMessenger.Default.Register<MapExtentChangedMessage>(
+            this,
+            (recipient, message) =>
+            {
+                extent = message.Value.Extent.Project(SpatialReferences.Wgs84);
+                // Log to trace the value of message.Value with a label.
+                Logger.Trace(
+                    "MainPage.xaml.cs, MainPage: MapExtentChangedMessage, {envelope}",
+                    extent.ToString()
+                );
+                var envelope = extent.As<Envelope>();
+                // Log to trace the minX, minY, maxX, and maxY values of the envelope.
+                Logger.Trace(
+                    "MainPage.xaml.cs, MainPage: MapExtentChangedMessage, minX: {minX}, minY: {minY}, maxX: {maxX}, maxY: {maxY}",
+                    envelope.XMin,
+                    envelope.YMin,
+                    envelope.XMax,
+                    envelope.YMax
+                );
             }
         );
 
@@ -406,12 +440,117 @@ public sealed partial class MainPage : Page
     private void SaveSecchiLocation_Click()
     {
         // Log to trace that the SaveSecchiLocation_Click method was called.
-        Logger.Trace("MainPage.xaml.cs, SaveSecchiLocation_Click: SaveSecchiLocation_Click method called.");
+        Logger.Trace(
+            "MainPage.xaml.cs, SaveSecchiLocation_Click: SaveSecchiLocation_Click method called."
+        );
     }
 
     private void CancelSecchiLocation_Click()
     {
         // Log to trace that the CancelSecchiLocation_Click method was called.
-        Logger.Trace("MainPage.xaml.cs, CancelSecchiLocation_Click: CancelSecchiLocation_Click method called.");
+        Logger.Trace(
+            "MainPage.xaml.cs, CancelSecchiLocation_Click: CancelSecchiLocation_Click method called."
+        );
+    }
+
+    private void LocationType_Click(object sender, RoutedEventArgs eventArgs)
+    {
+        _ = eventArgs as RoutedEventArgs;
+
+        // Log to trace that the LocationType_Click method was called.
+        Logger.Trace("MainPage.xaml.cs, LocationType_Click: LocationType_Click method called.");
+
+        if (sender is null)
+        {
+            // Log to trace that the sender is null.
+            Logger.Trace("MainPage.xaml.cs, LocationType_Click: sender is null.");
+            return;
+        }
+
+        var menuFlyoutItem = sender as MenuFlyoutItem;
+
+        if (menuFlyoutItem != null)
+        {
+            var tag = menuFlyoutItem.Tag as string;
+
+            switch (tag)
+            {
+                case "OneTime":
+                    locationType = LocationType.OneTime;
+                    SecchiLocationTypeDropDown.Content = "One-Time";
+                    break;
+                case "Permanent":
+                    locationType = LocationType.Permanent;
+                    SecchiLocationTypeDropDown.Content = "Permanent";
+                    break;
+                default:
+                    // Log to trace that an invalid tag value was encountered.
+                    Logger.Trace(
+                        "MainPage.xaml.cs, LocationType_Click: Invalid tag value: {tag}",
+                        tag
+                    );
+                    break;
+            }
+        }
+
+        // Log to trace the value of locationType with a label.
+        Logger.Trace(
+            "MainPage.xaml.cs, LocationType_Click: Location Type: {locationType}",
+            locationType
+        );
+    }
+
+    private void LocationSource_Click(object sender, RoutedEventArgs eventArgs)
+    {
+        _ = eventArgs as RoutedEventArgs;
+
+        // Log to trace that the LocationSource_Click method was called.
+        Logger.Trace("MainPage.xaml.cs, LocationSource_Click: LocationSource_Click method called.");
+
+        if (sender is null)
+        {
+            // Log to trace that the sender is null.
+            Logger.Trace("MainPage.xaml.cs, LocationSource_Click: sender is null.");
+            return;
+        }
+
+        var menuFlyoutItem = sender as MenuFlyoutItem;
+
+        if (menuFlyoutItem != null)
+        {
+            var tag = menuFlyoutItem.Tag as string;
+
+            switch (tag)
+            {
+                case "CurrentGPS":
+                    locationSource = LocationSource.CurrentGPS;
+                    LatLongEntry.Visibility = Visibility.Collapsed;
+                    SecchiLocationSourceDropDown.Content = "Current GPS";
+                    break;
+                case "PointOnMap":
+                    locationSource = LocationSource.PointOnMap;
+                    LatLongEntry.Visibility = Visibility.Collapsed;
+                    SecchiLocationSourceDropDown.Content = "Map Point";
+                    break;
+                case "EnterLatLong":
+                    locationSource = LocationSource.EnteredLatLong;
+                    SecchiLocationSourceDropDown.Content = "Enter Lat/Long";
+                    LatLongEntry.Visibility = Visibility.Visible;
+                    break;
+                default:
+                    // Log to trace that an invalid tag value was encountered.
+                    Logger.Trace(
+                        "MainPage.xaml.cs, LocationSource_Click: Invalid tag value: {tag}",
+                        tag
+                    );
+                    break;
+            }
+        }
+
+        // Log to trace the value of locationSource with a label.
+        Logger.Trace(
+            "MainPage.xaml.cs, LocationSource_Click: Location Source: {locationSource}",
+            locationSource
+        );
     }
 }

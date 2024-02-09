@@ -324,7 +324,7 @@ public partial class GeoDatabaseInstance : IGeoDatabaseInstance
                 {
                     logger.LogDebug(
                         GeoDatabaseLog,
-                        "GeoDatabaseInstance {name}, MapExtentChangedMessage: {envelop}.",
+                        "GeoDatabaseInstance {name}, MapExtentChangedMessage: {envelope}.",
                         Name,
                         message.Value.Extent.Project(SpatialReferences.Wgs84).ToString()
                     );

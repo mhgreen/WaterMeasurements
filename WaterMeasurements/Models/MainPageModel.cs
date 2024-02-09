@@ -6,6 +6,9 @@ namespace WaterMeasurements.Models;
 // Record for UIQueue subscription.
 public readonly record struct UIQueue(DispatcherQueue? UIDispatcherQueue);
 
+// Record to notify modules that the MapPage has been unloaded.
+public readonly record struct MapPageUnloadedMessage();
+
 public readonly record struct SecchiMeasurements(
     MapPoint Location,
     int Measurement1,
@@ -13,5 +16,9 @@ public readonly record struct SecchiMeasurements(
     int Measurement3
 );
 
-// Record to notify modules that the MapPage has been unloaded.
-public readonly record struct MapPageUnloadedMessage();
+public enum LocationSource
+{
+    CurrentGPS,
+    PointOnMap,
+    EnteredLatLong
+}
