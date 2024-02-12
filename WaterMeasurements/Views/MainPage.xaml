@@ -481,7 +481,7 @@
                                                     x:Uid="Settings_Secchi_Collected"
                                                     Margin="0,12,0,5"
                                                     HorizontalAlignment="Center"
-                                                    Opacity="0.7"
+                                                    Opacity="0.6"
                                                     Style="{ThemeResource BodyStrongTextBlockStyle}" />
                                             </StackPanel>
 
@@ -559,7 +559,7 @@
                                                     x:Uid="Settings_Secchi_Collection"
                                                     Margin="0,12,0,5"
                                                     HorizontalAlignment="Center"
-                                                    Opacity="0.7"
+                                                    Opacity="0.6"
                                                     Style="{ThemeResource BodyStrongTextBlockStyle}" />
                                             </StackPanel>
 
@@ -641,14 +641,14 @@
                                                     x:Uid="Settings_Secchi_Add_Location"
                                                     Margin="0,12,0,5"
                                                     HorizontalAlignment="Center"
-                                                    Opacity="0.7"
+                                                    Opacity="0.6"
                                                     Style="{ThemeResource BodyStrongTextBlockStyle}" />
                                             </StackPanel>
 
                                             <StackPanel
                                                 x:Name="SecchiAddLocationStackPanel"
                                                 Width="400"
-                                                Margin="0,30,0,0"
+                                                Margin="0,25,0,0"
                                                 Visibility="Visible">
 
                                                 <StackPanel>
@@ -722,6 +722,24 @@
                                                                 VerticalOffset="-48" />
                                                         </ToolTipService.ToolTip>
                                                     </StackPanel>
+
+                                                    <StackPanel>
+                                                        <CheckBox
+                                                            x:Name="SecchiEnteredDefault"
+                                                            x:Uid="Settings_Secchi_Entered_Default"
+                                                            Margin="20,0,0,0"
+                                                            Content="Save as Default"
+                                                            IsChecked="False"
+                                                            Tag="CurrentGPS"
+                                                            Visibility="Visible" />
+                                                        <ToolTipService.ToolTip>
+                                                            <ToolTip
+                                                                Content="Save the location type and source as defaults. This is useful if new locations are likely to be of the same type."
+                                                                HorizontalOffset="200"
+                                                                VerticalOffset="-48" />
+                                                        </ToolTipService.ToolTip>
+                                                    </StackPanel>
+
                                                 </StackPanel>
 
                                                 <StackPanel
@@ -745,17 +763,19 @@
                                                         <TextBlock
                                                             Grid.Row="0"
                                                             Grid.Column="1"
-                                                            Text="Longitude"/>
+                                                            Text="Longitude" />
 
                                                         <TextBox
                                                             Grid.Row="1"
                                                             Grid.Column="0"
+                                                            Margin="0,10,0,0"
                                                             ui:TextBoxExtensions.ValidationMode="Dynamic"
                                                             ui:TextBoxExtensions.ValidationType="Decimal"
                                                             InputScope="NumberFullWidth" />
                                                         <TextBox
                                                             Grid.Row="1"
                                                             Grid.Column="1"
+                                                            Margin="0,10,0,0"
                                                             ui:TextBoxExtensions.ValidationMode="Dynamic"
                                                             ui:TextBoxExtensions.ValidationType="Decimal"
                                                             InputScope="NumberFullWidth" />
