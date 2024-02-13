@@ -7,6 +7,7 @@
     xmlns:esri="using:Esri.ArcGISRuntime.UI.Controls"
     xmlns:helpers="using:WaterMeasurements.Helpers"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:secchipagemodel="using:WaterMeasurements.Models"
     xmlns:ui="using:CommunityToolkit.WinUI"
     xmlns:viewmodels="using:WaterMeasurements.ViewModels"
     xmlns:xaml="using:Microsoft.UI.Xaml"
@@ -49,11 +50,63 @@
             </Grid>
         </ControlTemplate>
 
+        <!--  When using x:Bind, you need to set x:DataType  -->
+        <DataTemplate x:Key="SecchiLocationsTemplate" x:DataType="secchipagemodel:SecchiLocationDisplay">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Ellipse
+                    x:Name="Ellipse"
+                    Grid.RowSpan="2"
+                    Width="16"
+                    Height="16"
+                    Margin="6"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Fill="{x:Bind LocationType, Converter={StaticResource LocationTypeToColorConverter}}" />
+                <TextBlock
+                    Grid.Column="1"
+                    Margin="12,6,0,0"
+                    x:Phase="1"
+                    Style="{ThemeResource BaseTextBlockStyle}"
+                    Text="{x:Bind LocationName}" />
+                <TextBlock
+                    Grid.Row="1"
+                    Grid.Column="1"
+                    Margin="12,0,0,6"
+                    x:Phase="2"
+                    Style="{ThemeResource BodyTextBlockStyle}"
+                    Text="{x:Bind LatLon}" />
+                <!--  Visibility="{x:Bind LocationType, Converter={StaticResource LocationTypeToVisibilityConverter}}">  -->
+                <Button
+                    x:Name="SecchiLocationEdit"
+                    Grid.RowSpan="2"
+                    Grid.Column="1"
+                    Margin="0,7,0,0"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Center"
+                    Click="Edit_Location_Click"
+                    Scale="0.8, 0.8, 0.8"
+                    Tag="{x:Bind LocationId}">
+                    <SymbolIcon Symbol="Edit" />
+                </Button>
+
+            </Grid>
+        </DataTemplate>
+
         <FontFamily x:Key="AppIconFont">
             /Assets/icomoon.ttf#icomoon
         </FontFamily>
 
         <helpers:EnumToBooleanConverter x:Key="EnumToBooleanConverter" />
+        <helpers:LocationTypeToColorConverter x:Key="LocationTypeToColorConverter" />
+        <helpers:LocationTypeToVisibilityConverter x:Key="LocationTypeToVisibilityConverter" />
 
     </Page.Resources>
 
@@ -799,6 +852,13 @@
                                                             Click="{x:Bind CancelSecchiLocation_Click}" />
                                                     </StackPanel>
                                                 </StackPanel>
+
+                                                <ListView
+                                                    x:Name="SecchiLocationsListView"
+                                                    Margin="0,20,0,0"
+                                                    ItemTemplate="{StaticResource SecchiLocationsTemplate}"
+                                                    ItemsSource="{x:Bind SecchiView.SecchiLocationDB}" />
+
 
                                             </StackPanel>
                                         </Grid>

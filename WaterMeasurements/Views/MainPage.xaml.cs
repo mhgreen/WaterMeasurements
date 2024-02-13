@@ -553,4 +553,19 @@ public sealed partial class MainPage : Page
             locationSource
         );
     }
+
+    private void Edit_Location_Click(object sender, RoutedEventArgs eventArgs)
+    {
+        // Log to trace that the Edit_Location_Click method was called.
+        Logger.Trace("MainPage.xaml.cs, Edit_Location_Click: Edit_Location_Click method called.");
+
+        Button button = sender as Button;
+        var locationId = button.Tag;
+
+        // Log to trace the value of sender and eventArgs.
+        Logger.Trace(
+            "MainPage.xaml.cs, Edit_Location_Click: LocationId: {locationId}",
+            locationId
+        );
+    }
 }

@@ -28,6 +28,7 @@ using Windows.Media.Core;
 using Dapper.SimpleSqlBuilder;
 using Microsoft.UI.Xaml.Controls;
 using Windows.System;
+using System.Collections.ObjectModel;
 
 namespace WaterMeasurements.Services;
 
@@ -49,6 +50,14 @@ public class AddSecchiObservationMessage(SecchiObservation secchiObservation)
 // Message to add a SecchiLocation to the Sqlite database.
 public class AddSecchiLocationMessage(SecchiLocation secchiLocation)
     : ValueChangedMessage<SecchiLocation>(secchiLocation) { }
+
+// Message to request a table in the form of an observable collection from the Sqlite database.
+// One use of this is to populate a listview.
+public class GetObservableCollectionFromSqlite(DbType dbType) : ValueChangedMessage<DbType>(dbType) { }
+
+// Message to provide modules with the observable collection as a result of getting SecchiLocations from the Sqlite database.
+public class SecchiLocationsViewMessage(ObservableCollection<SecchiLocationDisplay> secchiLocationDisplay)
+    : ValueChangedMessage<ObservableCollection<SecchiLocationDisplay>>(secchiLocationDisplay) { }
 
 public partial class SqliteService : ISqliteService
 {
@@ -153,7 +162,26 @@ public partial class SqliteService : ISqliteService
                     AddSecchiLocation(message.Value);
                 }
             );
+
+            // Register a message handler for GetObservableCollectionFromSqlite.
+            WeakReferenceMessenger.Default.Register<GetObservableCollectionFromSqlite>(
+                this,
+                (recipient, message) =>
+                {
+                    // Log the GetObservableCollectionFromSqlite.
+                    logger.LogDebug(
+                        SqliteLog,
+                        "SqliteService, GetObservableCollectionFromSqlite: {message}.",
+                        message
+                     );
+
+                    // Call GetObservableCollection with the extracted dbType.
+                    GetObservableCollection(message.Value);
+                }
+            );
+
         }
+
         catch (Exception exception)
         {
             logger.LogError(
@@ -696,6 +724,72 @@ public partial class SqliteService : ISqliteService
 
         // Send a TableAvailableMessage with the dbType.
         WeakReferenceMessenger.Default.Send(new TableAvailableMessage(dbType));
+    }
+
+    private void GetObservableCollection(DbType dbType)
+    {
+        ObservableCollection<SecchiLocationDisplay> secchiLocationCollection = [];
+
+        try
+        {
+            logger.LogTrace(SqliteLog, "GetObservableCollection called.");
+
+            // Open the connection to the sqlite database.
+            using var database = GetOpenConnectionAsync().Result;
+
+            if (dbType == DbType.SecchiLocations)
+            {
+                // Create the sqlite select statement.
+                var selectStatement = "SELECT * FROM SecchiLocations;";
+                logger.LogTrace(
+                    SqliteLog,
+                    "Sqlite select statement: {selectStatement}",
+                    selectStatement
+                );
+
+                // Execute the select statement.
+                using var selectCommand = database.CreateCommand();
+                selectCommand.CommandText = selectStatement;
+                using var reader = selectCommand.ExecuteReader();
+
+                // Iterate over the records in the SecchiLocations table.
+                while (reader.Read())
+                {
+                    // Create a SecchiLocationDisplay from the record.
+                    var secchiLocationDisplay = new SecchiLocationDisplay(
+                        reader.GetString(3),
+                        reader.GetDouble(1),
+                        reader.GetDouble(2),
+                        (LocationType)reader.GetInt32(4),
+                        reader.GetInt32(0)
+                    );
+
+                    // Log the SecchiLocationDisplay to trace.
+                    logger.LogTrace(
+                        SqliteLog,
+                        "SecchiLocationDisplay: {secchiLocationDisplay}",
+                        secchiLocationDisplay
+                    );
+
+                    // Add the SecchiLocationDisplay to the secchiLocationCollection.
+                    secchiLocationCollection.Add(secchiLocationDisplay);
+                }
+
+                // Send a SecchiLocationsViewMessage with the SecchiLocationDisplay.
+                WeakReferenceMessenger.Default.Send(
+                    new SecchiLocationsViewMessage(secchiLocationCollection)
+                );
+            
+            }
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(
+                SqliteLog,
+                "Error getting SecchiLocations: {exception}.",
+                exception.ToString()
+            );
+        }
     }
 
     private async Task SetPreviouslyLoadedState(DbType dbType)

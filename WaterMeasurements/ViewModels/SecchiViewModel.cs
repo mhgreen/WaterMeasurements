@@ -59,6 +59,7 @@ using static WaterMeasurements.Models.SecchiConfiguration;
 using NLog;
 using WaterMeasurements.Helpers;
 using System.ComponentModel.DataAnnotations;
+using System.Collections.ObjectModel;
 
 namespace WaterMeasurements.ViewModels;
 
@@ -80,6 +81,8 @@ public partial class SecchiViewModel : ObservableRecipient
 
     [ObservableProperty]
     private string selectView = "SecchiCollectionTable";
+
+    public ObservableCollection<SecchiLocationDisplay> SecchiLocationDB = [];
 
     // Feature for the current location sent by the GeoTriggerService.
     public ArcGISFeature? feature;
@@ -116,6 +119,10 @@ public partial class SecchiViewModel : ObservableRecipient
     {
         this.logger = logger;
         logger.LogDebug(SecchiViewModelLog, "SecchiViewModel, Constructor.");
+
+        SecchiLocationDB.Add(new SecchiLocationDisplay("Location 1", 47.673988, -122.121513, LocationType.Permanent, 22));
+        SecchiLocationDB.Add(new SecchiLocationDisplay("Location 2", 47.673988, -122.121513, LocationType.Permanent, 23));
+        SecchiLocationDB.Add(new SecchiLocationDisplay("Location 3", 47.673988, -122.121513, LocationType.Permanent, 24));
 
         LocalSettingsService = localSettingsService;
 
@@ -754,10 +761,20 @@ public partial class SecchiViewModel : ObservableRecipient
             if (dbType == DbType.SecchiLocations)
             {
                 haveLocationsTable = true;
+                // Log that the SecchiViewModel has locations.
+                logger.LogDebug(
+                    SecchiViewModelLog,
+                    "SecchiViewModel, WaitForObservationsAndLocations: SecchiViewModel has locations."
+                );
             }
             else if (dbType == DbType.SecchiObservations)
             {
                 haveObservationsTable = true;
+                // Log that the SecchiViewModel has observations.
+                logger.LogDebug(
+                    SecchiViewModelLog,
+                    "SecchiViewModel, WaitForObservationsAndLocations: SecchiViewModel has observations."
+                );
             }
 
             if (haveLocations && haveObservations)
@@ -779,6 +796,8 @@ public partial class SecchiViewModel : ObservableRecipient
             );
         }
     }
+
+
 
     // Get the current network status and use that to trigger InternetAvailableRecieved and InternetUnavailableRecieved.
     private async void StartMonitoringNetwork()
