@@ -29,6 +29,9 @@ public enum LocationType
 // Record to create a table from a feature table.
 public readonly record struct FeatureToTable(FeatureTable FeatureTable, DbType DbType);
 
+// Record to request a group of records from Sqlite.
+public readonly record struct SqliteRecordsGroupRequest(DbType DbType, int PageSize, int Offset);
+
 // Record for Secchi observation.
 public readonly record struct SecchiObservation(
     int Measurement1,

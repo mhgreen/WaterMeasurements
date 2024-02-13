@@ -25,10 +25,14 @@ using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.DependencyInjection;
 using Windows.Media.Core;
+
+using Dapper;
 using Dapper.SimpleSqlBuilder;
 using Microsoft.UI.Xaml.Controls;
 using Windows.System;
 using System.Collections.ObjectModel;
+using System.Data;
+using DbType = WaterMeasurements.Models.DbType;
 
 namespace WaterMeasurements.Services;
 
@@ -51,13 +55,15 @@ public class AddSecchiObservationMessage(SecchiObservation secchiObservation)
 public class AddSecchiLocationMessage(SecchiLocation secchiLocation)
     : ValueChangedMessage<SecchiLocation>(secchiLocation) { }
 
-// Message to request a table in the form of an observable collection from the Sqlite database.
-// One use of this is to populate a listview.
-public class GetObservableCollectionFromSqlite(DbType dbType) : ValueChangedMessage<DbType>(dbType) { }
+// Message to request a group of records from the Sqlite database.
+public class GetSqliteRecordsGroupRequest(SqliteRecordsGroupRequest sqliteRecordsGroupRequest)
+    : ValueChangedMessage<SqliteRecordsGroupRequest>(sqliteRecordsGroupRequest)
+{
+}
 
-// Message to provide modules with the observable collection as a result of getting SecchiLocations from the Sqlite database.
-public class SecchiLocationsViewMessage(ObservableCollection<SecchiLocationDisplay> secchiLocationDisplay)
-    : ValueChangedMessage<ObservableCollection<SecchiLocationDisplay>>(secchiLocationDisplay) { }
+// Message to provide modules with a SecchiLocation from the Sqlite database.
+public class SecchiLocationsSqliteRecordGroup(SecchiLocation secchiLocation)
+    : ValueChangedMessage<SecchiLocation>(secchiLocation) { }
 
 public partial class SqliteService : ISqliteService
 {
@@ -163,21 +169,26 @@ public partial class SqliteService : ISqliteService
                 }
             );
 
-            // Register a message handler for GetObservableCollectionFromSqlite.
-            WeakReferenceMessenger.Default.Register<GetObservableCollectionFromSqlite>(
+            // Register a message handler for GetSqliteRecordsGroupRequest.
+            WeakReferenceMessenger.Default.Register<GetSqliteRecordsGroupRequest>(
                 this,
-                (recipient, message) =>
+                async (recipient, message) =>
                 {
-                    // Log the GetObservableCollectionFromSqlite.
+                                                             
+                    // Log the GetSqliteRecordsGroupRequest.
                     logger.LogDebug(
                         SqliteLog,
-                        "SqliteService, GetObservableCollectionFromSqlite: {message}.",
-                        message
+                        "SqliteService, GetSqliteRecordsGroupRequest: {message}.",
+                        message.Value.ToString()
                      );
-
-                    // Call GetObservableCollection with the extracted dbType.
-                    GetObservableCollection(message.Value);
-                }
+                                                                                
+                    // Call GetRecordGroupFromSqlite with the extracted dbType, pageSize, and offset.
+                    await GetRecordGroupFromSqlite(
+                        message.Value.DbType,
+                        message.Value.PageSize,
+                        message.Value.Offset
+                    );
+                }   
             );
 
         }
@@ -726,61 +737,66 @@ public partial class SqliteService : ISqliteService
         WeakReferenceMessenger.Default.Send(new TableAvailableMessage(dbType));
     }
 
-    private void GetObservableCollection(DbType dbType)
+    private async Task GetRecordGroupFromSqlite(DbType dbType, int pageSize, int offset)
     {
         ObservableCollection<SecchiLocationDisplay> secchiLocationCollection = [];
 
         try
         {
-            logger.LogTrace(SqliteLog, "GetObservableCollection called.");
+            logger.LogTrace(SqliteLog, "GetObservableCollection called with dbType of {dbType}.",
+                dbType
+                );
 
             // Open the connection to the sqlite database.
-            using var database = GetOpenConnectionAsync().Result;
+            using var database = await GetOpenConnectionAsync();
 
-            if (dbType == DbType.SecchiLocations)
+            switch (dbType)
             {
-                // Create the sqlite select statement.
-                var selectStatement = "SELECT * FROM SecchiLocations;";
-                logger.LogTrace(
-                    SqliteLog,
-                    "Sqlite select statement: {selectStatement}",
-                    selectStatement
-                );
+                case DbType.SecchiLocations:
+                    //Log to trace that the dbType is SecchiLocations.
+                    logger.LogTrace(SqliteLog, "dbType is SecchiLocations.");
 
-                // Execute the select statement.
-                using var selectCommand = database.CreateCommand();
-                selectCommand.CommandText = selectStatement;
-                using var reader = selectCommand.ExecuteReader();
+                    //Dapper.SimpleSqlBuilder to build the SQL query.
+                    var builder = SimpleBuilder.CreateFluent()
+                        .Select($"*")
+                        .From($"SecchiLocations")
+                        .OrderBy($"LocationId")
+                        .Limit(pageSize)
+                        .Offset(offset);
 
-                // Iterate over the records in the SecchiLocations table.
-                while (reader.Read())
-                {
-                    // Create a SecchiLocationDisplay from the record.
-                    var secchiLocationDisplay = new SecchiLocationDisplay(
-                        reader.GetString(3),
-                        reader.GetDouble(1),
-                        reader.GetDouble(2),
-                        (LocationType)reader.GetInt32(4),
-                        reader.GetInt32(0)
-                    );
+                    // Log builder.sql to trace.
+                    logger.LogTrace(SqliteLog, "Sqlite query: {builder.Sql}", builder.Sql);
 
-                    // Log the SecchiLocationDisplay to trace.
-                    logger.LogTrace(
+                    // Execute the query and retrieve the results.
+                    var locations = await database.QueryAsync<SecchiLocation>(builder.Sql, builder.Parameters);
+
+                    // Iterate over the locations and log them to trace.
+                    foreach (var location in locations)
+                    {
+                        WeakReferenceMessenger.Default.Send(new SecchiLocationsSqliteRecordGroup(location));   
+                    }
+                    break;
+
+                default:
+                    // Log a warning that the dbType is not implemented.
+                    logger.LogWarning(
                         SqliteLog,
-                        "SecchiLocationDisplay: {secchiLocationDisplay}",
-                        secchiLocationDisplay
+                        "dbType {dbType} is not implemented.",
+                        dbType
                     );
+                    break;
 
-                    // Add the SecchiLocationDisplay to the secchiLocationCollection.
-                    secchiLocationCollection.Add(secchiLocationDisplay);
-                }
-
-                // Send a SecchiLocationsViewMessage with the SecchiLocationDisplay.
-                WeakReferenceMessenger.Default.Send(
-                    new SecchiLocationsViewMessage(secchiLocationCollection)
-                );
-            
             }
+        }
+        catch (SqliteException sqliteException)
+        {
+            logger.LogError(
+                SqliteLog,
+                "Error creating Sqlite table from DbType {dbType}, Sqlite exception: {sqliteMessage}, with an error code of {SqliteErrorCode}",
+                dbType.ToString(),
+                sqliteException.Message,
+                sqliteException.SqliteErrorCode
+            );
         }
         catch (Exception exception)
         {

@@ -120,10 +120,6 @@ public partial class SecchiViewModel : ObservableRecipient
         this.logger = logger;
         logger.LogDebug(SecchiViewModelLog, "SecchiViewModel, Constructor.");
 
-        SecchiLocationDB.Add(new SecchiLocationDisplay("Location 1", 47.673988, -122.121513, LocationType.Permanent, 22));
-        SecchiLocationDB.Add(new SecchiLocationDisplay("Location 2", 47.673988, -122.121513, LocationType.Permanent, 23));
-        SecchiLocationDB.Add(new SecchiLocationDisplay("Location 3", 47.673988, -122.121513, LocationType.Permanent, 24));
-
         LocalSettingsService = localSettingsService;
 
         this.sqliteService = sqliteService;
@@ -752,6 +748,37 @@ public partial class SecchiViewModel : ObservableRecipient
                 WaitForObservationsAndLocations(message.Value);
             }
         );
+
+        WeakReferenceMessenger.Default.Register<SecchiLocationsSqliteRecordGroup>(
+            this,
+            (recipient, message) =>
+            {
+                logger.LogDebug(
+                    SecchiViewModelLog,
+                    "SecchiViewModel, Secchi location record received."
+                );
+
+                logger.LogTrace(
+                    SecchiViewModelLog,
+                    "SecchiViewModel, SecchiLocationsSqliteRecordGroup location: {location}, latitude: {latitude}, longitude {longitude}.",
+                    message.Value.Location,
+                    message.Value.Latitude,
+                    message.Value.Longitude
+                );
+                
+                SecchiLocationDB.Add(new SecchiLocationDisplay(
+                    message.Value.Location,
+                    message.Value.Latitude,
+                    message.Value.Longitude,
+                    message.Value.LocationType,
+                    message.Value.LocationId
+                ));
+
+                // SecchiLocationDB.Add(new SecchiLocationDisplay("Location 1", 47.673988, -122.121513, LocationType.OneTime, 22));
+                // SecchiLocationDB.Add(new SecchiLocationDisplay("Location 2", 47.673988, -122.121513, LocationType.OneTime, 23));
+                // SecchiLocationDB.Add(new SecchiLocationDisplay("Location 3", 47.673988, -122.121513, LocationType.OneTime, 24));
+            }
+        );
     }
 
     private void WaitForObservationsAndLocations(DbType dbType)
@@ -766,6 +793,12 @@ public partial class SecchiViewModel : ObservableRecipient
                     SecchiViewModelLog,
                     "SecchiViewModel, WaitForObservationsAndLocations: SecchiViewModel has locations."
                 );
+
+                // Send a message to get the next group of records.
+                WeakReferenceMessenger.Default.Send<GetSqliteRecordsGroupRequest>
+                    (new GetSqliteRecordsGroupRequest
+                    (new SqliteRecordsGroupRequest(DbType.SecchiLocations, 20, 1))
+                );
             }
             else if (dbType == DbType.SecchiObservations)
             {
@@ -777,7 +810,7 @@ public partial class SecchiViewModel : ObservableRecipient
                 );
             }
 
-            if (haveLocations && haveObservations)
+            if (haveLocationsTable && haveObservationsTable)
             {
                 // Log that the SecchiViewModel has both locations and observations.
                 logger.LogDebug(

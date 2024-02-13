@@ -60,17 +60,17 @@ public static class SecchiConfiguration
 
 // Location class for the SecchiViewModel service.
 public class SecchiLocationDisplay(
-    string? locationName,
-    double? latitude,
-    double? longitude,
-    LocationType? locationType,
-    int? locationId
+    string locationName,
+    double latitude,
+    double longitude,
+    LocationType locationType,
+    int locationId
     )
 {
-    public string? LocationName { get; private set; } = locationName;
-    public double? Latitude { get; private set; } = latitude;
-    public double? Longitude { get; private set; } = longitude;
-    public LocationType? LocationType { get; private set; } = locationType;
-    public int? LocationId { get; private set; } = locationId;
-    public string LatLon => $"Lat: {Latitude?.ToString("F4")}, Lon: {Longitude?.ToString("F4")}";
+    public string LocationName { get; private set; } = locationName;
+    public double Latitude { get; private set; } = latitude;
+    public double Longitude { get; private set; } = longitude;
+    public LocationType LocationType { get; private set; } = locationType;
+    public int LocationId { get; private set; } = locationId;
+    public string LatLon => $"Lat: {Latitude:F4}, Lon: {Longitude:F4}";
 }
