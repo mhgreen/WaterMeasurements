@@ -3,16 +3,16 @@ using WaterMeasurements.Models;
 
 namespace WaterMeasurements.Helpers;
 
-internal class LocationTypeToVisibilityConverter
+internal class RecordStatusToVisibilityConverter
 {
     public static object Convert(object value)
     {
-        var locationType = (LocationType)value;
+        var recordStatus = (RecordStatus)value;
 
-        return locationType switch
+        return recordStatus switch
         {
-            LocationType.OneTime => Visibility.Visible,
-            LocationType.Permanent => Visibility.Collapsed,
+            RecordStatus.WorkingSet => Visibility.Visible,
+            RecordStatus.Comitted => Visibility.Collapsed,
             _ => Visibility.Collapsed,
         };
     }

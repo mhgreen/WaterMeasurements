@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace WaterMeasurements.Models;
+﻿namespace WaterMeasurements.Models;
 
 // State of the SecchiViewModel service.
 public enum SecchiServiceState
@@ -65,7 +59,7 @@ public class SecchiLocationDisplay(
     double longitude,
     LocationType locationType,
     int locationId
-    )
+)
 {
     public string LocationName { get; private set; } = locationName;
     public double Latitude { get; private set; } = latitude;

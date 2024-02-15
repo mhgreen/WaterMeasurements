@@ -1,67 +1,91 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
+﻿using System.Collections.ObjectModel;
+using System.Runtime.InteropServices.WindowsRuntime;
+using System.Xml.Linq;
+using Ardalis.GuardClauses;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.Mvvm.Messaging.Messages;
-
 using Esri.ArcGISRuntime.Data;
-using Esri.ArcGISRuntime.Mapping;
-
-using Esri.ArcGISRuntime.Geometry;
-using Esri.ArcGISRuntime.Portal;
-using Esri.ArcGISRuntime.Symbology;
-using Esri.ArcGISRuntime.Tasks;
-using Esri.ArcGISRuntime.Tasks.Offline;
-using Esri.ArcGISRuntime.UI.Controls;
-using Esri.ArcGISRuntime.UI;
-
-using Windows.Security.Cryptography.Core;
-
-using System;
-using System.Collections;
-using System.Dynamic;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
-
-using Windows.Services.Maps;
-
-using Microsoft.UI.Xaml;
-using Microsoft.UI.Dispatching;
-using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Navigation;
-using Windows.ApplicationModel.Activation;
-
-using Ardalis.GuardClauses;
-
-using WaterMeasurements.Views;
-using WaterMeasurements.Services;
-using WaterMeasurements.Contracts.Services;
-
-using Newtonsoft.Json.Linq;
-using Microsoft.Extensions.Logging;
-using WaterMeasurements.Models;
-using Windows.UI.Core;
-using Stateless;
-using Windows.Devices.Bluetooth.GenericAttributeProfile;
-using Microsoft.Extensions.Hosting;
-using Windows.ApplicationModel.Core;
 using Esri.ArcGISRuntime.Geotriggers;
-using Application = Microsoft.UI.Xaml.Application;
+using Microsoft.Extensions.Logging;
 using Microsoft.UI;
-using System.Diagnostics.Metrics;
-using System.Xml.Linq;
-using WaterMeasurements.Services.Instances;
-using Windows.ApplicationModel.Store;
-using static WaterMeasurements.ViewModels.MainViewModel;
+using Microsoft.UI.Dispatching;
+using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Data;
+using Microsoft.UI.Xaml.Media;
+using Newtonsoft.Json.Linq;
+using Stateless;
+using WaterMeasurements.Contracts.Services;
+using WaterMeasurements.Models;
+using WaterMeasurements.Services;
+using WaterMeasurements.Views;
+using Windows.Foundation;
 using static WaterMeasurements.Models.SecchiConfiguration;
-using NLog;
-using WaterMeasurements.Helpers;
-using System.ComponentModel.DataAnnotations;
-using System.Collections.ObjectModel;
+using static WaterMeasurements.ViewModels.MainViewModel;
 
 namespace WaterMeasurements.ViewModels;
+
+public class SecchiLocationCollection : List<SecchiLocationDisplay>, ISupportIncrementalLoading
+{
+
+    public List<SecchiLocationDisplay> Locations = [];
+    private int currentPage = 0;
+    private readonly int pageSize = 3; // Or whatever page size you want
+    public bool HasMoreItems { get; private set; } = true;
+
+    public SecchiLocationCollection()
+    {
+        WeakReferenceMessenger.Default.Register<SecchiLocationsSqliteRecordGroup>(
+            this,
+            (recipient, message) =>
+            {
+                Locations.Add(new SecchiLocationDisplay(
+                    message.Value.Location,
+                    message.Value.Latitude,
+                    message.Value.Longitude,
+                    message.Value.LocationType,
+                    message.Value.LocationId
+                ));
+
+                // SecchiLocationDB.Add(new SecchiLocationDisplay("Location 1", 47.673988, -122.121513, LocationType.OneTime, 22));
+            }
+        );
+
+        Initialize();
+
+    }
+
+    private void Initialize()
+    {
+
+
+        // Send a message to get the next group of records.
+        WeakReferenceMessenger.Default.Send<GetSqliteRecordsGroupRequest>
+                   (new GetSqliteRecordsGroupRequest
+                              (new SqliteRecordsGroupRequest(DbType.SecchiLocations, pageSize, currentPage))
+                                     );
+
+        currentPage++;
+        HasMoreItems = currentPage < 4;
+    }
+
+    public IAsyncOperation<LoadMoreItemsResult> LoadMoreItemsAsync(uint count)
+    {
+        // Send a message to get the next group of records.
+        WeakReferenceMessenger.Default.Send<GetSqliteRecordsGroupRequest>
+            (new GetSqliteRecordsGroupRequest
+            (new SqliteRecordsGroupRequest(DbType.SecchiLocations, pageSize, currentPage))
+        );
+        currentPage++;
+        HasMoreItems = currentPage < 4;
+        return AsyncInfo.Run(token =>
+        {
+            var items = 3;
+            return Task.FromResult(new LoadMoreItemsResult { Count = (uint)items });
+        });
+    }
+}
+
 
 public partial class SecchiViewModel : ObservableRecipient
 {
@@ -82,7 +106,19 @@ public partial class SecchiViewModel : ObservableRecipient
     [ObservableProperty]
     private string selectView = "SecchiCollectionTable";
 
+    // The collection of Secchi locations to display.
     public ObservableCollection<SecchiLocationDisplay> SecchiLocationDB = [];
+
+    public SecchiLocationCollection SecchiLocations = new SecchiLocationCollection();
+
+    /*
+    public SecchiLocationCollection SecchiLocations
+    {
+        get; private set;
+    }
+    */
+
+
 
     // Feature for the current location sent by the GeoTriggerService.
     public ArcGISFeature? feature;
@@ -142,6 +178,8 @@ public partial class SecchiViewModel : ObservableRecipient
             secchiLocationsChannel,
             secchiGeotriggerChannel
         );
+
+
 
         // Create the state machine.
         stateMachine = new StateMachine<SecchiServiceState, SecchiServiceTrigger>(
@@ -765,7 +803,7 @@ public partial class SecchiViewModel : ObservableRecipient
                     message.Value.Latitude,
                     message.Value.Longitude
                 );
-                
+
                 SecchiLocationDB.Add(new SecchiLocationDisplay(
                     message.Value.Location,
                     message.Value.Latitude,
@@ -775,8 +813,6 @@ public partial class SecchiViewModel : ObservableRecipient
                 ));
 
                 // SecchiLocationDB.Add(new SecchiLocationDisplay("Location 1", 47.673988, -122.121513, LocationType.OneTime, 22));
-                // SecchiLocationDB.Add(new SecchiLocationDisplay("Location 2", 47.673988, -122.121513, LocationType.OneTime, 23));
-                // SecchiLocationDB.Add(new SecchiLocationDisplay("Location 3", 47.673988, -122.121513, LocationType.OneTime, 24));
             }
         );
     }
@@ -794,10 +830,13 @@ public partial class SecchiViewModel : ObservableRecipient
                     "SecchiViewModel, WaitForObservationsAndLocations: SecchiViewModel has locations."
                 );
 
+                // Create the SecchiLocations collection.
+                // SecchiLocations = new SecchiLocationCollection();
+
                 // Send a message to get the next group of records.
                 WeakReferenceMessenger.Default.Send<GetSqliteRecordsGroupRequest>
                     (new GetSqliteRecordsGroupRequest
-                    (new SqliteRecordsGroupRequest(DbType.SecchiLocations, 20, 1))
+                    (new SqliteRecordsGroupRequest(DbType.SecchiLocations, 3, 0))
                 );
             }
             else if (dbType == DbType.SecchiObservations)

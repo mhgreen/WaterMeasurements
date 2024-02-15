@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-using Esri.ArcGISRuntime.Data;
+﻿using Esri.ArcGISRuntime.Data;
 
 namespace WaterMeasurements.Models;
 
@@ -17,7 +11,7 @@ public enum DbType
 public enum RecordStatus
 {
     WorkingSet,
-    GeodatabaseCommitted
+    Comitted
 }
 
 public enum LocationType
@@ -30,7 +24,11 @@ public enum LocationType
 public readonly record struct FeatureToTable(FeatureTable FeatureTable, DbType DbType);
 
 // Record to request a group of records from Sqlite.
-public readonly record struct SqliteRecordsGroupRequest(DbType DbType, int PageSize, int Offset);
+public readonly record struct SqliteRecordsGroupRequest(
+    DbType DbType,
+    int PageSize,
+    int PageNumber
+);
 
 // Record for Secchi observation.
 public readonly record struct SecchiObservation(

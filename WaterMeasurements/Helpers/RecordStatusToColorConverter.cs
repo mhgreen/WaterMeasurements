@@ -1,21 +1,20 @@
-using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Data;
+﻿using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media;
 using WaterMeasurements.Models;
 
 namespace WaterMeasurements.Helpers;
 
-public class LocationTypeToColorConverter : IValueConverter
+internal class RecordStatusToColorConverter
 {
-    public object Convert(object value, Type targetType, object parameter, string language)
+    public static object Convert(object value)
     {
-        var locationType = (LocationType)value;
+        var recordStatus = (RecordStatus)value;
 
-        return locationType switch
+        return recordStatus switch
         {
-            LocationType.OneTime
+            RecordStatus.WorkingSet
                 => (SolidColorBrush)Application.Current.Resources["AccentFillColorDefaultBrush"],
-            LocationType.Permanent
+            RecordStatus.Comitted
                 => (SolidColorBrush)Application.Current.Resources["AccentFillColorDefaultBrush"],
             _ => (SolidColorBrush)Application.Current.Resources["AccentFillColorDisabledBrush"]
         };

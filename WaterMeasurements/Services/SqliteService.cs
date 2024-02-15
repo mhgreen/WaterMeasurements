@@ -1,37 +1,17 @@
-﻿using System;
-using System.IO;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-using Esri.ArcGISRuntime.Data;
-
+﻿using System.Data;
+using Ardalis.GuardClauses;
 using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.Mvvm.Messaging.Messages;
-
-using Windows.Storage;
-
-using WaterMeasurements.Models;
-using WaterMeasurements.Views;
-using WaterMeasurements.Services;
-using WaterMeasurements.Contracts.Services;
-using static WaterMeasurements.Models.SqliteConversion;
-using static WaterMeasurements.Models.SqliteConfiguration;
-
-using Ardalis.GuardClauses;
-
-using Microsoft.Data.Sqlite;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.DependencyInjection;
-using Windows.Media.Core;
-
 using Dapper;
 using Dapper.SimpleSqlBuilder;
-using Microsoft.UI.Xaml.Controls;
-using Windows.System;
-using System.Collections.ObjectModel;
-using System.Data;
+using Esri.ArcGISRuntime.Data;
+using Microsoft.Data.Sqlite;
+using Microsoft.Extensions.Logging;
+using WaterMeasurements.Contracts.Services;
+using WaterMeasurements.Models;
+using Windows.Storage;
+using static WaterMeasurements.Models.SqliteConfiguration;
+using static WaterMeasurements.Models.SqliteConversion;
 using DbType = WaterMeasurements.Models.DbType;
 
 namespace WaterMeasurements.Services;
@@ -57,9 +37,7 @@ public class AddSecchiLocationMessage(SecchiLocation secchiLocation)
 
 // Message to request a group of records from the Sqlite database.
 public class GetSqliteRecordsGroupRequest(SqliteRecordsGroupRequest sqliteRecordsGroupRequest)
-    : ValueChangedMessage<SqliteRecordsGroupRequest>(sqliteRecordsGroupRequest)
-{
-}
+    : ValueChangedMessage<SqliteRecordsGroupRequest>(sqliteRecordsGroupRequest) { }
 
 // Message to provide modules with a SecchiLocation from the Sqlite database.
 public class SecchiLocationsSqliteRecordGroup(SecchiLocation secchiLocation)
@@ -174,25 +152,22 @@ public partial class SqliteService : ISqliteService
                 this,
                 async (recipient, message) =>
                 {
-                                                             
                     // Log the GetSqliteRecordsGroupRequest.
                     logger.LogDebug(
                         SqliteLog,
                         "SqliteService, GetSqliteRecordsGroupRequest: {message}.",
                         message.Value.ToString()
-                     );
-                                                                                
-                    // Call GetRecordGroupFromSqlite with the extracted dbType, pageSize, and offset.
+                    );
+
+                    // Call GetRecordGroupFromSqlite with the extracted dbType, pageSize, and pageNumber.
                     await GetRecordGroupFromSqlite(
                         message.Value.DbType,
                         message.Value.PageSize,
-                        message.Value.Offset
+                        message.Value.PageNumber
                     );
-                }   
+                }
             );
-
         }
-
         catch (Exception exception)
         {
             logger.LogError(
@@ -443,7 +418,7 @@ public partial class SqliteService : ISqliteService
                     }
                 }
                 // Indicate that the feature is from the geodatabase and has been committed.
-                fieldValues["Status"] = (int)RecordStatus.GeodatabaseCommitted;
+                fieldValues["Status"] = (int)RecordStatus.Comitted;
 
                 // Create the sqlite insert statement.
                 var insertStatement =
@@ -737,15 +712,15 @@ public partial class SqliteService : ISqliteService
         WeakReferenceMessenger.Default.Send(new TableAvailableMessage(dbType));
     }
 
-    private async Task GetRecordGroupFromSqlite(DbType dbType, int pageSize, int offset)
+    private async Task GetRecordGroupFromSqlite(DbType dbType, int pageSize, int pageNumber)
     {
-        ObservableCollection<SecchiLocationDisplay> secchiLocationCollection = [];
-
         try
         {
-            logger.LogTrace(SqliteLog, "GetObservableCollection called with dbType of {dbType}.",
+            logger.LogTrace(
+                SqliteLog,
+                "GetObservableCollection called with dbType of {dbType}.",
                 dbType
-                );
+            );
 
             // Open the connection to the sqlite database.
             using var database = await GetOpenConnectionAsync();
@@ -756,8 +731,12 @@ public partial class SqliteService : ISqliteService
                     //Log to trace that the dbType is SecchiLocations.
                     logger.LogTrace(SqliteLog, "dbType is SecchiLocations.");
 
+                    // Calculate the offset so that the correct records for a page are retrieved.
+                    var offset = pageSize * pageNumber;
+
                     //Dapper.SimpleSqlBuilder to build the SQL query.
-                    var builder = SimpleBuilder.CreateFluent()
+                    var builder = SimpleBuilder
+                        .CreateFluent()
                         .Select($"*")
                         .From($"SecchiLocations")
                         .OrderBy($"LocationId")
@@ -768,24 +747,33 @@ public partial class SqliteService : ISqliteService
                     logger.LogTrace(SqliteLog, "Sqlite query: {builder.Sql}", builder.Sql);
 
                     // Execute the query and retrieve the results.
-                    var locations = await database.QueryAsync<SecchiLocation>(builder.Sql, builder.Parameters);
+                    var locations = await database.QueryAsync<SecchiLocation>(
+                        builder.Sql,
+                        builder.Parameters
+                    );
+
+                    if (locations.Count() < pageSize)
+                    {
+                        // Log a warning that the number of records returned is less than the page size.
+                        logger.LogWarning(
+                            SqliteLog,
+                            "Number of records returned is less than the page size, so a message can be sent."
+                        );
+                    }
 
                     // Iterate over the locations and log them to trace.
                     foreach (var location in locations)
                     {
-                        WeakReferenceMessenger.Default.Send(new SecchiLocationsSqliteRecordGroup(location));   
+                        WeakReferenceMessenger.Default.Send(
+                            new SecchiLocationsSqliteRecordGroup(location)
+                        );
                     }
                     break;
 
                 default:
                     // Log a warning that the dbType is not implemented.
-                    logger.LogWarning(
-                        SqliteLog,
-                        "dbType {dbType} is not implemented.",
-                        dbType
-                    );
+                    logger.LogWarning(SqliteLog, "dbType {dbType} is not implemented.", dbType);
                     break;
-
             }
         }
         catch (SqliteException sqliteException)

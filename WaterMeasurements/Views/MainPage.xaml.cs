@@ -1,28 +1,19 @@
-﻿using CommunityToolkit.Mvvm.Input;
+﻿using Ardalis.GuardClauses;
+using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.Mvvm.Messaging.Messages;
-
+using Esri.ArcGISRuntime.Geometry;
 using Esri.ArcGISRuntime.Location;
-
+using Esri.ArcGISRuntime.UI.Controls;
+using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Dispatching;
-
 using NLog;
-
-using Ardalis.GuardClauses;
-
-using WaterMeasurements.ViewModels;
 using WaterMeasurements.Models;
-using WaterMeasurements.Services.Instances;
-using Microsoft.Extensions.Logging;
-using NLog.Fluent;
 using WaterMeasurements.Services;
-using WaterMeasurements.Contracts.Services;
-using static WaterMeasurements.Models.PrePlannedMapConfiguration;
-using Esri.ArcGISRuntime.UI.Controls;
-using Esri.ArcGISRuntime.Geometry;
+using WaterMeasurements.ViewModels;
 using WinRT;
+using static WaterMeasurements.Models.PrePlannedMapConfiguration;
 
 namespace WaterMeasurements.Views;
 
@@ -559,13 +550,13 @@ public sealed partial class MainPage : Page
         // Log to trace that the Edit_Location_Click method was called.
         Logger.Trace("MainPage.xaml.cs, Edit_Location_Click: Edit_Location_Click method called.");
 
-        Button button = sender as Button;
+        var button = sender as Button;
+
+        Guard.Against.Null(button, nameof(button), "Button in Edit_Location_Click is null.");
+
         var locationId = button.Tag;
 
         // Log to trace the value of sender and eventArgs.
-        Logger.Trace(
-            "MainPage.xaml.cs, Edit_Location_Click: LocationId: {locationId}",
-            locationId
-        );
+        Logger.Trace("MainPage.xaml.cs, Edit_Location_Click: LocationId: {locationId}", locationId);
     }
 }
