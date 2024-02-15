@@ -1,91 +1,29 @@
 ﻿using System.Collections.ObjectModel;
-using System.Runtime.InteropServices.WindowsRuntime;
 using System.Xml.Linq;
 using Ardalis.GuardClauses;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.Mvvm.Messaging.Messages;
+using CommunityToolkit.WinUI.Collections;
 using Esri.ArcGISRuntime.Data;
 using Esri.ArcGISRuntime.Geotriggers;
 using Microsoft.Extensions.Logging;
 using Microsoft.UI;
 using Microsoft.UI.Dispatching;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Media;
 using Newtonsoft.Json.Linq;
 using Stateless;
 using WaterMeasurements.Contracts.Services;
 using WaterMeasurements.Models;
 using WaterMeasurements.Services;
+using WaterMeasurements.Services.IncrementalLoaders;
 using WaterMeasurements.Views;
-using Windows.Foundation;
 using static WaterMeasurements.Models.SecchiConfiguration;
 using static WaterMeasurements.ViewModels.MainViewModel;
 
 namespace WaterMeasurements.ViewModels;
-
-public class SecchiLocationCollection : List<SecchiLocationDisplay>, ISupportIncrementalLoading
-{
-
-    public List<SecchiLocationDisplay> Locations = [];
-    private int currentPage = 0;
-    private readonly int pageSize = 3; // Or whatever page size you want
-    public bool HasMoreItems { get; private set; } = true;
-
-    public SecchiLocationCollection()
-    {
-        WeakReferenceMessenger.Default.Register<SecchiLocationsSqliteRecordGroup>(
-            this,
-            (recipient, message) =>
-            {
-                Locations.Add(new SecchiLocationDisplay(
-                    message.Value.Location,
-                    message.Value.Latitude,
-                    message.Value.Longitude,
-                    message.Value.LocationType,
-                    message.Value.LocationId
-                ));
-
-                // SecchiLocationDB.Add(new SecchiLocationDisplay("Location 1", 47.673988, -122.121513, LocationType.OneTime, 22));
-            }
-        );
-
-        Initialize();
-
-    }
-
-    private void Initialize()
-    {
-
-
-        // Send a message to get the next group of records.
-        WeakReferenceMessenger.Default.Send<GetSqliteRecordsGroupRequest>
-                   (new GetSqliteRecordsGroupRequest
-                              (new SqliteRecordsGroupRequest(DbType.SecchiLocations, pageSize, currentPage))
-                                     );
-
-        currentPage++;
-        HasMoreItems = currentPage < 4;
-    }
-
-    public IAsyncOperation<LoadMoreItemsResult> LoadMoreItemsAsync(uint count)
-    {
-        // Send a message to get the next group of records.
-        WeakReferenceMessenger.Default.Send<GetSqliteRecordsGroupRequest>
-            (new GetSqliteRecordsGroupRequest
-            (new SqliteRecordsGroupRequest(DbType.SecchiLocations, pageSize, currentPage))
-        );
-        currentPage++;
-        HasMoreItems = currentPage < 4;
-        return AsyncInfo.Run(token =>
-        {
-            var items = 3;
-            return Task.FromResult(new LoadMoreItemsResult { Count = (uint)items });
-        });
-    }
-}
-
 
 public partial class SecchiViewModel : ObservableRecipient
 {
@@ -109,8 +47,6 @@ public partial class SecchiViewModel : ObservableRecipient
     // The collection of Secchi locations to display.
     public ObservableCollection<SecchiLocationDisplay> SecchiLocationDB = [];
 
-    public SecchiLocationCollection SecchiLocations = new SecchiLocationCollection();
-
     /*
     public SecchiLocationCollection SecchiLocations
     {
@@ -118,7 +54,7 @@ public partial class SecchiViewModel : ObservableRecipient
     }
     */
 
-
+    public IncrementalLoadingCollection<SecchiLocationIncrementalLoader, SecchiLocationDisplay> SecchiLocationsIncrementalLoading;
 
     // Feature for the current location sent by the GeoTriggerService.
     public ArcGISFeature? feature;
@@ -179,8 +115,6 @@ public partial class SecchiViewModel : ObservableRecipient
             secchiGeotriggerChannel
         );
 
-
-
         // Create the state machine.
         stateMachine = new StateMachine<SecchiServiceState, SecchiServiceTrigger>(
             SecchiServiceState.WaitingForObservations
@@ -217,6 +151,28 @@ public partial class SecchiViewModel : ObservableRecipient
         {
             logger.LogDebug(SecchiViewModelLog, "SecchiViewModel, Constructor: Not configured.");
         }
+    }
+
+    public ObservableCollection<SecchiLocationDisplay> SecchiLocationCollection
+    {
+        get;
+    }
+
+
+
+    private async void RefreshCollection(Object sender, RoutedEventArgs routedEventArgs)
+    {
+        // Log that RefreshCollection has been called.
+        logger.LogDebug(
+                       SecchiViewModelLog,
+                                  "SecchiViewModel, RefreshCollection: RefreshCollection called."
+                                         );
+        // Log the sender and routedEventArgs.
+        logger.LogDebug(
+                                  SecchiViewModelLog,
+                                                                   "SecchiViewModel, RefreshCollection: sender: {sender}, routedEventArgs: {routedEventArgs}.",
+                                                                                                           sender,
+                                                                                                                                                   routedEventArgs);
     }
 
     private void Initialize()
@@ -834,10 +790,26 @@ public partial class SecchiViewModel : ObservableRecipient
                 // SecchiLocations = new SecchiLocationCollection();
 
                 // Send a message to get the next group of records.
+                /*
                 WeakReferenceMessenger.Default.Send<GetSqliteRecordsGroupRequest>
                     (new GetSqliteRecordsGroupRequest
                     (new SqliteRecordsGroupRequest(DbType.SecchiLocations, 3, 0))
                 );
+                */
+
+                /*
+                Func<SecchiLocationIncrementalLoader> secchiLocationIncrementalLoaderFactory = () =>
+                {
+                    // Get the necessary dependencies.
+                    var sqliteService = serviceProvider.GetService<SqliteService>();
+                    var logger = serviceProvider.GetService<ILogger<SecchiLocationIncrementalLoader>>();
+
+                    // Create and return a new SecchiLocationIncrementalLoader.
+                    return new SecchiLocationIncrementalLoader(sqliteService, logger);
+                };
+                */
+
+                SecchiLocationsIncrementalLoading = new IncrementalLoadingCollection<SecchiLocationIncrementalLoader, SecchiLocationDisplay>();
             }
             else if (dbType == DbType.SecchiObservations)
             {
@@ -1367,3 +1339,4 @@ public partial class SecchiViewModel : ObservableRecipient
         WeakReferenceMessenger.Default.UnregisterAll(this);
     }
 }
+

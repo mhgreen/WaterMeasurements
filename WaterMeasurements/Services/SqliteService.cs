@@ -18,30 +18,44 @@ namespace WaterMeasurements.Services;
 
 // Message to request the creation of a Sqlite table from a feature table.
 public class FeatureToTableMessage(FeatureToTable featureToTable)
-    : ValueChangedMessage<FeatureToTable>(featureToTable) { }
+    : ValueChangedMessage<FeatureToTable>(featureToTable)
+{
+}
 
 // Message to notify modules of the result of a table creation.
 public class FeatureToTableResultMessage(FeatureToTableResult featureToTableResult)
-    : ValueChangedMessage<FeatureToTableResult>(featureToTableResult) { }
+    : ValueChangedMessage<FeatureToTableResult>(featureToTableResult)
+{
+}
 
 // Message to nofify modules that a table is available.
-public class TableAvailableMessage(DbType dbType) : ValueChangedMessage<DbType>(dbType) { }
+public class TableAvailableMessage(DbType dbType) : ValueChangedMessage<DbType>(dbType)
+{
+}
 
 // Message to add a SecchiObservation to the Sqlite database.
 public class AddSecchiObservationMessage(SecchiObservation secchiObservation)
-    : ValueChangedMessage<SecchiObservation>(secchiObservation) { }
+    : ValueChangedMessage<SecchiObservation>(secchiObservation)
+{
+}
 
 // Message to add a SecchiLocation to the Sqlite database.
 public class AddSecchiLocationMessage(SecchiLocation secchiLocation)
-    : ValueChangedMessage<SecchiLocation>(secchiLocation) { }
+    : ValueChangedMessage<SecchiLocation>(secchiLocation)
+{
+}
 
 // Message to request a group of records from the Sqlite database.
 public class GetSqliteRecordsGroupRequest(SqliteRecordsGroupRequest sqliteRecordsGroupRequest)
-    : ValueChangedMessage<SqliteRecordsGroupRequest>(sqliteRecordsGroupRequest) { }
+    : ValueChangedMessage<SqliteRecordsGroupRequest>(sqliteRecordsGroupRequest)
+{
+}
 
 // Message to provide modules with a SecchiLocation from the Sqlite database.
 public class SecchiLocationsSqliteRecordGroup(SecchiLocation secchiLocation)
-    : ValueChangedMessage<SecchiLocation>(secchiLocation) { }
+    : ValueChangedMessage<SecchiLocation>(secchiLocation)
+{
+}
 
 public partial class SqliteService : ISqliteService
 {
@@ -793,6 +807,69 @@ public partial class SqliteService : ISqliteService
                 "Error getting SecchiLocations: {exception}.",
                 exception.ToString()
             );
+        }
+    }
+
+    public async Task<IEnumerable<SecchiLocation>> GetSecchiLocationsFromSqlite(int pageSize, int pageNumber)
+    {
+        try
+        {
+            logger.LogTrace(
+                SqliteLog,
+                "GetSecchiLocationsFromSqlite called with a pageSize of {pageSize} and a pageNumber of {pageNumber}.",
+                pageSize,
+                pageNumber
+            );
+
+            // Open the connection to the sqlite database.
+            using var database = await GetOpenConnectionAsync();
+
+            // Calculate the offset so that the correct records for a page are retrieved.
+            var offset = pageSize * pageNumber;
+
+            //Dapper.SimpleSqlBuilder to build the SQL query.
+            var builder = SimpleBuilder
+                .CreateFluent()
+                .Select($"*")
+                .From($"SecchiLocations")
+                .OrderBy($"LocationId")
+                .Limit(pageSize)
+                .Offset(offset);
+
+            // Log builder.sql to trace.
+            logger.LogTrace(SqliteLog, "Sqlite query: {builder.Sql}", builder.Sql);
+
+            // Execute the query and retrieve the results.
+            var locations = await database.QueryAsync<SecchiLocation>(
+                builder.Sql,
+                builder.Parameters
+            );
+
+            return locations;
+
+        }
+        catch (SqliteException sqliteException)
+        {
+            logger.LogError(
+                SqliteLog,
+                "SqliteService, GetSecchiLocationsFromSqlite, Sqlite exception: {sqliteMessage}, with an error code of {SqliteErrorCode}",
+                sqliteException.Message,
+                sqliteException.SqliteErrorCode
+            );
+
+            // Return an empty list of SecchiLocation.
+            return [];
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(
+                SqliteLog,
+                "Error getting SecchiLocations: {exception}.",
+                exception.ToString()
+            );
+
+            // Return an empty list of SecchiLocation.
+            return [];
         }
     }
 

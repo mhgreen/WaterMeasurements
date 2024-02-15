@@ -860,10 +860,9 @@
                                                         x:Name="SecchiLocationsListView"
                                                         MaxHeight="200"
                                                         Margin="0,20,0,0"
-                                                        IncrementalLoadingThreshold="0.8"
-                                                        IncrementalLoadingTrigger="Edge"
                                                         ItemTemplate="{StaticResource SecchiLocationsTemplate}"
-                                                        ItemsSource="{x:Bind SecchiView.SecchiLocations.Locations}"
+                                                        ItemsSource="{x:Bind SecchiView.SecchiLocationsIncrementalLoading}"
+                                                        DataContext="{x:Bind SecchiView.SecchiLocationsIncrementalLoading}"
                                                         ScrollViewer.VerticalScrollBarVisibility="Visible" />
                                                 </StackPanel>
 

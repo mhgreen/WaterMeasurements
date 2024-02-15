@@ -1,15 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-using WaterMeasurements.Models;
-
-using Esri.ArcGISRuntime.Data;
+﻿using WaterMeasurements.Models;
 
 namespace WaterMeasurements.Contracts.Services;
+
 public interface ISqliteService
 {
-
+    public Task<IEnumerable<SecchiLocation>> GetSecchiLocationsFromSqlite(
+        int pageSize,
+        int pageNumber
+    );
 }
