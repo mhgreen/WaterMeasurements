@@ -47,13 +47,6 @@ public partial class SecchiViewModel : ObservableRecipient
     // The collection of Secchi locations to display.
     public ObservableCollection<SecchiLocationDisplay> SecchiLocationDB = [];
 
-    /*
-    public SecchiLocationCollection SecchiLocations
-    {
-        get; private set;
-    }
-    */
-
     public IncrementalLoadingCollection<SecchiLocationIncrementalLoader, SecchiLocationDisplay> SecchiLocationsIncrementalLoading;
 
     // Feature for the current location sent by the GeoTriggerService.
@@ -152,14 +145,6 @@ public partial class SecchiViewModel : ObservableRecipient
             logger.LogDebug(SecchiViewModelLog, "SecchiViewModel, Constructor: Not configured.");
         }
     }
-
-    public ObservableCollection<SecchiLocationDisplay> SecchiLocationCollection
-    {
-        get;
-    }
-
-
-
     private async void RefreshCollection(Object sender, RoutedEventArgs routedEventArgs)
     {
         // Log that RefreshCollection has been called.
@@ -809,7 +794,10 @@ public partial class SecchiViewModel : ObservableRecipient
                 };
                 */
 
-                SecchiLocationsIncrementalLoading = new IncrementalLoadingCollection<SecchiLocationIncrementalLoader, SecchiLocationDisplay>();
+                // SecchiLocationsIncrementalLoading = new IncrementalLoadingCollection<SecchiLocationIncrementalLoader, SecchiLocationDisplay>();
+                // In MainPage.xaml, set SecchiLocationsListView.ItemsSource to SecchiLocationsIncrementalLoading.
+
+
             }
             else if (dbType == DbType.SecchiObservations)
             {

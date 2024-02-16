@@ -861,8 +861,6 @@
                                                         MaxHeight="200"
                                                         Margin="0,20,0,0"
                                                         ItemTemplate="{StaticResource SecchiLocationsTemplate}"
-                                                        ItemsSource="{x:Bind SecchiView.SecchiLocationsIncrementalLoading}"
-                                                        DataContext="{x:Bind SecchiView.SecchiLocationsIncrementalLoading}"
                                                         ScrollViewer.VerticalScrollBarVisibility="Visible" />
                                                 </StackPanel>
 
