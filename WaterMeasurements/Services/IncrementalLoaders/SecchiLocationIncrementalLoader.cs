@@ -10,7 +10,6 @@ namespace WaterMeasurements.Services.IncrementalLoaders;
 
 public class SecchiLocationIncrementalLoader : IIncrementalSource<SecchiLocationDisplay>
 {
-    private readonly int pageSize = 3;
     private int currentPage = 0;
     private readonly List<SecchiLocationDisplay> secchiLocations;
 
@@ -25,10 +24,7 @@ public class SecchiLocationIncrementalLoader : IIncrementalSource<SecchiLocation
     private readonly ILogger<SecchiLocationIncrementalLoader> logger;
     private readonly ISqliteService? sqliteService;
 
-    public bool HasMoreItems
-    {
-        get; private set;
-    } = true;
+    public bool HasMoreItems { get; private set; } = true;
 
     public SecchiLocationIncrementalLoader()
     {
@@ -37,17 +33,25 @@ public class SecchiLocationIncrementalLoader : IIncrementalSource<SecchiLocation
         // var serviceProvider = (Application.Current as App).Host.Services;
         var serviceProvider = currentApp.Host.Services;
         sqliteService = serviceProvider.GetService<ISqliteService>();
-        Guard.Against.Null(sqliteService, nameof(sqliteService), "SecchiLocationIncrementalLoader can't work without the Sqlite service.");
-        var loggerProvider = serviceProvider.GetService<ILogger<SecchiLocationIncrementalLoader>>();
-        Guard.Against.Null(loggerProvider, nameof(loggerProvider), "SecchiLocationIncrementalLoader loggerProvider is null.");
-        logger = loggerProvider;
-        Guard.Against.Null(logger, nameof(logger), "SecchiLocationIncrementalLoader can't work without a logger.");
-
-
-        logger.LogDebug(
-            SecchiLocationLoaderLog,
-            "SecchiLocationIncrementalLoader created."
+        Guard.Against.Null(
+            sqliteService,
+            nameof(sqliteService),
+            "SecchiLocationIncrementalLoader can't work without the Sqlite service."
         );
+        var loggerProvider = serviceProvider.GetService<ILogger<SecchiLocationIncrementalLoader>>();
+        Guard.Against.Null(
+            loggerProvider,
+            nameof(loggerProvider),
+            "SecchiLocationIncrementalLoader loggerProvider is null."
+        );
+        logger = loggerProvider;
+        Guard.Against.Null(
+            logger,
+            nameof(logger),
+            "SecchiLocationIncrementalLoader can't work without a logger."
+        );
+
+        logger.LogDebug(SecchiLocationLoaderLog, "SecchiLocationIncrementalLoader created.");
 
         secchiLocations = [];
     }
@@ -58,51 +62,72 @@ public class SecchiLocationIncrementalLoader : IIncrementalSource<SecchiLocation
         CancellationToken cancellationToken = default
     )
     {
-
         try
         {
             // Make sure the SqliteService is available.
-            Guard.Against.Null(sqliteService, nameof(SqliteService), "SecchiLocationIncrementalLoader can't work without the Sqlite service.");
+            Guard.Against.Null(
+                sqliteService,
+                nameof(SqliteService),
+                "SecchiLocationIncrementalLoader can't work without the Sqlite service."
+            );
 
             // Log that the GetPagedItemsAsync method has been called.
-            logger.LogInformation(
-                    SecchiLocationLoaderLog,
-                    "GetPagedItemAsync: Fetching paged items. PageSize: {pageSize}, Page:{currentPage}.",
-                    pageSize,
-                    currentPage
-                );
+            logger.LogTrace(
+                SecchiLocationLoaderLog,
+                "GetPagedItemAsync: Fetching paged items. PageSize: {pageSize}, Page:{currentPage}.",
+                pageSize,
+                currentPage
+            );
+
+            // Clear the secchiLocations list as GetPagedItemsAsync expects only the records for the current page.
+            secchiLocations.Clear();
 
             // Call the GetsecchiLocationsFromSqlite method to retrieve the records.
-            var queryResult = await sqliteService.GetSecchiLocationsFromSqlite(pageSize, currentPage);
+            var queryResult = await sqliteService.GetSecchiLocationsFromSqlite(
+                pageSize,
+                currentPage
+            );
+
+            // secchiLocations.AddRange(queryResult.Select(item => new SecchiLocationDisplay(latitude: item.Latitude, longitude: item.Longitude, locationId: item.LocationId, locationName: item.Location, locationType: item.LocationType)).ToList());
 
             // Iterate through the queryResult and write the results to the log.
             foreach (var item in queryResult)
             {
                 logger.LogTrace(
                     SecchiLocationLoaderLog,
-                    "GetPagedItemAsync: {item.LocationName}, {item.Latitude}, {item.Longitude}, {item.LocationType}, {item.LocationId}",
+                    "GetPagedItemAsync, queryResult: {item.LocationName}, {item.Latitude}, {item.Longitude}, {item.LocationType}, {item.LocationId}",
                     item.Location,
                     item.Latitude,
                     item.Longitude,
                     item.LocationType,
                     item.LocationId
                 );
+                // Add the retrieved item to the secchiLocations list.
+                secchiLocations.Add(
+                    new SecchiLocationDisplay(
+                        latitude: item.Latitude,
+                        longitude: item.Longitude,
+                        locationId: item.LocationId,
+                        locationName: item.Location,
+                        locationType: item.LocationType
+                    )
+                );
             }
+
+            // Log then number of records retrieved.
+            logger.LogTrace(
+                SecchiLocationLoaderLog,
+                "GetPagedItemAsync: Fetched {queryResult.Count()} items.",
+                queryResult.Count()
+            );
 
             currentPage++;
 
-            // Add the retrieved records to the secchiLocations list.
-            // secchiLocations.AddRange(queryResult.Select(item => new SecchiLocationDisplay(latitude: item.Latitude, longitude: item.Longitude, locationId: item.LocationId, locationName: item.Location, locationType: item.LocationType)).ToList());
-            foreach (var item in queryResult)
-            {
-                secchiLocations.Add(new(latitude: item.Latitude, longitude: item.Longitude, locationId: item.LocationId, locationName: item.Location, locationType: item.LocationType));
-            }
-
             // Check if there are more items available.
-            HasMoreItems = secchiLocations.Count == pageSize;
+            HasMoreItems = (queryResult.Count() == pageSize);
 
             // Log the result.
-            logger.LogInformation(
+            logger.LogTrace(
                 SecchiLocationLoaderLog,
                 "Fetched {secchiLocations.Count()} items. HasMoreItems: {HasMoreItems}",
                 secchiLocations.Count,
@@ -118,7 +143,7 @@ public class SecchiLocationIncrementalLoader : IIncrementalSource<SecchiLocation
                 SecchiLocationLoaderLog,
                 "Error in GetPagedItemsAsync: {exception.Message}",
                 exception.Message
-                );
+            );
             return secchiLocations;
         }
     }

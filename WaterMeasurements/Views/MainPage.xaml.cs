@@ -256,12 +256,10 @@ public sealed partial class MainPage : Page
             }
 
             // Configure SecchiLocationsListView to use the SecchiLocationsIncrementalLoading collection.
-            // The RefreshCollection is at the bottom of the page.
-            var secchiLocationsIncrementalLoading =
-                new IncrementalLoadingCollection<
-                    SecchiLocationIncrementalLoader,
-                    SecchiLocationDisplay
-                >();
+            var secchiLocationsIncrementalLoading = new IncrementalLoadingCollection<
+                SecchiLocationIncrementalLoader,
+                SecchiLocationDisplay
+            >(itemsPerPage: 3);
             SecchiLocationsListView.ItemsSource = secchiLocationsIncrementalLoading;
             SecchiLocationsListView.IsItemClickEnabled = true;
             SecchiLocationsListView.ItemClick += (source, eventArgs) =>
@@ -276,6 +274,8 @@ public sealed partial class MainPage : Page
                 }
             };
             SecchiLocationsListView.DataContext = secchiLocationsIncrementalLoading;
+
+            var HasMoreItems = secchiLocationsIncrementalLoading.HasMoreItems;
 
             // Register for PreplannedMapConfigurationStatusMessage messages.
             // Log the result of the message.
@@ -582,27 +582,5 @@ public sealed partial class MainPage : Page
 
         // Log to trace the value of sender and eventArgs.
         Logger.Trace("MainPage.xaml.cs, Edit_Location_Click: LocationId: {locationId}", locationId);
-    }
-
-    // Refresh the collection of Secchi locations.
-    private async void RefreshCollection(object sender, RoutedEventArgs eventArgs)
-    {
-        // Log to trace that the RefreshCollection method was called.
-        Logger.Trace("MainPage.xaml.cs, RefreshCollection: RefreshCollection method called.");
-
-        // Log to trace the value of sender and eventArgs.
-        Logger.Trace(
-            "MainPage.xaml.cs, RefreshCollection: sender: {sender}, RoutedEventArgs: {eventArgs}",
-            sender,
-            eventArgs
-        );
-
-        // Call the RefreshCollection method from the DataCollectionView.
-        var secchiLocationsIncrementalLoading =
-            new IncrementalLoadingCollection<
-                SecchiLocationIncrementalLoader,
-                SecchiLocationDisplay
-            >();
-        await secchiLocationsIncrementalLoading.RefreshAsync();
     }
 }

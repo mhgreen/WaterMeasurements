@@ -10,7 +10,6 @@ using Esri.ArcGISRuntime.Geotriggers;
 using Microsoft.Extensions.Logging;
 using Microsoft.UI;
 using Microsoft.UI.Dispatching;
-using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Newtonsoft.Json.Linq;
@@ -47,7 +46,10 @@ public partial class SecchiViewModel : ObservableRecipient
     // The collection of Secchi locations to display.
     public ObservableCollection<SecchiLocationDisplay> SecchiLocationDB = [];
 
-    public IncrementalLoadingCollection<SecchiLocationIncrementalLoader, SecchiLocationDisplay> SecchiLocationsIncrementalLoading;
+    public IncrementalLoadingCollection<
+        SecchiLocationIncrementalLoader,
+        SecchiLocationDisplay
+    > SecchiLocationsIncrementalLoading;
 
     // Feature for the current location sent by the GeoTriggerService.
     public ArcGISFeature? feature;
@@ -144,20 +146,6 @@ public partial class SecchiViewModel : ObservableRecipient
         {
             logger.LogDebug(SecchiViewModelLog, "SecchiViewModel, Constructor: Not configured.");
         }
-    }
-    private async void RefreshCollection(Object sender, RoutedEventArgs routedEventArgs)
-    {
-        // Log that RefreshCollection has been called.
-        logger.LogDebug(
-                       SecchiViewModelLog,
-                                  "SecchiViewModel, RefreshCollection: RefreshCollection called."
-                                         );
-        // Log the sender and routedEventArgs.
-        logger.LogDebug(
-                                  SecchiViewModelLog,
-                                                                   "SecchiViewModel, RefreshCollection: sender: {sender}, routedEventArgs: {routedEventArgs}.",
-                                                                                                           sender,
-                                                                                                                                                   routedEventArgs);
     }
 
     private void Initialize()
@@ -745,13 +733,15 @@ public partial class SecchiViewModel : ObservableRecipient
                     message.Value.Longitude
                 );
 
-                SecchiLocationDB.Add(new SecchiLocationDisplay(
-                    message.Value.Location,
-                    message.Value.Latitude,
-                    message.Value.Longitude,
-                    message.Value.LocationType,
-                    message.Value.LocationId
-                ));
+                SecchiLocationDB.Add(
+                    new SecchiLocationDisplay(
+                        message.Value.Location,
+                        message.Value.Latitude,
+                        message.Value.Longitude,
+                        message.Value.LocationType,
+                        message.Value.LocationId
+                    )
+                );
 
                 // SecchiLocationDB.Add(new SecchiLocationDisplay("Location 1", 47.673988, -122.121513, LocationType.OneTime, 22));
             }
@@ -782,22 +772,9 @@ public partial class SecchiViewModel : ObservableRecipient
                 );
                 */
 
-                /*
-                Func<SecchiLocationIncrementalLoader> secchiLocationIncrementalLoaderFactory = () =>
-                {
-                    // Get the necessary dependencies.
-                    var sqliteService = serviceProvider.GetService<SqliteService>();
-                    var logger = serviceProvider.GetService<ILogger<SecchiLocationIncrementalLoader>>();
-
-                    // Create and return a new SecchiLocationIncrementalLoader.
-                    return new SecchiLocationIncrementalLoader(sqliteService, logger);
-                };
-                */
-
                 // SecchiLocationsIncrementalLoading = new IncrementalLoadingCollection<SecchiLocationIncrementalLoader, SecchiLocationDisplay>();
+
                 // In MainPage.xaml, set SecchiLocationsListView.ItemsSource to SecchiLocationsIncrementalLoading.
-
-
             }
             else if (dbType == DbType.SecchiObservations)
             {
@@ -828,8 +805,6 @@ public partial class SecchiViewModel : ObservableRecipient
             );
         }
     }
-
-
 
     // Get the current network status and use that to trigger InternetAvailableRecieved and InternetUnavailableRecieved.
     private async void StartMonitoringNetwork()
@@ -1327,4 +1302,3 @@ public partial class SecchiViewModel : ObservableRecipient
         WeakReferenceMessenger.Default.UnregisterAll(this);
     }
 }
-
