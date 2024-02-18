@@ -18,44 +18,30 @@ namespace WaterMeasurements.Services;
 
 // Message to request the creation of a Sqlite table from a feature table.
 public class FeatureToTableMessage(FeatureToTable featureToTable)
-    : ValueChangedMessage<FeatureToTable>(featureToTable)
-{
-}
+    : ValueChangedMessage<FeatureToTable>(featureToTable) { }
 
 // Message to notify modules of the result of a table creation.
 public class FeatureToTableResultMessage(FeatureToTableResult featureToTableResult)
-    : ValueChangedMessage<FeatureToTableResult>(featureToTableResult)
-{
-}
+    : ValueChangedMessage<FeatureToTableResult>(featureToTableResult) { }
 
 // Message to nofify modules that a table is available.
-public class TableAvailableMessage(DbType dbType) : ValueChangedMessage<DbType>(dbType)
-{
-}
+public class TableAvailableMessage(DbType dbType) : ValueChangedMessage<DbType>(dbType) { }
 
 // Message to add a SecchiObservation to the Sqlite database.
 public class AddSecchiObservationMessage(SecchiObservation secchiObservation)
-    : ValueChangedMessage<SecchiObservation>(secchiObservation)
-{
-}
+    : ValueChangedMessage<SecchiObservation>(secchiObservation) { }
 
 // Message to add a SecchiLocation to the Sqlite database.
 public class AddSecchiLocationMessage(SecchiLocation secchiLocation)
-    : ValueChangedMessage<SecchiLocation>(secchiLocation)
-{
-}
+    : ValueChangedMessage<SecchiLocation>(secchiLocation) { }
 
 // Message to request a group of records from the Sqlite database.
 public class GetSqliteRecordsGroupRequest(SqliteRecordsGroupRequest sqliteRecordsGroupRequest)
-    : ValueChangedMessage<SqliteRecordsGroupRequest>(sqliteRecordsGroupRequest)
-{
-}
+    : ValueChangedMessage<SqliteRecordsGroupRequest>(sqliteRecordsGroupRequest) { }
 
 // Message to provide modules with a SecchiLocation from the Sqlite database.
 public class SecchiLocationsSqliteRecordGroup(SecchiLocation secchiLocation)
-    : ValueChangedMessage<SecchiLocation>(secchiLocation)
-{
-}
+    : ValueChangedMessage<SecchiLocation>(secchiLocation) { }
 
 public partial class SqliteService : ISqliteService
 {
@@ -326,8 +312,8 @@ public partial class SqliteService : ISqliteService
                 string.Join(", ", featureTableFieldsDictionary)
             );
             // Convert the featureTableFieldsDictionary to a list of strings.
-            var featureTableFields = featureTableFieldsDictionary.Select(
-                field => $"{field.Key} {field.Value}"
+            var featureTableFields = featureTableFieldsDictionary.Select(field =>
+                $"{field.Key} {field.Value}"
             );
             // Log the feature table fields to trace.
             logger.LogTrace(
@@ -558,7 +544,8 @@ public partial class SqliteService : ISqliteService
             var builder = SimpleBuilder.Create(
                 $"""
                     INSERT INTO SecchiLocations (Latitude, Longitude, LocationId, Location, LocationType)
-                    VALUES ({secchiLocation.Latitude}, {secchiLocation.Longitude}, {secchiLocation.LocationId}, \"{secchiLocation.Location}\", {(int)secchiLocation.LocationType})
+                    VALUES ({secchiLocation.Latitude}, {secchiLocation.Longitude}, {secchiLocation.LocationId}, \"{secchiLocation.Location}\", {(int)
+                    secchiLocation.LocationType})
                 """
             );
 
@@ -810,7 +797,10 @@ public partial class SqliteService : ISqliteService
         }
     }
 
-    public async Task<IEnumerable<SecchiLocation>> GetSecchiLocationsFromSqlite(int pageSize, int pageNumber)
+    public async Task<IEnumerable<SecchiLocation>> GetSecchiLocationsFromSqlite(
+        int pageSize,
+        int pageNumber
+    )
     {
         try
         {
@@ -846,7 +836,6 @@ public partial class SqliteService : ISqliteService
             );
 
             return locations;
-
         }
         catch (SqliteException sqliteException)
         {

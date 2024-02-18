@@ -858,6 +858,11 @@
                                                 <StackPanel>
                                                     <ListView
                                                         x:Name="SecchiLocationsListView"
+                                                        ItemsSource="{x:Bind SecchiView.SecchiLocations}"
+                                                        ItemClick="{x:Bind SecchiView.SecchiLocationsListView_ItemClick}"
+                                                        IsItemClickEnabled="True"
+                                                        IncrementalLoadingTrigger="Edge"
+                                                        IncrementalLoadingThreshold="2"
                                                         MaxHeight="200"
                                                         Margin="0,20,0,0"
                                                         ItemTemplate="{StaticResource SecchiLocationsTemplate}"

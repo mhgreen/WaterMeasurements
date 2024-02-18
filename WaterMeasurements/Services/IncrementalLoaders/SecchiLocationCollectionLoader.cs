@@ -1,29 +1,38 @@
-﻿using Ardalis.GuardClauses;
-using CommunityToolkit.WinUI.Collections;
+﻿using System.Collections.ObjectModel;
+using System.Runtime.InteropServices.WindowsRuntime;
+using Ardalis.GuardClauses;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Data;
 using WaterMeasurements.Contracts.Services;
 using WaterMeasurements.Models;
+using Windows.Foundation;
 
 namespace WaterMeasurements.Services.IncrementalLoaders;
 
-public class SecchiLocationIncrementalLoader : IIncrementalSource<SecchiLocationDisplay>
+public class SecchiLocationCollectionLoader
+    : ObservableCollection<SecchiLocationDisplay>,
+        ISupportIncrementalLoading
 {
-    private readonly List<SecchiLocationDisplay> secchiLocations;
+    private int pageIndex = 0;
+    private readonly int pageSize = 10;
+    private bool hasMoreItems = true;
+
+    public bool HasMoreItems => hasMoreItems;
 
     // Set the eventId for the logger.
-    private readonly EventId SecchiLocationLoaderLog = new(16, "SecchiLocationIncrementalLoader");
+    private readonly EventId SecchiLocationLoaderLog = new(17, "SecchiLocationCollectionLoader");
 
     // Set the SqliteService and Logger properties.
     // These properties are set by the dependency injection system.
     // The factory method didn't seem to work in SecchiViewModel.
     // This may be due to how the incremental loader is used in the SecchiViewModel.
 
-    private readonly ILogger<SecchiLocationIncrementalLoader> logger;
+    private readonly ILogger<SecchiLocationCollectionLoader> logger;
     private readonly ISqliteService? sqliteService;
 
-    public SecchiLocationIncrementalLoader()
+    public SecchiLocationCollectionLoader()
     {
         var currentApp = Application.Current as App;
         Guard.Against.Null(currentApp, nameof(currentApp), "Application.Current can not be null");
@@ -33,30 +42,32 @@ public class SecchiLocationIncrementalLoader : IIncrementalSource<SecchiLocation
         Guard.Against.Null(
             sqliteService,
             nameof(sqliteService),
-            "SecchiLocationIncrementalLoader can't work without the Sqlite service."
+            "SecchiLocationCollectionLoader can't work without the Sqlite service."
         );
-        var loggerProvider = serviceProvider.GetService<ILogger<SecchiLocationIncrementalLoader>>();
+        var loggerProvider = serviceProvider.GetService<ILogger<SecchiLocationCollectionLoader>>();
         Guard.Against.Null(
             loggerProvider,
             nameof(loggerProvider),
-            "SecchiLocationIncrementalLoader loggerProvider is null."
+            "SecchiLocationCollectionLoader loggerProvider is null."
         );
         logger = loggerProvider;
         Guard.Against.Null(
             logger,
             nameof(logger),
-            "SecchiLocationIncrementalLoader can't work without a logger."
+            "SecchiLocationCollectionLoader can't work without a logger."
         );
 
-        logger.LogDebug(SecchiLocationLoaderLog, "SecchiLocationIncrementalLoader created.");
-
-        secchiLocations = [];
+        logger.LogDebug(SecchiLocationLoaderLog, "SecchiLocationCollectionLoader created.");
     }
 
-    public async Task<IEnumerable<SecchiLocationDisplay>> GetPagedItemsAsync(
-        int pageIndex,
-        int pageSize,
-        CancellationToken cancellationToken = default
+    public IAsyncOperation<LoadMoreItemsResult> LoadMoreItemsAsync(uint count)
+    {
+        return AsyncInfo.Run((cancellationToken) => LoadMoreItemsAsync(cancellationToken, count));
+    }
+
+    private async Task<LoadMoreItemsResult> LoadMoreItemsAsync(
+        CancellationToken cancellationToken,
+        uint count
     )
     {
         try
@@ -65,19 +76,15 @@ public class SecchiLocationIncrementalLoader : IIncrementalSource<SecchiLocation
             Guard.Against.Null(
                 sqliteService,
                 nameof(SqliteService),
-                "SecchiLocationIncrementalLoader can't work without the Sqlite service."
+                "SecchiLocationCollectionLoader can't work without the Sqlite service."
             );
 
-            // Log that the GetPagedItemsAsync method has been called.
-            logger.LogTrace(
+            // Write to the log that LoadMoreItemsAsync is called along with the count.
+            logger.LogDebug(
                 SecchiLocationLoaderLog,
-                "GetPagedItemAsync: pageIndex: {pageIndex}, pageSize: {pageSize}.",
-                pageIndex,
-                pageSize
+                "LoadMoreItemsAsync called with count: {Count}",
+                count
             );
-
-            // Clear the secchiLocations list as GetPagedItemsAsync expects only the records for the current page.
-            secchiLocations.Clear();
 
             // Call the GetsecchiLocationsFromSqlite method to retrieve the records.
             var queryResult = await sqliteService.GetSecchiLocationsFromSqlite(pageSize, pageIndex);
@@ -97,7 +104,7 @@ public class SecchiLocationIncrementalLoader : IIncrementalSource<SecchiLocation
                     item.LocationId
                 );
                 // Add the retrieved item to the secchiLocations list.
-                secchiLocations.Add(
+                Add(
                     new SecchiLocationDisplay(
                         latitude: item.Latitude,
                         longitude: item.Longitude,
@@ -115,26 +122,21 @@ public class SecchiLocationIncrementalLoader : IIncrementalSource<SecchiLocation
                 queryResult.Count()
             );
 
-            // Log the result.
-            logger.LogTrace(
-                SecchiLocationLoaderLog,
-                "Fetched {secchiLocations.Count()} items.",
-                secchiLocations.Count
-            );
+            pageIndex++;
 
-            await Task.Delay(1000, cancellationToken);
+            hasMoreItems = queryResult.Count() == pageSize;
+            // hasMoreItems = false;
 
-            // Return the retrieved secchiLocations
-            return secchiLocations;
+            return new LoadMoreItemsResult { Count = (uint)queryResult.Count() };
         }
         catch (Exception exception)
         {
             logger.LogError(
-                SecchiLocationLoaderLog,
-                "Error in GetPagedItemsAsync: {exception.Message}",
+                exception,
+                "Error in LoadMoreItemsAsync: {ErrorMessage}",
                 exception.Message
             );
-            return secchiLocations;
+            throw;
         }
     }
 }

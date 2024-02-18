@@ -62,6 +62,11 @@ public sealed partial class MainPage : Page
     // Extent of current map
     private Geometry? extent;
 
+    public IncrementalLoadingCollection<
+        SecchiLocationIncrementalLoader,
+        SecchiLocationDisplay
+    > SecchiLocationsIncrementalLoading;
+
     [RelayCommand]
     private void ReCenter()
     {
@@ -255,11 +260,17 @@ public sealed partial class MainPage : Page
                 );
             }
 
+            SecchiLocationsIncrementalLoading = new IncrementalLoadingCollection<
+                SecchiLocationIncrementalLoader,
+                SecchiLocationDisplay
+            >(itemsPerPage: 5);
+
+            /*
             // Configure SecchiLocationsListView to use the SecchiLocationsIncrementalLoading collection.
             var secchiLocationsIncrementalLoading = new IncrementalLoadingCollection<
                 SecchiLocationIncrementalLoader,
                 SecchiLocationDisplay
-            >(itemsPerPage: 3);
+            >(itemsPerPage: 5);
             SecchiLocationsListView.ItemsSource = secchiLocationsIncrementalLoading;
             SecchiLocationsListView.IsItemClickEnabled = true;
             SecchiLocationsListView.ItemClick += (source, eventArgs) =>
@@ -273,9 +284,8 @@ public sealed partial class MainPage : Page
                     );
                 }
             };
-            SecchiLocationsListView.DataContext = secchiLocationsIncrementalLoading;
+            */
 
-            var HasMoreItems = secchiLocationsIncrementalLoading.HasMoreItems;
 
             // Register for PreplannedMapConfigurationStatusMessage messages.
             // Log the result of the message.

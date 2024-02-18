@@ -4,7 +4,6 @@ using Ardalis.GuardClauses;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.Mvvm.Messaging.Messages;
-using CommunityToolkit.WinUI.Collections;
 using Esri.ArcGISRuntime.Data;
 using Esri.ArcGISRuntime.Geotriggers;
 using Microsoft.Extensions.Logging;
@@ -46,10 +45,12 @@ public partial class SecchiViewModel : ObservableRecipient
     // The collection of Secchi locations to display.
     public ObservableCollection<SecchiLocationDisplay> SecchiLocationDB = [];
 
+    /*
     public IncrementalLoadingCollection<
         SecchiLocationIncrementalLoader,
         SecchiLocationDisplay
     > SecchiLocationsIncrementalLoading;
+    */
 
     // Feature for the current location sent by the GeoTriggerService.
     public ArcGISFeature? feature;
@@ -73,6 +74,14 @@ public partial class SecchiViewModel : ObservableRecipient
 
     private bool haveLocationsTable = false;
     private bool haveObservationsTable = false;
+
+    private SecchiLocationCollectionLoader? secchiLocations;
+
+    public SecchiLocationCollectionLoader SecchiLocations
+    {
+        get => secchiLocations!;
+        set => SetProperty(ref secchiLocations, value);
+    }
 
     private readonly StateMachine<SecchiServiceState, SecchiServiceTrigger> stateMachine;
 
@@ -138,6 +147,8 @@ public partial class SecchiViewModel : ObservableRecipient
                 "SecchiViewModel, Constructor: GeoTriggerDistance: {geoTriggerDistance}.",
                 geoTriggerDistance
             );
+
+            SecchiLocations = [];
 
             Initialize();
             StartMonitoringSqlite();
@@ -765,14 +776,29 @@ public partial class SecchiViewModel : ObservableRecipient
                 // SecchiLocations = new SecchiLocationCollection();
 
                 // Send a message to get the next group of records.
+
                 /*
-                WeakReferenceMessenger.Default.Send<GetSqliteRecordsGroupRequest>
-                    (new GetSqliteRecordsGroupRequest
-                    (new SqliteRecordsGroupRequest(DbType.SecchiLocations, 3, 0))
+                WeakReferenceMessenger.Default.Send<GetSqliteRecordsGroupRequest>(
+                    new GetSqliteRecordsGroupRequest(
+                        new SqliteRecordsGroupRequest(DbType.SecchiLocations, 3, 0)
+                    )
                 );
+
+                WeakReferenceMessenger.Default.Send<GetSqliteRecordsGroupRequest>(
+                    new GetSqliteRecordsGroupRequest(
+                        new SqliteRecordsGroupRequest(DbType.SecchiLocations, 3, 1)
+                    )
+                );
+
                 */
 
-                // SecchiLocationsIncrementalLoading = new IncrementalLoadingCollection<SecchiLocationIncrementalLoader, SecchiLocationDisplay>();
+                /*
+                SecchiLocationsIncrementalLoading = new IncrementalLoadingCollection<
+                    SecchiLocationIncrementalLoader,
+                    SecchiLocationDisplay
+                >(itemsPerPage: 5);
+                */
+                // SecchiLocationsIncrementalLoading.LoadMoreItemsAsync(0);
 
                 // In MainPage.xaml, set SecchiLocationsListView.ItemsSource to SecchiLocationsIncrementalLoading.
             }
@@ -1143,6 +1169,22 @@ public partial class SecchiViewModel : ObservableRecipient
                 exception,
                 "Exception generated in SecchiViewModel, ProcessSecchiMeasurements: {message}.",
                 exception.Message.ToString()
+            );
+        }
+    }
+
+    public void SecchiLocationsListView_ItemClick(object sender, ItemClickEventArgs eventArgs)
+    {
+        var item = eventArgs.ClickedItem as SecchiLocationDisplay;
+
+        if (item is not null)
+        {
+            logger.LogTrace(
+                SecchiViewModelLog,
+                "SecchiViewModel, SecchiLocationsListView_ItemClick: {locationName}, Lat {}, Lon {}",
+                item.LocationName,
+                item.Latitude,
+                item.Longitude
             );
         }
     }
