@@ -1,11 +1,17 @@
-﻿using Ardalis.GuardClauses;
+﻿using System.Drawing;
+using Ardalis.GuardClauses;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.Mvvm.Messaging.Messages;
 using CommunityToolkit.WinUI.Collections;
+using Esri.ArcGISRuntime.Data;
 using Esri.ArcGISRuntime.Geometry;
 using Esri.ArcGISRuntime.Location;
+using Esri.ArcGISRuntime.Mapping;
+using Esri.ArcGISRuntime.Symbology;
+using Esri.ArcGISRuntime.UI;
 using Esri.ArcGISRuntime.UI.Controls;
+using Esri.ArcGISRuntime.UI.Editing;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -16,6 +22,8 @@ using WaterMeasurements.Services.IncrementalLoaders;
 using WaterMeasurements.ViewModels;
 using WinRT;
 using static WaterMeasurements.Models.PrePlannedMapConfiguration;
+using Geometry = Esri.ArcGISRuntime.Geometry.Geometry;
+using Symbol = Esri.ArcGISRuntime.Symbology.Symbol;
 
 namespace WaterMeasurements.Views;
 
@@ -61,6 +69,15 @@ public sealed partial class MainPage : Page
 
     // Extent of current map
     private Geometry? extent;
+
+    // Geometry editor to manage points on the map.
+    private GeometryEditor? geometryEditor;
+
+    // Graphics overlay to display points on the map.
+    private GraphicsOverlay? graphicsOverlay;
+
+    // Selected graphic to manage points on the map.
+    private Graphic? selectedGraphic;
 
     public IncrementalLoadingCollection<
         SecchiLocationIncrementalLoader,
@@ -134,7 +151,35 @@ public sealed partial class MainPage : Page
 
         Logger.Debug("MainPage.xaml.cs, MainPage: Starting");
 
+        SecchiLocationsIncrementalLoading = [];
+
         InitializeComponent();
+
+        SimpleMarkerSymbol crossMarkerSymbol = new SimpleMarkerSymbol(
+            SimpleMarkerSymbolStyle.Cross,
+            Color.FromArgb(255, 23, 217, 232),
+            10
+        );
+
+        var geometryEditorStyle = new GeometryEditorStyle
+        {
+            VertexSymbol = new SimpleMarkerSymbol(
+                SimpleMarkerSymbolStyle.Circle,
+                Color.FromArgb(255, 255, 0, 0),
+                10
+            ),
+            LineSymbol = new SimpleLineSymbol(
+                SimpleLineSymbolStyle.Solid,
+                Color.FromArgb(255, 0, 0, 255),
+                2
+            ),
+            FillSymbol = new SimpleFillSymbol(
+                SimpleFillSymbolStyle.Solid,
+                Color.FromArgb(100, 0, 0, 255),
+                new SimpleLineSymbol(SimpleLineSymbolStyle.Solid, Color.FromArgb(255, 0, 0, 255), 2)
+            ),
+            SelectedVertexSymbol = crossMarkerSymbol
+        };
 
         // Send the UI Dispatcher Queue to subscribers.
         DispatcherQueue.TryEnqueue(() =>
@@ -259,6 +304,14 @@ public sealed partial class MainPage : Page
                     preplannedMapName
                 );
             }
+
+            // Create a graphics overlay and add it to the map view.
+            graphicsOverlay = new GraphicsOverlay();
+            MapView.GraphicsOverlays.Add(graphicsOverlay);
+
+            // Create a geometry editor to allow the user to select a location on the map.
+            geometryEditor = new GeometryEditor();
+            MapView.GeometryEditor = geometryEditor;
 
             SecchiLocationsIncrementalLoading = new IncrementalLoadingCollection<
                 SecchiLocationIncrementalLoader,
@@ -411,6 +464,8 @@ public sealed partial class MainPage : Page
         }
     }
 
+    #region Event handlers
+
     private void MapNavView_Loaded(object sender, RoutedEventArgs e)
     {
         MapNavView.SelectedItem = MapNavView.MenuItems[1];
@@ -468,6 +523,165 @@ public sealed partial class MainPage : Page
         Logger.Trace(
             "MainPage.xaml.cs, SaveSecchiLocation_Click: SaveSecchiLocation_Click method called."
         );
+
+        if (MapView.LocationDisplay.Location is null)
+        {
+            // Log to trace that the LocationDisplay.Location is null.
+            Logger.Error(
+                "MainPage.xaml.cs, SaveSecchiLocation_Click: LocationDisplay.Location is null."
+            );
+            return;
+        }
+
+        var presentLocation = MapView.LocationDisplay.Location.Position;
+
+        Logger.Trace(
+            "MainPage.xaml.cs, SaveSecchiLocation_Click: presentLocation: Lat {presentLocation.Y}, Lon {presentLocation.X}.",
+            presentLocation.Y,
+            presentLocation.X
+        );
+
+        if (MapView.GeometryEditor is null)
+        {
+            // Log to trace that the MapView.GeometryEditor is null.
+            Logger.Error(
+                "MainPage.xaml.cs, SaveSecchiLocation_Click: MapView.GeometryEditor is null."
+            );
+            return;
+        }
+
+        // Use the geometry editor to allow the user to select a location on the map.
+        MapView.GeometryEditor.Start(GeometryType.Point);
+
+        MapView.SetViewpointCenterAsync(presentLocation, 17);
+    }
+
+    private void GeometryEditor_PropertyChanged(
+        object? sender,
+        System.ComponentModel.PropertyChangedEventArgs eventArgs
+    )
+    {
+        SimpleMarkerSymbol newLocationSymbol = new SimpleMarkerSymbol(
+            SimpleMarkerSymbolStyle.Circle,
+            Color.FromArgb(255, 0, 120, 212),
+            9
+        );
+
+        try
+        {
+            // Log to trace that the GeometryEditor_PropertyChanged method was called.
+            Logger.Trace(
+                "MainPage.xaml.cs, GeometryEditor_PropertyChanged: GeometryEditor_PropertyChanged method called."
+            );
+
+            Guard.Against.Null(
+                MapView.GeometryEditor,
+                nameof(MapView.GeometryEditor),
+                "GeometryEditor is null."
+            );
+
+            MapView.GeometryEditor.PropertyChanged -= GeometryEditor_PropertyChanged;
+
+            Guard.Against.Null(sender, nameof(sender), "Sender is null.");
+
+            var geometryEditor = sender as GeometryEditor;
+
+            if (sender is not GeometryEditor)
+            {
+                // Log to trace that the geometryEditor is null.
+                Logger.Trace(
+                    "MainPage.xaml.cs, GeometryEditor_PropertyChanged: geometryEditor is null."
+                );
+                return;
+            }
+
+            Guard.Against.Null(eventArgs, nameof(eventArgs), "eventArgs is null.");
+
+            if (eventArgs.PropertyName is null)
+            {
+                // Log to trace that the eventArgs.PropertyName is null.
+                Logger.Trace(
+                    "MainPage.xaml.cs, GeometryEditor_PropertyChanged: eventArgs.PropertyName is null."
+                );
+                return;
+            }
+
+            if (eventArgs.PropertyName == "Geometry")
+            {
+                if (sender is not GeometryEditor)
+                {
+                    // Log to trace that the geometryEditor is null.
+                    Logger.Trace(
+                        "MainPage.xaml.cs, GeometryEditor_PropertyChanged: geometryEditor is null."
+                    );
+                    return;
+                }
+
+                Guard.Against.Null(
+                    geometryEditor,
+                    nameof(geometryEditor),
+                    "GeometryEditor is null."
+                );
+
+                var geometry = geometryEditor.Geometry;
+
+                Guard.Against.Null(geometry, nameof(geometry), "Geometry is null.");
+
+                if (geometry is MapPoint)
+                {
+                    var mapPoint = geometry as MapPoint;
+
+                    if (geometry is not MapPoint)
+                    {
+                        // Log to trace that the mapPoint is null.
+                        Logger.Trace(
+                            "MainPage.xaml.cs, GeometryEditor_PropertyChanged: mapPoint is null."
+                        );
+                        return;
+                    }
+
+                    Guard.Against.Null(
+                        MapView.LocationDisplay.Location,
+                        nameof(MapView.LocationDisplay.Location),
+                        "MapPoint is null."
+                    );
+
+                    var presentLocation = MapView.LocationDisplay.Location.Position;
+
+                    var lat = presentLocation.Y;
+                    var lon = presentLocation.X;
+
+                    // Log to trace the lat and lon values of the mapPoint.
+                    Logger.Trace(
+                        "MainPage.xaml.cs, GeometryEditor_PropertyChanged: MapPoint: Lat {lat}, Lon {lon}.",
+                        lat,
+                        lon
+                    );
+
+                    MapView.GeometryEditor.Stop();
+                    if (graphicsOverlay is not null)
+                    {
+                        graphicsOverlay.Graphics.Add(new Graphic(geometry, newLocationSymbol));
+                    }
+                    else
+                    {
+                        // Log to trace that the graphicsOverlay is null.
+                        Logger.Error(
+                            "MainPage.xaml.cs, GeometryEditor_PropertyChanged: graphicsOverlay is null."
+                        );
+                    }
+                }
+            }
+        }
+        catch (Exception exception)
+        {
+            // Log to trace the exception message.
+            Logger.Error(
+                exception,
+                "MainPage.xaml.cs, GeometryEditor_PropertyChanged: An error occurred in GeometryEditor_PropertyChanged: {exception}",
+                exception.Message
+            );
+        }
     }
 
     private void CancelSecchiLocation_Click()
@@ -593,4 +807,6 @@ public sealed partial class MainPage : Page
         // Log to trace the value of sender and eventArgs.
         Logger.Trace("MainPage.xaml.cs, Edit_Location_Click: LocationId: {locationId}", locationId);
     }
+
+    #endregion Event handlers
 }

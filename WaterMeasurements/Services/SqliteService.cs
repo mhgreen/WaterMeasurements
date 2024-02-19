@@ -822,7 +822,7 @@ public partial class SqliteService : ISqliteService
                 .CreateFluent()
                 .Select($"*")
                 .From($"SecchiLocations")
-                .OrderBy($"LocationId")
+                .OrderBy($"LocationId DESC")
                 .Limit(pageSize)
                 .Offset(offset);
 
