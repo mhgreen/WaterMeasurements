@@ -479,7 +479,7 @@
                             MinHeight="470"
                             IsBackButtonVisible="Collapsed"
                             IsSettingsVisible="True"
-                            ItemInvoked="{x:Bind SecchiView.SecchiNavView_ItemInvoked}"
+                            ItemInvoked="{x:Bind SecchiNavView_ItemInvoked}"
                             Loaded="SecchiNavView_Loaded"
                             PaneDisplayMode="LeftMinimal"
                             PaneTitle="Secchi Location Measurements">
@@ -526,7 +526,7 @@
                                 HorizontalAlignment="Stretch"
                                 Visibility="Visible">
 
-                                <controls:SwitchPresenter x:Name="SecchiViews" Value="{x:Bind SecchiView.SelectView, Mode=TwoWay}">
+                                <controls:SwitchPresenter x:Name="SecchiViews" Value="{x:Bind SecchiSelectView, Mode=OneWay}">
 
                                     <controls:Case Value="SecchiCollectionTable">
 
@@ -859,7 +859,7 @@
                                                     <ListView
                                                         x:Name="SecchiLocationsListView"
                                                         ItemsSource="{x:Bind SecchiView.SecchiLocations}"
-                                                        ItemClick="{x:Bind SecchiView.SecchiLocationsListView_ItemClick}"
+                                                        ItemClick="{x:Bind SecchiLocationsListView_ItemClick}"
                                                         IsItemClickEnabled="True"
                                                         IncrementalLoadingTrigger="Edge"
                                                         IncrementalLoadingThreshold="2"

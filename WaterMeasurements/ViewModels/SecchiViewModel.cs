@@ -39,9 +39,6 @@ public partial class SecchiViewModel : ObservableRecipient
     [ObservableProperty]
     private Brush mapBorderColor = new SolidColorBrush(Colors.Transparent);
 
-    [ObservableProperty]
-    private string selectView = "SecchiCollectionTable";
-
     // The collection of Secchi locations to display.
     public ObservableCollection<SecchiLocationDisplay> SecchiLocationDB = [];
 
@@ -939,6 +936,8 @@ public partial class SecchiViewModel : ObservableRecipient
         }
     }
 
+    // TODO: Consider moving this to MainPage.xaml.cs. If that does not seem like a good idea, find a better way to set SecchiCollectionPointName.
+
     private void HandleGeotriggerNotification(
         GeotriggerNotificationInfo info,
         DispatcherQueue uiDispatcherQueue
@@ -1018,7 +1017,12 @@ public partial class SecchiViewModel : ObservableRecipient
                                     locationId,
                                     locationName
                                 );
-                                SelectView = "SecchiDataEntry";
+
+                                // Send a SetSecchiSelectViewMessage with the value of "SecchiDataEntry".
+                                WeakReferenceMessenger.Default.Send<SetSecchiSelectViewMessage>(
+                                    new SetSecchiSelectViewMessage("SecchiDataEntry")
+                                );
+
                                 uiDispatcherQueue.TryEnqueue(() =>
                                 {
                                     SecchiCollectionPointName = locationName.ToString()!;
@@ -1082,7 +1086,10 @@ public partial class SecchiViewModel : ObservableRecipient
             );
 
             // Once the location have been collected, move to the results panel.
-            SelectView = "SecchiCollectionTable";
+            // Send a SetSecchiSelectViewMessage with the value of "SecchiCollectionTable".
+            WeakReferenceMessenger.Default.Send<SetSecchiSelectViewMessage>(
+                new SetSecchiSelectViewMessage("SecchiCollectionTable")
+            );
 
             // Log to debug the type of notification.
             logger.LogDebug(
@@ -1170,108 +1177,6 @@ public partial class SecchiViewModel : ObservableRecipient
                 "Exception generated in SecchiViewModel, ProcessSecchiMeasurements: {message}.",
                 exception.Message.ToString()
             );
-        }
-    }
-
-    public void SecchiLocationsListView_ItemClick(object sender, ItemClickEventArgs eventArgs)
-    {
-        var item = eventArgs.ClickedItem as SecchiLocationDisplay;
-
-        if (item is not null)
-        {
-            logger.LogTrace(
-                SecchiViewModelLog,
-                "SecchiViewModel, SecchiLocationsListView_ItemClick: {locationName}, Lat {}, Lon {}",
-                item.LocationName,
-                item.Latitude,
-                item.Longitude
-            );
-        }
-    }
-
-    public void SecchiNavView_ItemInvoked(
-        NavigationView sender,
-        NavigationViewItemInvokedEventArgs args
-    )
-    {
-        // Log to debug that the MapNavView_ItemInvoked event was fired.
-        logger.LogDebug(
-            SecchiViewModelLog,
-            "SecchiViewModel, CollectionNavView_ItemInvoked(): CollectionNavView_ItemInvoked event fired."
-        );
-
-        // Log the name of the invoked item.
-        logger.LogDebug(
-            SecchiViewModelLog,
-            "SecchiViewModel, CollectionNavView_ItemInvoked(): Invoked item name: {invokedItemName}.",
-            args.InvokedItemContainer.Name
-        );
-
-        // Log the sender name.
-        logger.LogDebug(
-            SecchiViewModelLog,
-            "SecchiViewModel, CollectionNavView_ItemInvoked(): Sender name: {senderName}.",
-            sender.Name
-        );
-
-        switch (args.InvokedItemContainer.Name)
-        {
-            case "SecchiNavMeasurementAdd":
-                // Log that upload was selected.
-                logger.LogDebug(
-                    SecchiViewModelLog,
-                    "SecchiViewModel, CollectionNavView_ItemInvoked(): Add Measurement selected."
-                );
-                SelectView = "SecchiDataEntry";
-                break;
-            case "SecchiNavLocationAdd":
-                // Log that upload was selected.
-                logger.LogDebug(
-                    SecchiViewModelLog,
-                    "SecchiViewModel, CollectionNavView_ItemInvoked(): Add Location selected."
-                );
-                SelectView = "SecchiAddLocation";
-                break;
-            case "SecchiNavCollected":
-                // Log that upload was selected.
-                logger.LogDebug(
-                    SecchiViewModelLog,
-                    "SecchiViewModel, CollectionNavView_ItemInvoked(): Collected selected."
-                );
-                SelectView = "SecchiCollectionTable";
-                break;
-            case "SecchiNavDiscard":
-                // Log that discard was selected.
-                logger.LogDebug(
-                    SecchiViewModelLog,
-                    "SecchiViewModel, CollectionNavView_ItemInvoked(): Discard item selected."
-                );
-                break;
-            case "SecchiNavUpload":
-                // Log that upload was selected.
-                logger.LogDebug(
-                    SecchiViewModelLog,
-                    "SecchiViewModel, CollectionNavView_ItemInvoked(): Upload selected."
-                );
-                break;
-            case "SecchiNavInfo":
-                // Log that discard was selected.
-                logger.LogDebug(
-                    SecchiViewModelLog,
-                    "SecchiViewModel, CollectionNavView_ItemInvoked(): Info item selected."
-                );
-                break;
-
-            case "SettingsItem":
-                // Log that settings was selected.
-                logger.LogDebug(
-                    SecchiViewModelLog,
-                    "SecchiViewModel, CollectionNavView_ItemInvoked(): Settings selected."
-                );
-                SelectView = "SecchiSettings";
-                break;
-            default:
-                break;
         }
     }
 

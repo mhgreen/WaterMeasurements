@@ -1,5 +1,8 @@
-﻿using System.Drawing;
+﻿using System.ComponentModel;
+using System.Drawing;
+using System.Runtime.CompilerServices;
 using Ardalis.GuardClauses;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.Mvvm.Messaging.Messages;
@@ -12,6 +15,7 @@ using Esri.ArcGISRuntime.Symbology;
 using Esri.ArcGISRuntime.UI;
 using Esri.ArcGISRuntime.UI.Controls;
 using Esri.ArcGISRuntime.UI.Editing;
+using Microsoft.Extensions.Logging;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -20,6 +24,7 @@ using WaterMeasurements.Models;
 using WaterMeasurements.Services;
 using WaterMeasurements.Services.IncrementalLoaders;
 using WaterMeasurements.ViewModels;
+using Windows.ApplicationModel.Store;
 using WinRT;
 using static WaterMeasurements.Models.PrePlannedMapConfiguration;
 using Geometry = Esri.ArcGISRuntime.Geometry.Geometry;
@@ -43,7 +48,10 @@ public class SetMapAutoPanMessage(bool value) : ValueChangedMessage<bool>(value)
 // Message to center the map.
 public class SetMapCenterMessage(bool value) : ValueChangedMessage<bool>(value) { }
 
-public sealed partial class MainPage : Page
+// Message to set the value of SecchiSelectView.
+public class SetSecchiSelectViewMessage(string value) : ValueChangedMessage<string>(value) { }
+
+public partial class MainPage : Page, INotifyPropertyChanged
 {
     public MainViewModel ViewModel { get; }
     public SecchiViewModel SecchiView { get; }
@@ -60,6 +68,27 @@ public sealed partial class MainPage : Page
 
     // Current WebMapId
     public string? webMapId;
+
+    // Current view for Secchi data and locations.
+    private string secchiSelectView;
+
+    public string SecchiSelectView
+    {
+        get => secchiSelectView;
+        set
+        {
+            if (secchiSelectView != value)
+            {
+                secchiSelectView = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null) =>
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 
     // Source of the location
     private LocationSource locationSource;
@@ -152,6 +181,7 @@ public sealed partial class MainPage : Page
         Logger.Debug("MainPage.xaml.cs, MainPage: Starting");
 
         SecchiLocationsIncrementalLoading = [];
+        secchiSelectView = "SecchiCollectionTable";
 
         InitializeComponent();
 
@@ -248,6 +278,21 @@ public sealed partial class MainPage : Page
             }
         );
 
+        // Handle the SetSecchiSelectViewMessage message.
+        WeakReferenceMessenger.Default.Register<SetSecchiSelectViewMessage>(
+            this,
+            (recipient, message) =>
+            {
+                // Log to trace the value of message.Value with a label.
+                Logger.Trace(
+                    "MainPage.xaml.cs, MainPage: SetSecchiSelectViewMessage, message.Value: {messageValue}",
+                    message.Value
+                );
+
+                SecchiSelectView = message.Value;
+            }
+        );
+
         Initialize();
     }
 
@@ -338,7 +383,6 @@ public sealed partial class MainPage : Page
                 }
             };
             */
-
 
             // Register for PreplannedMapConfigurationStatusMessage messages.
             // Log the result of the message.
@@ -479,6 +523,89 @@ public sealed partial class MainPage : Page
     private void SecchiNavView_Loaded(object sender, RoutedEventArgs e)
     {
         SecchiNavView.SelectedItem = SecchiNavView.MenuItems[0];
+    }
+
+    public void SecchiLocationsListView_ItemClick(object sender, ItemClickEventArgs eventArgs)
+    {
+        var item = eventArgs.ClickedItem as SecchiLocationDisplay;
+
+        if (item is not null)
+        {
+            Logger.Trace(
+                "MainPage.xaml.cs, SecchiLocationsListView_ItemClick: {locationName}, Lat {}, Lon {}",
+                item.LocationName,
+                item.Latitude,
+                item.Longitude
+            );
+        }
+    }
+
+    public void SecchiNavView_ItemInvoked(
+        NavigationView sender,
+        NavigationViewItemInvokedEventArgs args
+    )
+    {
+        // Log to debug that the MapNavView_ItemInvoked event was fired.
+        Logger.Debug(
+            "MainPage.xaml.cs, SecchiNavView_ItemInvoked(): SecchiNavView_ItemInvoked event."
+        );
+
+        // Log the name of the invoked item.
+        Logger.Debug(
+            "MainPage.xaml.cs, SecchiNavView_ItemInvoked(): Invoked item name: {invokedItemName}.",
+            args.InvokedItemContainer.Name
+        );
+
+        // Log the sender name.
+        Logger.Debug(
+            "MainPage.xaml.cs, SecchiNavView_ItemInvoked(): Sender name: {senderName}.",
+            sender.Name
+        );
+
+        switch (args.InvokedItemContainer.Name)
+        {
+            case "SecchiNavMeasurementAdd":
+                // Log that upload was selected.
+                Logger.Debug(
+                    "MainPage.xaml.cs, SecchiNavView_ItemInvoked(): Add Measurement selected."
+                );
+                SecchiSelectView = "SecchiDataEntry";
+                break;
+            case "SecchiNavLocationAdd":
+                // Log that upload was selected.
+                Logger.Debug(
+                    "MainPage.xaml.cs, SecchiNavView_ItemInvoked(): Add Location selected."
+                );
+                SecchiSelectView = "SecchiAddLocation";
+                break;
+            case "SecchiNavCollected":
+                // Log that upload was selected.
+                Logger.Debug("MainPage.xaml.cs, SecchiNavView_ItemInvoked(): Collected selected.");
+                SecchiSelectView = "SecchiCollectionTable";
+                break;
+            case "SecchiNavDiscard":
+                // Log that discard was selected.
+                Logger.Debug(
+                    "MainPage.xaml.cs, SecchiNavView_ItemInvoked(): Discard item selected."
+                );
+                break;
+            case "SecchiNavUpload":
+                // Log that upload was selected.
+                Logger.Debug("MainPage.xaml.cs, SecchiNavView_ItemInvoked(): Upload selected.");
+                break;
+            case "SecchiNavInfo":
+                // Log that discard was selected.
+                Logger.Debug("MainPage.xaml.cs, SecchiNavView_ItemInvoked(): Info item selected.");
+                break;
+
+            case "SettingsItem":
+                // Log that settings was selected.
+                Logger.Debug("MainPage.xaml.cs, SecchiNavView_ItemInvoked(): Settings selected.");
+                SecchiSelectView = "SecchiSettings";
+                break;
+            default:
+                break;
+        }
     }
 
     private void SaveSecchiMeasurements_Click()
