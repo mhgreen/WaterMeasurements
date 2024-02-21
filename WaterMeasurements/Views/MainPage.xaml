@@ -526,7 +526,7 @@
                                 HorizontalAlignment="Stretch"
                                 Visibility="Visible">
 
-                                <controls:SwitchPresenter x:Name="SecchiViews" Value="{x:Bind SecchiSelectView, Mode=OneWay}">
+                                <controls:SwitchPresenter x:Name="SecchiViews" Value="{x:Bind secchiPageSelection.SecchiSelectView, Mode=OneWay}">
 
                                     <controls:Case Value="SecchiCollectionTable">
 

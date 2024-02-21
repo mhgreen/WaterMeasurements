@@ -1,5 +1,9 @@
-﻿using Esri.ArcGISRuntime.Geometry;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using Esri.ArcGISRuntime.Geometry;
+using Esri.ArcGISRuntime.Mapping;
+using Microsoft.Extensions.Logging;
 using Microsoft.UI.Dispatching;
+using WaterMeasurements.ViewModels;
 
 namespace WaterMeasurements.Models;
 
@@ -16,9 +20,9 @@ public readonly record struct SecchiMeasurements(
     int Measurement3
 );
 
-public enum LocationSource
+// Observable to update the map on the UI.
+public partial class SecchiPageSelection : ObservableRecipient
 {
-    CurrentGPS,
-    PointOnMap,
-    EnteredLatLong
+    [ObservableProperty]
+    public string? secchiSelectView;
 }

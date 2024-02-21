@@ -14,6 +14,13 @@ public enum RecordStatus
     Comitted
 }
 
+public enum LocationSource
+{
+    CurrentGPS,
+    PointOnMap,
+    EnteredLatLong
+}
+
 public enum LocationType
 {
     Permanent,

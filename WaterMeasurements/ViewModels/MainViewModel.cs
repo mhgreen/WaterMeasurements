@@ -1,36 +1,30 @@
 ﻿using System;
-using System.Reflection;
-using System.Windows.Input;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-
+using System.Reflection;
+using System.Windows.Input;
+using Ardalis.GuardClauses;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.Mvvm.Messaging.Messages;
-using CommunityToolkit.Mvvm.Input;
-
 using Esri.ArcGISRuntime.Data;
 using Esri.ArcGISRuntime.Mapping;
-
+using Esri.ArcGISRuntime.UI.Controls;
 using Microsoft.Extensions.Logging;
-
-using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Media;
+using Microsoft.Extensions.Primitives;
 using Microsoft.UI;
 using Microsoft.UI.Dispatching;
-using Microsoft.UI.Xaml.Navigation;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-
+using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Navigation;
+using Newtonsoft.Json.Linq;
 using WaterMeasurements.Contracts.Services;
 using WaterMeasurements.Models;
-using WaterMeasurements.Views;
 using WaterMeasurements.Services;
+using WaterMeasurements.Views;
 using static WaterMeasurements.Models.PrePlannedMapConfiguration;
-
-using Ardalis.GuardClauses;
-using Newtonsoft.Json.Linq;
-using Microsoft.Extensions.Primitives;
-using Esri.ArcGISRuntime.UI.Controls;
 
 namespace WaterMeasurements.ViewModels;
 
@@ -64,12 +58,6 @@ public partial class MainViewModel : ObservableRecipient
 
     [ObservableProperty]
     private double geodatabasePercentDownloaded;
-
-    [ObservableProperty]
-    private bool showSecchiCollectionPoint = true;
-
-    [ObservableProperty]
-    private string secchiCollectionPointName = "Default Location";
 
     [ObservableProperty]
     private bool showGeodatabaseDownloadProgress = false;
