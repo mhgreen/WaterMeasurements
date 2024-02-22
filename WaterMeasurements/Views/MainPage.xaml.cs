@@ -21,6 +21,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using NLog;
 using NLog.Fluent;
+using Stateless;
 using WaterMeasurements.Models;
 using WaterMeasurements.Services;
 using WaterMeasurements.Services.IncrementalLoaders;
@@ -81,7 +82,7 @@ public partial class MainPage : Page
         public LocationSource? LocationSource { get; set; }
     }
 
-    SecchiAddLocation secchiAddLocation;
+    private SecchiAddLocation secchiAddLocation;
 
     // Extent of current map
     private Geometry? extent;
@@ -94,9 +95,6 @@ public partial class MainPage : Page
 
     // Graphics overlay for point selection.
     private GraphicsOverlay? selectionOverlay;
-
-    // Selected graphic to manage points on the map.
-    private Graphic? selectedGraphic;
 
     public IncrementalLoadingCollection<
         SecchiLocationIncrementalLoader,
@@ -181,7 +179,7 @@ public partial class MainPage : Page
 
         InitializeComponent();
 
-        SimpleMarkerSymbol crossMarkerSymbol = new SimpleMarkerSymbol(
+        var crossMarkerSymbol = new SimpleMarkerSymbol(
             SimpleMarkerSymbolStyle.Cross,
             Color.FromArgb(255, 23, 217, 232),
             10
@@ -289,6 +287,26 @@ public partial class MainPage : Page
             }
         );
 
+        // Register to get MapPageUnloadedMessage messages.
+        WeakReferenceMessenger.Default.Register<MapPageUnloaded>(
+            this,
+            (recipient, message) =>
+            {
+                // Log to trace that the MapPageUnloaded message was received.
+                Logger.Trace("MainPage.xaml.cs, MainPage: MapPageUnloaded message received.");
+                if (MapView.GeometryEditor is not null)
+                {
+                    if (MapView.GeometryEditor.IsStarted)
+                    {
+                        MapView.GeometryEditor.Stop();
+                    }
+                }
+
+                // Unregister all listeners.
+                WeakReferenceMessenger.Default.UnregisterAll(this);
+            }
+        );
+
         Initialize();
     }
 
@@ -346,11 +364,19 @@ public partial class MainPage : Page
                 );
             }
 
-            // Create a graphics overlay and add it to the map view.
-            graphicsOverlay = new GraphicsOverlay();
-            selectionOverlay = new GraphicsOverlay();
-            MapView.GraphicsOverlays.Add(graphicsOverlay);
-            MapView.GraphicsOverlays.Add(selectionOverlay);
+            if (MapView.GraphicsOverlays is not null)
+            {
+                // Create a graphics overlay and add it to the map view.
+                graphicsOverlay = new GraphicsOverlay();
+                selectionOverlay = new GraphicsOverlay();
+                MapView.GraphicsOverlays.Add(graphicsOverlay);
+                MapView.GraphicsOverlays.Add(selectionOverlay);
+            }
+            else
+            {
+                // Log to error that the MapView.GraphicsOverlays is null.
+                Logger.Error("MainPage.xaml.cs, Initialize: MapView.GraphicsOverlays is null.");
+            }
 
             // Create a geometry editor to allow the user to select a location on the map.
             geometryEditor = new GeometryEditor();
@@ -525,6 +551,7 @@ public partial class MainPage : Page
 
     public void SecchiLocationsListView_ItemClick(object sender, ItemClickEventArgs eventArgs)
     {
+        _ = sender;
         var item = eventArgs.ClickedItem as SecchiLocationDisplay;
 
         if (item is not null)
@@ -537,17 +564,13 @@ public partial class MainPage : Page
             );
 
             // Create a MapPoint from the latitude and longitude
-            MapPoint mapPoint = new MapPoint(
-                item.Longitude,
-                item.Latitude,
-                SpatialReferences.Wgs84
-            );
+            var mapPoint = new MapPoint(item.Longitude, item.Latitude, SpatialReferences.Wgs84);
 
             // Center the map on the selected location
             MapView.SetViewpointCenterAsync(mapPoint);
 
             // Create a simple marker symbol
-            SimpleMarkerSymbol selectedPoint = new SimpleMarkerSymbol()
+            var selectedPoint = new SimpleMarkerSymbol()
             {
                 // Create a clear color, make it a bit bigger than the point on the map.
                 // Then create a circle with a black outline.
@@ -558,7 +581,7 @@ public partial class MainPage : Page
                 Outline = new SimpleLineSymbol(SimpleLineSymbolStyle.Solid, Color.Black, 2)
             };
 
-            Graphic graphicWithSymbol = new Graphic(mapPoint, selectedPoint);
+            var graphicWithSymbol = new Graphic(mapPoint, selectedPoint);
             if (selectionOverlay != null)
             {
                 // Log to trace that the selectionOverlay is being cleared.
@@ -704,16 +727,25 @@ public partial class MainPage : Page
             return;
         }
 
-        if (secchiAddLocation.LocationSource == LocationSource.PointOnMap)
+        if (graphicsOverlay is null)
         {
-            Geometry? newLocation = MapView.GeometryEditor.Stop();
+            // Log to trace that the graphicsOverlay is null.
+            Logger.Error("MainPage.xaml.cs, SaveSecchiLocation_Click: graphicsOverlay is null.");
+            return;
+        }
+
+        if (MapView.GeometryEditor.IsStarted)
+        {
+            var newLocation = MapView.GeometryEditor.Stop();
             if (newLocation is not null)
             {
-                SimpleMarkerSymbol newLocationSymbol = new SimpleMarkerSymbol(
+                var newLocationSymbol = new SimpleMarkerSymbol(
                     SimpleMarkerSymbolStyle.Circle,
                     Color.FromArgb(255, 0, 120, 212),
                     8
                 );
+                // Add the new location to the map.
+                graphicsOverlay.Graphics.Add(new Graphic(newLocation, newLocationSymbol));
 
                 // log the latitute and longitude of the new location.
                 var lat = newLocation.Project(SpatialReferences.Wgs84).As<MapPoint>().Y;
@@ -725,13 +757,10 @@ public partial class MainPage : Page
                 );
             }
 
-            var presentLocation = MapView.LocationDisplay.Location.Position;
-
-            Logger.Trace(
-                "MainPage.xaml.cs, SaveSecchiLocation_Click: presentLocation: Lat {presentLocation.Y}, Lon {presentLocation.X}.",
-                presentLocation.Y,
-                presentLocation.X
-            );
+            if (secchiAddLocation.LocationSource == LocationSource.PointOnMap)
+            {
+                MapView.GeometryEditor.Start(GeometryType.Point);
+            }
         }
     }
 
@@ -740,7 +769,7 @@ public partial class MainPage : Page
         System.ComponentModel.PropertyChangedEventArgs eventArgs
     )
     {
-        SimpleMarkerSymbol newLocationSymbol = new SimpleMarkerSymbol(
+        var newLocationSymbol = new SimpleMarkerSymbol(
             SimpleMarkerSymbolStyle.Circle,
             Color.FromArgb(255, 0, 120, 212),
             9
@@ -871,14 +900,6 @@ public partial class MainPage : Page
         }
     }
 
-    private void CancelSecchiLocation_Click()
-    {
-        // Log to trace that the CancelSecchiLocation_Click method was called.
-        Logger.Trace(
-            "MainPage.xaml.cs, CancelSecchiLocation_Click: CancelSecchiLocation_Click method called."
-        );
-    }
-
     private void LocationType_Click(object sender, RoutedEventArgs eventArgs)
     {
         _ = eventArgs as RoutedEventArgs;
@@ -967,7 +988,7 @@ public partial class MainPage : Page
             switch (tag)
             {
                 case "CurrentGPS":
-                    if (secchiAddLocation.LocationSource == LocationSource.PointOnMap)
+                    if (MapView.GeometryEditor.IsStarted)
                     {
                         MapView.GeometryEditor.Stop();
                     }
@@ -985,9 +1006,6 @@ public partial class MainPage : Page
                         presentLocation.Y,
                         presentLocation.X
                     );
-
-                    // Use the geometry editor to allow the user to select a location on the map.
-                    MapView.GeometryEditor.Start(GeometryType.Point);
 
                     MapView.SetViewpointCenterAsync(presentLocation, 2500);
 

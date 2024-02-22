@@ -778,23 +778,6 @@
                                                         </ToolTipService.ToolTip>
                                                     </StackPanel>
 
-                                                    <StackPanel>
-                                                        <CheckBox
-                                                            x:Name="SecchiEnteredDefault"
-                                                            x:Uid="Settings_Secchi_Entered_Default"
-                                                            Margin="20,0,0,0"
-                                                            Content="Save as Default"
-                                                            IsChecked="False"
-                                                            Tag="CurrentGPS"
-                                                            Visibility="Visible" />
-                                                        <ToolTipService.ToolTip>
-                                                            <ToolTip
-                                                                Content="Save the location type and source as defaults. This is useful if new locations are likely to be of the same type."
-                                                                HorizontalOffset="200"
-                                                                VerticalOffset="-48" />
-                                                        </ToolTipService.ToolTip>
-                                                    </StackPanel>
-
                                                 </StackPanel>
 
                                                 <StackPanel
@@ -837,7 +820,7 @@
                                                     </Grid>
                                                 </StackPanel>
 
-                                                <StackPanel Margin="0,10,0,0">
+                                                <StackPanel Margin="0,0,0,0">
                                                     <StackPanel
                                                         x:Name="LocationButtonStackPanel"
                                                         Margin="{StaticResource SmallTopMargin}"
@@ -848,24 +831,27 @@
                                                             x:Name="LocationSaveButton"
                                                             x:Uid="Main_SecchiSaveButton"
                                                             Click="{x:Bind SaveSecchiLocation_Click}" />
-                                                        <Button
-                                                            x:Name="LocationCancelButton"
-                                                            x:Uid="Main_SecchiCancelButton"
-                                                            Click="{x:Bind CancelSecchiLocation_Click}" />
+
+                                                        <ToolTipService.ToolTip>
+                                                            <ToolTip
+                                                                Content="Name, feature type, and location source needed prior to saving."
+                                                                HorizontalOffset="200"
+                                                                VerticalOffset="15" />
+                                                        </ToolTipService.ToolTip>
                                                     </StackPanel>
                                                 </StackPanel>
 
                                                 <StackPanel>
                                                     <ListView
                                                         x:Name="SecchiLocationsListView"
-                                                        ItemsSource="{x:Bind SecchiView.SecchiLocations}"
-                                                        ItemClick="{x:Bind SecchiLocationsListView_ItemClick}"
-                                                        IsItemClickEnabled="True"
-                                                        IncrementalLoadingTrigger="Edge"
-                                                        IncrementalLoadingThreshold="2"
                                                         MaxHeight="200"
                                                         Margin="0,20,0,0"
+                                                        IncrementalLoadingThreshold="2"
+                                                        IncrementalLoadingTrigger="Edge"
+                                                        IsItemClickEnabled="True"
+                                                        ItemClick="{x:Bind SecchiLocationsListView_ItemClick}"
                                                         ItemTemplate="{StaticResource SecchiLocationsTemplate}"
+                                                        ItemsSource="{x:Bind SecchiView.SecchiLocations}"
                                                         ScrollViewer.VerticalScrollBarVisibility="Visible" />
                                                 </StackPanel>
 
