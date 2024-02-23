@@ -82,6 +82,16 @@ public partial class MainPage : Page
         public LocationSource? LocationSource { get; set; }
     }
 
+    private struct SecchiChannelNumbers
+    {
+        public uint ObservationChannel { get; set; }
+        public uint LocationChannel { get; set; }
+        public uint GeoTriggerChannel { get; set; }
+    }
+
+    FeatureTable? secchiLocationFeatures;
+    FeatureLayer? secchiLocationLayer;
+
     private SecchiAddLocation secchiAddLocation;
 
     // Extent of current map
@@ -177,7 +187,15 @@ public partial class MainPage : Page
             SecchiSelectView = "SecchiCollectionTable"
         };
 
+        SecchiChannelNumbers secchiChannelNumbers = new();
+
         InitializeComponent();
+
+        var collectionLocation = new SimpleMarkerSymbol(
+            SimpleMarkerSymbolStyle.Circle,
+            Color.Blue,
+            15
+        );
 
         var crossMarkerSymbol = new SimpleMarkerSymbol(
             SimpleMarkerSymbolStyle.Cross,
@@ -287,6 +305,56 @@ public partial class MainPage : Page
             }
         );
 
+        // Request the Secchi channel numbers from SecchiViewModel.
+        var secchiChannelMessageResult =
+            WeakReferenceMessenger.Default.Send<SecchiChannelRequestMessage>();
+        if (secchiChannelMessageResult.Response.LocationChannel is not 0)
+        {
+            secchiChannelNumbers.LocationChannel = secchiChannelMessageResult
+                .Response
+                .LocationChannel;
+            secchiChannelNumbers.ObservationChannel = secchiChannelMessageResult
+                .Response
+                .ObservationChannel;
+            secchiChannelNumbers.GeoTriggerChannel = secchiChannelMessageResult
+                .Response
+                .GeoTriggerChannel;
+
+            // Log to trace the individual channel numbers.
+            Logger.Trace(
+                "MainPage.xaml.cs, MainPage: SecchiChannelRequestMessage, ObservationChannel: {ObservationChannel}, LocationChannel: {LocationChannel}, GeoTriggerChannel: {GeoTriggerChannel}",
+                secchiChannelNumbers.ObservationChannel,
+                secchiChannelNumbers.LocationChannel,
+                secchiChannelNumbers.GeoTriggerChannel
+            );
+        }
+
+        if (secchiChannelNumbers.LocationChannel is not 0)
+        {
+            // Register to get location featuretable messages on the secchiLocationsChannel.
+            WeakReferenceMessenger.Default.Register<FeatureTableMessage, uint>(
+                this,
+                secchiChannelNumbers.LocationChannel,
+                (recipient, message) =>
+                {
+                    Logger.Trace(
+                        "MainPage.xaml.cs, FeatureTableMessage, secchiLocationsChannel: {secchiLocationsChannel}, FeatureTable: {featureTable}.",
+                        secchiChannelNumbers.LocationChannel,
+                        message.Value.TableName
+                    );
+                    secchiLocationFeatures = message.Value;
+                    secchiLocationLayer = new FeatureLayer(secchiLocationFeatures);
+                    MapView.Map.OperationalLayers.Add(secchiLocationLayer);
+                    secchiLocationLayer.Renderer = new SimpleRenderer(collectionLocation);
+                }
+            );
+        }
+        else
+        {
+            // Log to trace that the secchiLocationsChannel is not set.
+            Logger.Error("MainPage.xaml.cs, MainPage: secchiLocationsChannel is not set.");
+        }
+
         // Register to get MapPageUnloadedMessage messages.
         WeakReferenceMessenger.Default.Register<MapPageUnloaded>(
             this,
@@ -369,6 +437,7 @@ public partial class MainPage : Page
                 // Create a graphics overlay and add it to the map view.
                 graphicsOverlay = new GraphicsOverlay();
                 selectionOverlay = new GraphicsOverlay();
+                var secchiLocationPoints = new GraphicsOverlay();
                 MapView.GraphicsOverlays.Add(graphicsOverlay);
                 MapView.GraphicsOverlays.Add(selectionOverlay);
             }

@@ -68,3 +68,9 @@ public class SecchiLocationDisplay(
     public int LocationId { get; private set; } = locationId;
     public string LatLon => $"Lat: {Latitude:F4}, Lon: {Longitude:F4}";
 }
+
+public readonly record struct SecchiChannelNumbersMessage(
+    uint ObservationChannel,
+    uint LocationChannel,
+    uint GeoTriggerChannel
+);

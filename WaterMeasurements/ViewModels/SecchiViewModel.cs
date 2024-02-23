@@ -23,6 +23,9 @@ using static WaterMeasurements.ViewModels.MainViewModel;
 
 namespace WaterMeasurements.ViewModels;
 
+// Message from other modules to request the Secchi channel numbers.
+public class SecchiChannelRequestMessage : RequestMessage<SecchiChannelNumbersMessage> { }
+
 public partial class SecchiViewModel : ObservableRecipient
 {
     private readonly ILogger<SecchiViewModel> logger;
@@ -114,6 +117,28 @@ public partial class SecchiViewModel : ObservableRecipient
             secchiObservationsChannel,
             secchiLocationsChannel,
             secchiGeotriggerChannel
+        );
+
+        // Now that the channels have been set, register to get the SecchiChannelRequestMessage.
+        // Register to get SecchiChannelRequestMessage, return the Secchi channel numbers.
+        WeakReferenceMessenger.Default.Register<SecchiChannelRequestMessage>(
+            this,
+            (recipient, message) =>
+            {
+                logger.LogDebug(
+                    SecchiViewModelLog,
+                    "SecchiViewModel, SecchiChannelRequestMessage: SecchiChannelRequestMessage received."
+                );
+
+                // Return the Secchi channel numbers.
+                message.Reply(
+                    new SecchiChannelNumbersMessage(
+                        secchiObservationsChannel,
+                        secchiLocationsChannel,
+                        secchiGeotriggerChannel
+                    )
+                );
+            }
         );
 
         // Create the state machine.

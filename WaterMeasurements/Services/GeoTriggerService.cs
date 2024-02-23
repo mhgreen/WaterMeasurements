@@ -4,42 +4,33 @@ using System.Linq;
 using System.Security.Policy;
 using System.Text;
 using System.Threading.Tasks;
-
 using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.Mvvm.Messaging.Messages;
-
 using Esri.ArcGISRuntime;
 using Esri.ArcGISRuntime.Data;
 using Esri.ArcGISRuntime.Geotriggers;
 using Esri.ArcGISRuntime.Location;
-
 using Microsoft.Extensions.Logging;
-
-using WaterMeasurements.Models;
-using WaterMeasurements.Views;
-using WaterMeasurements.Services;
 using WaterMeasurements.Contracts.Services;
 using WaterMeasurements.Contracts.Services.Instances;
+using WaterMeasurements.Models;
+using WaterMeasurements.Services;
 using WaterMeasurements.Services.Instances;
-
+using WaterMeasurements.Views;
 using Windows.Networking.Connectivity;
 
 namespace WaterMeasurements.Services;
 
 // Message to notify modules of a GeoTrigger event.
-public class GeoTriggerMessage(GeoTriggerNotification geoTriggerNotification) : ValueChangedMessage<GeoTriggerNotification>(geoTriggerNotification)
-{
-}
+public class GeoTriggerMessage(GeoTriggerNotification geoTriggerNotification)
+    : ValueChangedMessage<GeoTriggerNotification>(geoTriggerNotification) { }
 
 // Message to request the addition of a GeoTrigger.
-public class GeoTriggerAddMessage(GeoTriggerAdd geoTriggerAdd) : ValueChangedMessage<GeoTriggerAdd>(geoTriggerAdd)
-{
-}
+public class GeoTriggerAddMessage(GeoTriggerAdd geoTriggerAdd)
+    : ValueChangedMessage<GeoTriggerAdd>(geoTriggerAdd) { }
 
 // Message to request the deletion of a GeoTrigger by name.
-public class GeoTriggerDeleteMessage(string name) : ValueChangedMessage<string>(name)
-{
-}
+public class GeoTriggerDeleteMessage(string name) : ValueChangedMessage<string>(name) { }
 
 public partial class GeoTriggerService : IGeoTriggerService
 {
@@ -61,7 +52,7 @@ public partial class GeoTriggerService : IGeoTriggerService
         // Log the service initialization.
         logger.LogInformation(GeoTriggerLog, "GeoTriggerService created.");
 
-        Initialize();        
+        Initialize();
     }
 
     private void Initialize()
