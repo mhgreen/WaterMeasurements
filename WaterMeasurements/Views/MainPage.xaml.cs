@@ -106,6 +106,27 @@ public partial class MainPage : Page
     // Graphics overlay for point selection.
     private GraphicsOverlay? selectionOverlay;
 
+    // Marker symbol for a collection location.
+    private readonly SimpleMarkerSymbol collectionLocationSymbol =
+        new(SimpleMarkerSymbolStyle.Circle, Color.FromArgb(255, 0, 120, 212), 8);
+
+    // Symbol for location highlighting.
+    private readonly SimpleMarkerSymbol highlightLocationSymbol =
+        new()
+        {
+            // Create a clear color, make it a bit bigger than the point on the map.
+            // Then create a circle with a black outline.
+            // The result is a black circle with a clear center that can be used as a highlight.
+            Color = Color.FromArgb(0, 0, 0, 0),
+            Size = 9,
+            Style = SimpleMarkerSymbolStyle.Circle,
+            Outline = new SimpleLineSymbol(
+                SimpleLineSymbolStyle.Solid,
+                Color.FromArgb(255, 255, 148, 137),
+                2
+            )
+        };
+
     public IncrementalLoadingCollection<
         SecchiLocationIncrementalLoader,
         SecchiLocationDisplay
@@ -190,12 +211,6 @@ public partial class MainPage : Page
         SecchiChannelNumbers secchiChannelNumbers = new();
 
         InitializeComponent();
-
-        var collectionLocation = new SimpleMarkerSymbol(
-            SimpleMarkerSymbolStyle.Circle,
-            Color.Blue,
-            15
-        );
 
         var crossMarkerSymbol = new SimpleMarkerSymbol(
             SimpleMarkerSymbolStyle.Cross,
@@ -342,10 +357,20 @@ public partial class MainPage : Page
                         secchiChannelNumbers.LocationChannel,
                         message.Value.TableName
                     );
-                    secchiLocationFeatures = message.Value;
-                    secchiLocationLayer = new FeatureLayer(secchiLocationFeatures);
-                    MapView.Map.OperationalLayers.Add(secchiLocationLayer);
-                    secchiLocationLayer.Renderer = new SimpleRenderer(collectionLocation);
+                    if (MapView.Map is not null)
+                    {
+                        secchiLocationFeatures = message.Value;
+                        secchiLocationLayer = new FeatureLayer(secchiLocationFeatures);
+                        MapView.Map.OperationalLayers.Add(secchiLocationLayer);
+                        secchiLocationLayer.Renderer = new SimpleRenderer(collectionLocationSymbol);
+                    }
+                    else
+                    {
+                        // Log to trace that the MapView.Map is null.
+                        Logger.Error(
+                            "MainPage.xaml.cs, MainPage FeatureTableMessage handler: MapView.Map is null."
+                        );
+                    }
                 }
             );
         }
@@ -638,19 +663,7 @@ public partial class MainPage : Page
             // Center the map on the selected location
             MapView.SetViewpointCenterAsync(mapPoint);
 
-            // Create a simple marker symbol
-            var selectedPoint = new SimpleMarkerSymbol()
-            {
-                // Create a clear color, make it a bit bigger than the point on the map.
-                // Then create a circle with a black outline.
-                // The result is a black circle with a clear center that can be used as a highlight.
-                Color = Color.FromArgb(0, 0, 0, 0),
-                Size = 14,
-                Style = SimpleMarkerSymbolStyle.Circle,
-                Outline = new SimpleLineSymbol(SimpleLineSymbolStyle.Solid, Color.Black, 2)
-            };
-
-            var graphicWithSymbol = new Graphic(mapPoint, selectedPoint);
+            var graphicWithSymbol = new Graphic(mapPoint, highlightLocationSymbol);
             if (selectionOverlay != null)
             {
                 // Log to trace that the selectionOverlay is being cleared.
@@ -808,13 +821,8 @@ public partial class MainPage : Page
             var newLocation = MapView.GeometryEditor.Stop();
             if (newLocation is not null)
             {
-                var newLocationSymbol = new SimpleMarkerSymbol(
-                    SimpleMarkerSymbolStyle.Circle,
-                    Color.FromArgb(255, 0, 120, 212),
-                    8
-                );
                 // Add the new location to the map.
-                graphicsOverlay.Graphics.Add(new Graphic(newLocation, newLocationSymbol));
+                graphicsOverlay.Graphics.Add(new Graphic(newLocation, collectionLocationSymbol));
 
                 // log the latitute and longitude of the new location.
                 var lat = newLocation.Project(SpatialReferences.Wgs84).As<MapPoint>().Y;

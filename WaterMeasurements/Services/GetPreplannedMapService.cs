@@ -1,32 +1,27 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-
-using Esri.ArcGISRuntime.Portal;
-using Esri.ArcGISRuntime.Mapping;
+using System.Xml.Linq;
+using Ardalis.GuardClauses;
+using CommunityToolkit.Mvvm.Messaging;
+using CommunityToolkit.Mvvm.Messaging.Messages;
+using Esri.ArcGISRuntime.Data;
 using Esri.ArcGISRuntime.Geometry;
+using Esri.ArcGISRuntime.Mapping;
+using Esri.ArcGISRuntime.Portal;
 using Esri.ArcGISRuntime.Symbology;
 using Esri.ArcGISRuntime.Tasks;
 using Esri.ArcGISRuntime.Tasks.Offline;
-using Esri.ArcGISRuntime.Data;
-
-using CommunityToolkit.Mvvm.Messaging;
-using CommunityToolkit.Mvvm.Messaging.Messages;
-
 using Microsoft.Extensions.Logging;
-
+using Stateless;
 using WaterMeasurements.Contracts.Services;
 using WaterMeasurements.Models;
-
 using Windows.ApplicationModel.Store;
-using Ardalis.GuardClauses;
-using Stateless;
-using System.ComponentModel;
 using static WaterMeasurements.Models.PrePlannedMapConfiguration;
-using System.Xml.Linq;
 
 // using static WaterMeasurements.Models.GetPreplannedMapModel;
 
@@ -735,8 +730,8 @@ public partial class GetPreplannedMapService : IGetPreplannedMapService
             }
 
             // Find the preplanned area and store it.
-            var selectedArea = preplannedAreas.Where(
-                area => area.PortalItem!.Title == portalItemTitle
+            var selectedArea = preplannedAreas.Where(area =>
+                area.PortalItem!.Title == portalItemTitle
             );
 
             // Log the number of selected areas.
@@ -1329,8 +1324,8 @@ public partial class GetPreplannedMapService : IGetPreplannedMapService
             logger.LogDebug(
                 DownloadPreplannedEvent,
                 "GetPreplannedMapService, SendMapUpdate: sending MapExtentChangedMessage MaxExtent (Wgs84): {extentValue}",
-                updatedMap.InitialViewpoint.TargetGeometry.Extent
-                    .Project(SpatialReferences.Wgs84)
+                updatedMap
+                    .InitialViewpoint.TargetGeometry.Extent.Project(SpatialReferences.Wgs84)
                     .ToString()
             );
 
