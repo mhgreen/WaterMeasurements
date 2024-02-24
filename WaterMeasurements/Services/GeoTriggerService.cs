@@ -77,7 +77,7 @@ public partial class GeoTriggerService : IGeoTriggerService
                         // Log that the instance already exists.
                         logger.LogDebug(
                             GeoTriggerLog,
-                            "GeoTriggerService, GeoTriggerAddMessage: GeoTrigger instance already exists: {name}. Deleting the existing one and replacing it with the one requested.",
+                            "GeoTriggerService, GeoTriggerAddMessage: GeoTrigger instance already exists: {name}. Stopping and Deleting the existing one and replacing it with the one requested.",
                             message.Value.Name
                         );
 

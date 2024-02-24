@@ -830,7 +830,8 @@
                                                         <Button
                                                             x:Name="LocationSaveButton"
                                                             x:Uid="Main_SecchiSaveButton"
-                                                            Click="{x:Bind SaveSecchiLocation_Click}" />
+                                                            Command="{x:Bind SaveSecchiLocationCommand, Mode=OneWay}"
+                                                            />
 
                                                         <ToolTipService.ToolTip>
                                                             <ToolTip

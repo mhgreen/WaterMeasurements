@@ -2,6 +2,7 @@
 using System.Drawing;
 using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 using Ardalis.GuardClauses;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -23,6 +24,7 @@ using Microsoft.UI.Xaml.Controls;
 using NLog;
 using NLog.Fluent;
 using Stateless;
+using WaterMeasurements.Contracts.Services;
 using WaterMeasurements.Models;
 using WaterMeasurements.Services;
 using WaterMeasurements.Services.IncrementalLoaders;
@@ -90,8 +92,8 @@ public partial class MainPage : Page
         public uint GeoTriggerChannel { get; set; }
     }
 
-    FeatureTable? secchiLocationFeatures;
-    FeatureLayer? secchiLocationLayer;
+    private FeatureTable? secchiLocationFeatures;
+    private FeatureLayer? secchiLocationLayer;
 
     private SecchiAddLocation secchiAddLocation;
 
@@ -123,8 +125,8 @@ public partial class MainPage : Page
             Style = SimpleMarkerSymbolStyle.Circle,
             Outline = new SimpleLineSymbol(
                 SimpleLineSymbolStyle.Solid,
-                Color.FromArgb(255, 255, 148, 137),
-                2
+                Color.FromArgb(255, 174, 232, 255),
+                3
             )
         };
 
@@ -170,14 +172,18 @@ public partial class MainPage : Page
     }
 
     [RelayCommand]
-    public async Task StoreWebMapIdAsync()
+    public void StoreWebMapIdAsync()
     {
         Logger.Debug("webMapId changed to: " + WebMapId.Text);
 
-        await ViewModel.StoreSettingByKeyAsync(
-            PrePlannedMapConfiguration.Item[Key.OfflineMapIdentifier],
-            WebMapId.Text
-        );
+        Task.Run(async () =>
+            {
+                await ViewModel.StoreSettingByKeyAsync(
+                    PrePlannedMapConfiguration.Item[Key.OfflineMapIdentifier],
+                    WebMapId.Text
+                );
+            })
+            .Wait();
     }
 
     private void RevealApiKey_Changed(object sender, RoutedEventArgs e)
@@ -798,7 +804,8 @@ public partial class MainPage : Page
         secchiPageSelection.SecchiSelectView = "SecchiCollectionTable";
     }
 
-    private async Task SaveSecchiLocation_Click()
+    [RelayCommand]
+    private async Task SaveSecchiLocationAsync()
     {
         // Log to trace that the SaveSecchiLocation_Click method was called.
         Logger.Trace(

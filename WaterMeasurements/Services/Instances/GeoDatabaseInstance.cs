@@ -1,31 +1,26 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.Common;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
-using Esri.ArcGISRuntime.Portal;
-using Esri.ArcGISRuntime.Mapping;
+using Ardalis.GuardClauses;
+using CommunityToolkit.Mvvm.Messaging;
+using CommunityToolkit.Mvvm.Messaging.Messages;
+using Esri.ArcGISRuntime.Data;
 using Esri.ArcGISRuntime.Geometry;
+using Esri.ArcGISRuntime.Mapping;
+using Esri.ArcGISRuntime.Portal;
 using Esri.ArcGISRuntime.Symbology;
 using Esri.ArcGISRuntime.Tasks;
 using Esri.ArcGISRuntime.Tasks.Offline;
-using Esri.ArcGISRuntime.Data;
-
-using CommunityToolkit.Mvvm.Messaging;
-using CommunityToolkit.Mvvm.Messaging.Messages;
-
-using Stateless;
-
 using Microsoft.Extensions.Logging;
-
+using RabbitMQ.Client;
+using Stateless;
+using WaterMeasurements.Contracts.Services;
+using WaterMeasurements.Contracts.Services.Instances;
 using WaterMeasurements.Models;
 using WaterMeasurements.Views;
-using WaterMeasurements.Contracts.Services.Instances;
-using System.Data.Common;
-using RabbitMQ.Client;
-using WaterMeasurements.Contracts.Services;
-using Ardalis.GuardClauses;
 
 namespace WaterMeasurements.Services.Instances;
 
@@ -74,15 +69,36 @@ public partial class GeoDatabaseInstance : IGeoDatabaseInstance
         this.logger = logger;
 
         // Name = name;
-        Name = Guard.Against.NullOrWhiteSpace(name, nameof(name), "GeoDatabaseInstance, constructor: Name is null or blank.");
+        Name = Guard.Against.NullOrWhiteSpace(
+            name,
+            nameof(name),
+            "GeoDatabaseInstance, constructor: Name is null or blank."
+        );
         // GeoDatabaseType = geoDatabaseType;
-        GeoDatabaseType = Guard.Against.EnumOutOfRange(geoDatabaseType, nameof(geoDatabaseType), "GeoDatabaseInstance, constructor: GeoDatabaseType enum is out of range.");
+        GeoDatabaseType = Guard.Against.EnumOutOfRange(
+            geoDatabaseType,
+            nameof(geoDatabaseType),
+            "GeoDatabaseInstance, constructor: GeoDatabaseType enum is out of range."
+        );
         // Channel = channel;
-        Channel = (uint)Guard.Against.NegativeOrZero(channel, nameof(channel), "GeoDatabaseInstance, constructor: Channel is negative or zero.");
+        Channel = (uint)
+            Guard.Against.NegativeOrZero(
+                channel,
+                nameof(channel),
+                "GeoDatabaseInstance, constructor: Channel is negative or zero."
+            );
         // Url = url;
-        Url = Guard.Against.NullOrWhiteSpace(url, nameof(url), "GeoDatabaseInstance, constructor: Url is null or blank.");
+        Url = Guard.Against.NullOrWhiteSpace(
+            url,
+            nameof(url),
+            "GeoDatabaseInstance, constructor: Url is null or blank."
+        );
         // CauseGeoDatabaseDownload = causeGeoDatabaseDownload;
-        CauseGeoDatabaseDownload = Guard.Against.Null(causeGeoDatabaseDownload, nameof(CauseGeoDatabaseDownload), "GeoDatabaseInstance, constructor: CauseGeoDatabaseDownload is null.");
+        CauseGeoDatabaseDownload = Guard.Against.Null(
+            causeGeoDatabaseDownload,
+            nameof(CauseGeoDatabaseDownload),
+            "GeoDatabaseInstance, constructor: CauseGeoDatabaseDownload is null."
+        );
 
         // Create a state machine to manage the state of the geodatabase service.
         stateMachine = new StateMachine<GeoDbServiceState, GeoDbServiceTrigger>(
@@ -823,7 +839,6 @@ public partial class GeoDatabaseInstance : IGeoDatabaseInstance
             await featureTable.AddFeatureAsync(featureMessage.FeatureToAdd);
 
             ListGeodatabaseContents(currentGeodatabase);
-
         }
         catch (Exception exception)
         {
