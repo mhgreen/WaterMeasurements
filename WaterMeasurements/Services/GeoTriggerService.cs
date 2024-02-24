@@ -81,6 +81,9 @@ public partial class GeoTriggerService : IGeoTriggerService
                             message.Value.Name
                         );
 
+                        // Stop monitoring the geotrigger.
+                        geoTriggerInstances[message.Value.Name].StopGeotrigger();
+
                         // If the instance exists, then delete it.
                         geoTriggerInstances.Remove(message.Value.Name);
                     }

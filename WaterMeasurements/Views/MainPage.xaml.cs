@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel;
 using System.Drawing;
+using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 using Ardalis.GuardClauses;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -118,7 +119,7 @@ public partial class MainPage : Page
             // Then create a circle with a black outline.
             // The result is a black circle with a clear center that can be used as a highlight.
             Color = Color.FromArgb(0, 0, 0, 0),
-            Size = 9,
+            Size = 3,
             Style = SimpleMarkerSymbolStyle.Circle,
             Outline = new SimpleLineSymbol(
                 SimpleLineSymbolStyle.Solid,
@@ -131,6 +132,8 @@ public partial class MainPage : Page
         SecchiLocationIncrementalLoader,
         SecchiLocationDisplay
     > SecchiLocationsIncrementalLoading;
+
+    private double geoTriggerDistance = 0;
 
     [RelayCommand]
     private void ReCenter()
@@ -481,6 +484,17 @@ public partial class MainPage : Page
                 SecchiLocationDisplay
             >(itemsPerPage: 5);
 
+            // Get the current value of the GeoTriggerDistanceMeters setting.
+            geoTriggerDistance = await ViewModel.RetrieveSettingByKeyAsync<double>(
+                SecchiConfiguration.Item[SecchiConfiguration.Key.GeoTriggerDistanceMeters]
+            );
+
+            // Log to trace the value of geoTriggerDistance with a label.
+            Logger.Trace(
+                "MainPage.xaml.cs, Initialize: GeoTriggerDistanceMeters: {geoTriggerDistance}",
+                geoTriggerDistance
+            );
+
             /*
             // Configure SecchiLocationsListView to use the SecchiLocationsIncrementalLoading collection.
             var secchiLocationsIncrementalLoading = new IncrementalLoadingCollection<
@@ -784,60 +798,117 @@ public partial class MainPage : Page
         secchiPageSelection.SecchiSelectView = "SecchiCollectionTable";
     }
 
-    private void SaveSecchiLocation_Click()
+    private async Task SaveSecchiLocation_Click()
     {
         // Log to trace that the SaveSecchiLocation_Click method was called.
         Logger.Trace(
             "MainPage.xaml.cs, SaveSecchiLocation_Click: SaveSecchiLocation_Click method called."
         );
 
-        if (MapView.LocationDisplay.Location is null)
+        try
         {
-            // Log to trace that the LocationDisplay.Location is null.
-            Logger.Error(
-                "MainPage.xaml.cs, SaveSecchiLocation_Click: LocationDisplay.Location is null."
-            );
-            return;
-        }
-
-        if (MapView.GeometryEditor is null)
-        {
-            // Log to trace that the MapView.GeometryEditor is null.
-            Logger.Error(
-                "MainPage.xaml.cs, SaveSecchiLocation_Click: MapView.GeometryEditor is null."
-            );
-            return;
-        }
-
-        if (graphicsOverlay is null)
-        {
-            // Log to trace that the graphicsOverlay is null.
-            Logger.Error("MainPage.xaml.cs, SaveSecchiLocation_Click: graphicsOverlay is null.");
-            return;
-        }
-
-        if (MapView.GeometryEditor.IsStarted)
-        {
-            var newLocation = MapView.GeometryEditor.Stop();
-            if (newLocation is not null)
+            if (MapView.LocationDisplay.Location is null)
             {
-                // Add the new location to the map.
-                graphicsOverlay.Graphics.Add(new Graphic(newLocation, collectionLocationSymbol));
-
-                // log the latitute and longitude of the new location.
-                var lat = newLocation.Project(SpatialReferences.Wgs84).As<MapPoint>().Y;
-                var lon = newLocation.Project(SpatialReferences.Wgs84).As<MapPoint>().X;
-                Logger.Trace(
-                    "MainPage.xaml.cs, SaveSecchiLocation_Click: New Location is at: Lat {lat}, Lon {lon}.",
-                    lat,
-                    lon
+                // Log to trace that the LocationDisplay.Location is null.
+                Logger.Error(
+                    "MainPage.xaml.cs, SaveSecchiLocation_Click: LocationDisplay.Location is null."
                 );
+                return;
             }
 
-            if (secchiAddLocation.LocationSource == LocationSource.PointOnMap)
+            if (MapView.GeometryEditor is null)
             {
-                MapView.GeometryEditor.Start(GeometryType.Point);
+                // Log to trace that the MapView.GeometryEditor is null.
+                Logger.Error(
+                    "MainPage.xaml.cs, SaveSecchiLocation_Click: MapView.GeometryEditor is null."
+                );
+                return;
             }
+
+            if (graphicsOverlay is null)
+            {
+                // Log to trace that the graphicsOverlay is null.
+                Logger.Error(
+                    "MainPage.xaml.cs, SaveSecchiLocation_Click: graphicsOverlay is null."
+                );
+                return;
+            }
+
+            if (MapView.GeometryEditor.IsStarted)
+            {
+                var newLocation = MapView.GeometryEditor.Stop();
+                if (newLocation is not null)
+                {
+                    // Add the new location to the map.
+                    graphicsOverlay.Graphics.Add(
+                        new Graphic(newLocation, collectionLocationSymbol)
+                    );
+
+                    // log the latitute and longitude of the new location.
+                    var lat = newLocation.Project(SpatialReferences.Wgs84).As<MapPoint>().Y;
+                    var lon = newLocation.Project(SpatialReferences.Wgs84).As<MapPoint>().X;
+                    Logger.Trace(
+                        "MainPage.xaml.cs, SaveSecchiLocation_Click: New Location is at: Lat {lat}, Lon {lon}.",
+                        lat,
+                        lon
+                    );
+                    // Create the feature.
+                    var newFeature = (ArcGISFeature)secchiLocationFeatures.CreateFeature();
+                    newFeature.Geometry = newLocation;
+                    newFeature.Attributes["Latitude"] = lat;
+                    newFeature.Attributes["Longitude"] = lon;
+                    newFeature.Attributes["Location"] = "New Location";
+                    newFeature.Attributes["LocationId"] = 7;
+                    await secchiLocationFeatures.AddFeatureAsync(newFeature);
+                    newFeature.Refresh();
+
+                    // Log to trace the fields in secchiLocationFeatures.
+                    foreach (var field in secchiLocationFeatures.Fields)
+                    {
+                        Logger.Trace(
+                            "MainPage.xaml.cs, secchiLocationFeatures (after new location): featureTable.TableName: {featureTable.TableName}, field.Name: {field.Name}, field.FieldType: {field.FieldType}.",
+                            secchiLocationFeatures.TableName,
+                            field.Name,
+                            field.FieldType.ToString()
+                        );
+                    }
+
+                    // create a where clause to get all the features
+                    var queryParameters = new QueryParameters() { WhereClause = "1=1" };
+
+                    // query the feature table
+                    var queryResult = secchiLocationFeatures
+                        .QueryFeaturesAsync(queryParameters)
+                        .Result;
+
+                    // iterate over the features and log their attributes
+                    foreach (var feature in queryResult)
+                    {
+                        foreach (var attribute in feature.Attributes)
+                        {
+                            Logger.Trace(
+                                "MainPage.xaml.cs, secchiLocationFeatures (after new location): feature.Attributes: attribute.Key: {attributeName}, attribute.Value: {attributeValue}.",
+                                attribute.Key,
+                                attribute.Value
+                            );
+                        }
+                    }
+                }
+
+                if (secchiAddLocation.LocationSource == LocationSource.PointOnMap)
+                {
+                    MapView.GeometryEditor.Start(GeometryType.Point);
+                }
+            }
+        }
+        catch (Exception exception)
+        {
+            // Log to trace that an error occurred in SaveSecchiLocation_Click.
+            Logger.Error(
+                exception,
+                "MainPage.xaml.cs, SaveSecchiLocation_Click: An error occurred in SaveSecchiLocation_Click: {exception}.",
+                exception.Message.ToString()
+            );
         }
     }
 

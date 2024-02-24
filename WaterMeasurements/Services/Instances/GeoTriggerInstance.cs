@@ -3,25 +3,21 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
-using Esri.ArcGISRuntime.Portal;
-using Esri.ArcGISRuntime.Mapping;
+using CommunityToolkit.Mvvm.Messaging;
+using CommunityToolkit.Mvvm.Messaging.Messages;
+using Esri.ArcGISRuntime.Data;
 using Esri.ArcGISRuntime.Geometry;
+using Esri.ArcGISRuntime.Geotriggers;
+using Esri.ArcGISRuntime.Location;
+using Esri.ArcGISRuntime.Mapping;
+using Esri.ArcGISRuntime.Portal;
 using Esri.ArcGISRuntime.Symbology;
 using Esri.ArcGISRuntime.Tasks;
 using Esri.ArcGISRuntime.Tasks.Offline;
-using Esri.ArcGISRuntime.Data;
-
-using CommunityToolkit.Mvvm.Messaging;
-using CommunityToolkit.Mvvm.Messaging.Messages;
-
 using Microsoft.Extensions.Logging;
-
+using WaterMeasurements.Contracts.Services.Instances;
 using WaterMeasurements.Models;
 using WaterMeasurements.Views;
-using WaterMeasurements.Contracts.Services.Instances;
-using Esri.ArcGISRuntime.Location;
-using Esri.ArcGISRuntime.Geotriggers;
 
 namespace WaterMeasurements.Services.Instances;
 
@@ -57,12 +53,10 @@ public partial class GeoTriggerInstance : IGeoTriggerInstance
         TriggerDistance = triggerDistance;
 
         _ = Initialize();
-
     }
 
     private async Task Initialize()
     {
-
         try
         {
             // Log that a GeoTrigger was added.
@@ -218,8 +212,8 @@ public partial class GeoTriggerInstance : IGeoTriggerInstance
             queryParameters = new QueryParameters() { WhereClause = "1=1" };
 
             // query the feature table
-            var queryResult = fenceParameters.FeatureTable
-                .QueryFeaturesAsync(queryParameters)
+            var queryResult = fenceParameters
+                .FeatureTable.QueryFeaturesAsync(queryParameters)
                 .Result;
 
             foreach (var feature in queryResult)
@@ -303,7 +297,7 @@ public partial class GeoTriggerInstance : IGeoTriggerInstance
         );
 
         // Send a message to notify modules of the GeoTrigger event and feature.
-        WeakReferenceMessenger.Default.Send<GeoTriggerMessage,uint>(
+        WeakReferenceMessenger.Default.Send<GeoTriggerMessage, uint>(
             new GeoTriggerMessage(new GeoTriggerNotification(info)),
             Channel
         );
@@ -319,7 +313,7 @@ public partial class GeoTriggerInstance : IGeoTriggerInstance
                             GeoTriggerLog,
                             "GeoTriggerInstance, name {name} on channel {channel}, HandleGeotriggerNotification: fenceInfo.FenceNotificationType: Entered. {fenceInfo}.",
                             Name,
-                                Channel,
+                            Channel,
                             fenceInfo.Message
                         );
                         break;
@@ -328,7 +322,7 @@ public partial class GeoTriggerInstance : IGeoTriggerInstance
                             GeoTriggerLog,
                             "GeoTriggerInstance, name {name} on channel {channel}, HandleGeotriggerNotification: fenceInfo.FenceNotificationType: Exited. {fenceInfo}.",
                             Name,
-                                Channel,
+                            Channel,
                             fenceInfo.Message
                         );
                         break;
@@ -337,7 +331,7 @@ public partial class GeoTriggerInstance : IGeoTriggerInstance
                             GeoTriggerLog,
                             "GeoTriggerInstance, name {name} on channel {channel}, HandleGeotriggerNotification: fenceInfo.FenceNotificationType: Unknown. {fenceInfo}.",
                             Name,
-                                Channel,
+                            Channel,
                             fenceInfo.Message
                         );
                         break;
