@@ -130,11 +130,6 @@ public partial class MainPage : Page
             )
         };
 
-    public IncrementalLoadingCollection<
-        SecchiLocationIncrementalLoader,
-        SecchiLocationDisplay
-    > SecchiLocationsIncrementalLoading;
-
     private double geoTriggerDistance = 0;
 
     [RelayCommand]
@@ -207,8 +202,6 @@ public partial class MainPage : Page
         SecchiConfigurationView = App.GetService<SecchiConfigurationViewModel>();
 
         Logger.Debug("MainPage.xaml.cs, MainPage: Starting");
-
-        SecchiLocationsIncrementalLoading = [];
 
         // Set the initial Secchi Measurements page to the Collection Table.
         // This is used by the UI to determine which Secchi page to display.
@@ -484,11 +477,6 @@ public partial class MainPage : Page
             // Create a geometry editor to allow the user to select a location on the map.
             geometryEditor = new GeometryEditor();
             MapView.GeometryEditor = geometryEditor;
-
-            SecchiLocationsIncrementalLoading = new IncrementalLoadingCollection<
-                SecchiLocationIncrementalLoader,
-                SecchiLocationDisplay
-            >(itemsPerPage: 5);
 
             // Get the current value of the GeoTriggerDistanceMeters setting.
             geoTriggerDistance = await ViewModel.RetrieveSettingByKeyAsync<double>(
@@ -860,6 +848,14 @@ public partial class MainPage : Page
                         lon
                     );
                     // Create the feature.
+                    if (secchiLocationFeatures is null)
+                    {
+                        // Log to trace that the secchiLocationFeatures is null.
+                        Logger.Error(
+                            "MainPage.xaml.cs, SaveSecchiLocation_Click: secchiLocationFeatures is null."
+                        );
+                        return;
+                    }
                     var newFeature = (ArcGISFeature)secchiLocationFeatures.CreateFeature();
                     newFeature.Geometry = newLocation;
                     newFeature.Attributes["Latitude"] = lat;

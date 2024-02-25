@@ -42,16 +42,6 @@ public partial class SecchiViewModel : ObservableRecipient
     [ObservableProperty]
     private Brush mapBorderColor = new SolidColorBrush(Colors.Transparent);
 
-    // The collection of Secchi locations to display.
-    public ObservableCollection<SecchiLocationDisplay> SecchiLocationDB = [];
-
-    /*
-    public IncrementalLoadingCollection<
-        SecchiLocationIncrementalLoader,
-        SecchiLocationDisplay
-    > SecchiLocationsIncrementalLoading;
-    */
-
     // Feature for the current location sent by the GeoTriggerService.
     public ArcGISFeature? feature;
 
@@ -748,37 +738,6 @@ public partial class SecchiViewModel : ObservableRecipient
                 WaitForObservationsAndLocations(message.Value);
             }
         );
-
-        WeakReferenceMessenger.Default.Register<SecchiLocationsSqliteRecordGroup>(
-            this,
-            (recipient, message) =>
-            {
-                logger.LogDebug(
-                    SecchiViewModelLog,
-                    "SecchiViewModel, Secchi location record received."
-                );
-
-                logger.LogTrace(
-                    SecchiViewModelLog,
-                    "SecchiViewModel, SecchiLocationsSqliteRecordGroup location: {location}, latitude: {latitude}, longitude {longitude}.",
-                    message.Value.Location,
-                    message.Value.Latitude,
-                    message.Value.Longitude
-                );
-
-                SecchiLocationDB.Add(
-                    new SecchiLocationDisplay(
-                        message.Value.Location,
-                        message.Value.Latitude,
-                        message.Value.Longitude,
-                        message.Value.LocationType,
-                        message.Value.LocationId
-                    )
-                );
-
-                // SecchiLocationDB.Add(new SecchiLocationDisplay("Location 1", 47.673988, -122.121513, LocationType.OneTime, 22));
-            }
-        );
     }
 
     private void WaitForObservationsAndLocations(DbType dbType)
@@ -793,36 +752,6 @@ public partial class SecchiViewModel : ObservableRecipient
                     SecchiViewModelLog,
                     "SecchiViewModel, WaitForObservationsAndLocations: SecchiViewModel has locations."
                 );
-
-                // Create the SecchiLocations collection.
-                // SecchiLocations = new SecchiLocationCollection();
-
-                // Send a message to get the next group of records.
-
-                /*
-                WeakReferenceMessenger.Default.Send<GetSqliteRecordsGroupRequest>(
-                    new GetSqliteRecordsGroupRequest(
-                        new SqliteRecordsGroupRequest(DbType.SecchiLocations, 3, 0)
-                    )
-                );
-
-                WeakReferenceMessenger.Default.Send<GetSqliteRecordsGroupRequest>(
-                    new GetSqliteRecordsGroupRequest(
-                        new SqliteRecordsGroupRequest(DbType.SecchiLocations, 3, 1)
-                    )
-                );
-
-                */
-
-                /*
-                SecchiLocationsIncrementalLoading = new IncrementalLoadingCollection<
-                    SecchiLocationIncrementalLoader,
-                    SecchiLocationDisplay
-                >(itemsPerPage: 5);
-                */
-                // SecchiLocationsIncrementalLoading.LoadMoreItemsAsync(0);
-
-                // In MainPage.xaml, set SecchiLocationsListView.ItemsSource to SecchiLocationsIncrementalLoading.
             }
             else if (dbType == DbType.SecchiObservations)
             {
