@@ -23,8 +23,8 @@ public enum LocationSource
 
 public enum LocationType
 {
-    Permanent,
-    OneTime
+    Ongoing,
+    Occasional
 }
 
 // Record to create a table from a feature table.

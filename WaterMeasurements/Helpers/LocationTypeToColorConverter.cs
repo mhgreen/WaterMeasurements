@@ -13,9 +13,9 @@ public class LocationTypeToColorConverter : IValueConverter
 
         return locationType switch
         {
-            LocationType.OneTime
+            LocationType.Occasional
                 => (SolidColorBrush)Application.Current.Resources["AccentFillColorDefaultBrush"],
-            LocationType.Permanent
+            LocationType.Ongoing
                 => (SolidColorBrush)Application.Current.Resources["AccentFillColorDefaultBrush"],
             _ => (SolidColorBrush)Application.Current.Resources["AccentFillColorDisabledBrush"]
         };

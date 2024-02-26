@@ -59,6 +59,15 @@ public partial class SecchiViewModel : ObservableRecipient
     private string? observationsURL = string.Empty;
     private string? locationsURL = string.Empty;
 
+    // TODO: add the following to the configuration file.
+
+    // -------------------- Set one or both of the following to true to cause download --------------------
+
+    private readonly bool refreshObservations = false;
+    private readonly bool refreshLocations = false;
+
+    // -------------------- Set one or both of above to true to cause download ----------------------------
+
     private bool haveObservations;
     private bool haveLocations;
 
@@ -609,7 +618,7 @@ public partial class SecchiViewModel : ObservableRecipient
                         GeoDatabaseType.Observations,
                         secchiObservationsChannel,
                         observationsURL,
-                        false
+                        refreshObservations
                     )
                 )
             );
@@ -628,7 +637,7 @@ public partial class SecchiViewModel : ObservableRecipient
                         GeoDatabaseType.Locations,
                         secchiLocationsChannel,
                         locationsURL,
-                        false
+                        refreshLocations
                     )
                 )
             );

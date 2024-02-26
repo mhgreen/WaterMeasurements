@@ -181,8 +181,10 @@ public partial class MainPage : Page
             .Wait();
     }
 
-    private void RevealApiKey_Changed(object sender, RoutedEventArgs e)
+    private void RevealApiKey_Changed(object sender, RoutedEventArgs routedEventArgs)
     {
+        _ = sender;
+        _ = routedEventArgs;
         if (RevealApiKey.IsChecked == true)
         {
             ApiKeyArcGIS.PasswordRevealMode = PasswordRevealMode.Visible;
@@ -773,7 +775,7 @@ public partial class MainPage : Page
         else
         {
             // Write to debug that Location is not available, there is a problem with system location services.
-            Logger.Debug(
+            Logger.Error(
                 "MainPage.xaml.cs, SaveSecchiMeasurements_Click: Location is not available, there is a problem with system location services."
             );
 
@@ -1074,12 +1076,12 @@ public partial class MainPage : Page
             switch (tag)
             {
                 case "OneTime":
-                    secchiAddLocation.LocationType = LocationType.OneTime;
-                    SecchiLocationTypeDropDown.Content = "One-Time";
+                    secchiAddLocation.LocationType = LocationType.Occasional;
+                    SecchiLocationTypeDropDown.Content = "Occasional";
                     break;
                 case "Permanent":
-                    secchiAddLocation.LocationType = LocationType.Permanent;
-                    SecchiLocationTypeDropDown.Content = "Permanent";
+                    secchiAddLocation.LocationType = LocationType.Ongoing;
+                    SecchiLocationTypeDropDown.Content = "Ongoing";
                     break;
                 default:
                     // Log to trace that an invalid tag value was encountered.

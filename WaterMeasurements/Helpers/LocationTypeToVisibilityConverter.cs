@@ -11,8 +11,8 @@ internal class LocationTypeToVisibilityConverter
 
         return locationType switch
         {
-            LocationType.OneTime => Visibility.Visible,
-            LocationType.Permanent => Visibility.Collapsed,
+            LocationType.Occasional => Visibility.Visible,
+            LocationType.Ongoing => Visibility.Collapsed,
             _ => Visibility.Collapsed,
         };
     }

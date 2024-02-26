@@ -3,6 +3,7 @@ using System.Runtime.InteropServices.WindowsRuntime;
 using Ardalis.GuardClauses;
 using CommunityToolkit.Mvvm.Messaging;
 using Esri.ArcGISRuntime.Data;
+using Esri.ArcGISRuntime.Portal;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.UI.Xaml;
@@ -182,6 +183,8 @@ public class SecchiLocationCollectionLoader
                     item.LocationId
                 );
                 // Add the retrieved item to the secchiLocations list.
+                /*
+                 *
                 Add(
                     new SecchiLocationDisplay(
                         latitude: item.Latitude,
@@ -191,6 +194,7 @@ public class SecchiLocationCollectionLoader
                         locationType: item.LocationType
                     )
                 );
+                */
             }
 
             // Log then number of records retrieved.
@@ -217,7 +221,10 @@ public class SecchiLocationCollectionLoader
                 return new LoadMoreItemsResult { Count = 0 };
             }
             // Query the secchiLocationFeatures for the next set of features.
-            var result = await secchiLocationFeatures.QueryFeaturesAsync(queryParameters);
+            var result = await secchiLocationFeatures.QueryFeaturesAsync(
+                queryParameters,
+                CancellationToken.None
+            );
             totalFeatureCount = result.Count();
             totalFeaturePages = (int)Math.Ceiling((double)totalFeatureCount / pageSize);
 
@@ -233,11 +240,53 @@ public class SecchiLocationCollectionLoader
             {
                 logger.LogTrace(
                     SecchiLocationLoaderLog,
-                    "GetPagedItemAsync: (not sorted) Feature: Id {LocationId} Location Name: {Location}, Geometry: {Geometry}",
+                    "GetPagedItemAsync: (not sorted) Feature: Id {LocationId} Location Name: {Location}, Latitude: {latitude}, Longitude: {longitude}, Location Type: {locationType}  Geometry: {Geometry}",
                     feature.Attributes["LocationId"],
                     feature.Attributes["Location"],
+                    feature.Attributes["Latitude"],
+                    feature.Attributes["Longitude"],
+                    feature.Attributes["LocationType"],
                     feature.Geometry
                 );
+
+                Add(
+                    new SecchiLocationDisplay(
+                        latitude: (double)feature.Attributes["Latitude"],
+                        longitude: (double)feature.Attributes["Longitude"],
+                        locationId: (int)feature.Attributes["LocationId"],
+                        locationName: (string)feature.Attributes["Location"],
+                        locationType: (LocationType)feature.Attributes["LocationType"]
+                    )
+                );
+            }
+
+            foreach (var field in result)
+            {
+                if (field.Attributes.TryGetValue("LocationId", out var locationId))
+                {
+                    if (locationId is null)
+                    {
+                        logger.LogError(
+                            SecchiLocationLoaderLog,
+                            "GetPagedItemAsync: LocationId is null."
+                        );
+                        continue;
+                    }
+                    var locationIdInt = (int)locationId;
+                    // Log the locationIdResult.
+                    logger.LogTrace(
+                        SecchiLocationLoaderLog,
+                        "GetPagedItemAsync: LocationId after verification: {locationIdResult}",
+                        locationIdInt
+                    );
+                }
+                else
+                {
+                    logger.LogError(
+                        SecchiLocationLoaderLog,
+                        "GetPagedItemAsync: LocationId is not a field in the Secchi locations geodatabase."
+                    );
+                }
             }
 
             pageIndex++;
