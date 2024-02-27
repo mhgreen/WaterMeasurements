@@ -1,8 +1,12 @@
-﻿using System.Collections.ObjectModel;
+﻿using System;
+using System.Collections.ObjectModel;
+using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices.WindowsRuntime;
 using Ardalis.GuardClauses;
 using CommunityToolkit.Mvvm.Messaging;
 using Esri.ArcGISRuntime.Data;
+using Esri.ArcGISRuntime.Geometry;
+using Esri.ArcGISRuntime.Location;
 using Esri.ArcGISRuntime.Portal;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -11,9 +15,11 @@ using Microsoft.UI.Xaml.Data;
 using NLog;
 using NLog.Fluent;
 using WaterMeasurements.Contracts.Services;
+using WaterMeasurements.Helpers;
 using WaterMeasurements.Models;
 using WaterMeasurements.ViewModels;
 using Windows.Foundation;
+using WinRT;
 
 namespace WaterMeasurements.Services.IncrementalLoaders;
 
@@ -25,6 +31,8 @@ public class SecchiLocationCollectionLoader
     private readonly int pageSize = 10;
     private bool hasMoreItems = true;
 
+    // HasMoreItems is a required property of ISupportIncrementalLoading.
+    // It is used to determine if there are more items to load.
     public bool HasMoreItems => hasMoreItems;
 
     // Set the eventId for the logger.
@@ -50,8 +58,16 @@ public class SecchiLocationCollectionLoader
 
     private QueryParameters queryParameters = new() { WhereClause = "1=1" };
 
-    private int totalFeatureCount;
-    private int totalFeaturePages;
+    private int queriedFeatureCount;
+
+    // Initialize helpers.
+
+    private readonly FeatureToType<double?, bool> featureDoubleConverter = new(null, false);
+    private readonly FeatureToType<int?, bool> featureIntConverter = new(null, false);
+    private readonly FeatureToType<short?, bool> featureShortConverter = new(null, false);
+    private readonly FeatureToType<long?, bool> featureLongConverter = new(null, false);
+    private readonly FeatureToType<string?, bool> featureStringConverter = new(null, false);
+    private readonly FeatureToType<Guid?, bool> featureGuidConverter = new(null, false);
 
     public SecchiLocationCollectionLoader()
     {
@@ -165,6 +181,8 @@ public class SecchiLocationCollectionLoader
                 count
             );
 
+            /*
+
             // Call the GetsecchiLocationsFromSqlite method to retrieve the records.
             var queryResult = await sqliteService.GetSecchiLocationsFromSqlite(pageSize, pageIndex);
 
@@ -183,8 +201,7 @@ public class SecchiLocationCollectionLoader
                     item.LocationId
                 );
                 // Add the retrieved item to the secchiLocations list.
-                /*
-                 *
+
                 Add(
                     new SecchiLocationDisplay(
                         latitude: item.Latitude,
@@ -194,7 +211,7 @@ public class SecchiLocationCollectionLoader
                         locationType: item.LocationType
                     )
                 );
-                */
+
             }
 
             // Log then number of records retrieved.
@@ -203,6 +220,8 @@ public class SecchiLocationCollectionLoader
                 "GetPagedItemAsync: Fetched {queryResult.Count()} items.",
                 queryResult.Count()
             );
+
+            */
 
             queryParameters = new QueryParameters
             {
@@ -225,15 +244,15 @@ public class SecchiLocationCollectionLoader
                 queryParameters,
                 CancellationToken.None
             );
-            totalFeatureCount = result.Count();
-            totalFeaturePages = (int)Math.Ceiling((double)totalFeatureCount / pageSize);
+            queriedFeatureCount = result.Count();
+            // If totalFeaturePages is needed, that will have to be a separate query.
+            // totalFeaturePages = (int)Math.Ceiling((double)queriedFeatureCount / pageSize);
 
-            // Log the totalFeatureCount and the totalFeaturePages.
+            // Log the queriedFeatureCount and the totalFeaturePages.
             logger.LogTrace(
                 SecchiLocationLoaderLog,
-                "GetPagedItemAsync: TotalFeatureCount: {totalFeatureCount}, TotalFeaturePages: {totalFeaturePages}",
-                totalFeatureCount,
-                totalFeaturePages
+                "GetPagedItemAsync: Queried Feature Count: {queriedFeatureCount}",
+                queriedFeatureCount
             );
             // Log the results of the query.
             foreach (var feature in result)
@@ -249,52 +268,191 @@ public class SecchiLocationCollectionLoader
                     feature.Geometry
                 );
 
-                Add(
-                    new SecchiLocationDisplay(
-                        latitude: (double)feature.Attributes["Latitude"],
-                        longitude: (double)feature.Attributes["Longitude"],
-                        locationId: (int)feature.Attributes["LocationId"],
-                        locationName: (string)feature.Attributes["Location"],
-                        locationType: (LocationType)feature.Attributes["LocationType"]
-                    )
+                Guard.Against.Null(
+                    feature.Geometry,
+                    nameof(feature.Geometry),
+                    "SecchiLocationCollectionLoader: feature.Geometry is null."
                 );
-            }
+                // Convert feature.Geometry to Wgs84geometry to add latitude and longitude to the location.
+                var Wgs84geometry = feature
+                    .Geometry.Project(SpatialReferences.Wgs84)
+                    .As<MapPoint>();
+                // var latitude = Wgs84geometry.Y;
+                // var longitude = Wgs84geometry.X;
 
-            foreach (var field in result)
-            {
-                if (field.Attributes.TryGetValue("LocationId", out var locationId))
+
+                // Convert from the feature table to the SecchiLocationDisplay.
+                // Don't convert latitude or longitude, get those from the geometry.
+
+                var conversionSuccess = true;
+                List<string> notConverted = [];
+
+                var locationIdConverted = featureIntConverter.ConvertInt32ToInt(
+                    "LocationId",
+                    feature
+                );
+                conversionSuccess |= locationIdConverted.Success;
+                if (!locationIdConverted.Success)
                 {
-                    if (locationId is null)
-                    {
-                        logger.LogError(
-                            SecchiLocationLoaderLog,
-                            "GetPagedItemAsync: LocationId is null."
-                        );
-                        continue;
-                    }
-                    var locationIdInt = (int)locationId;
-                    // Log the locationIdResult.
+                    notConverted.Add("LocationId");
+                }
+
+                var locationConverted = featureStringConverter.ConvertTextToString(
+                    "Location",
+                    feature
+                );
+                conversionSuccess |= locationConverted.Success;
+                if (!locationConverted.Success)
+                {
+                    notConverted.Add("Location");
+                }
+
+                var locationTypeConverted = featureShortConverter.ConvertInt32ToInt(
+                    "LocationType",
+                    feature
+                );
+                conversionSuccess |= locationTypeConverted.Success;
+                if (!locationTypeConverted.Success)
+                {
+                    notConverted.Add("LocationType");
+                }
+
+                if (conversionSuccess)
+                {
+                    // Log all of the converted values.
                     logger.LogTrace(
                         SecchiLocationLoaderLog,
-                        "GetPagedItemAsync: LocationId after verification: {locationIdResult}",
-                        locationIdInt
+                        "GetPagedItemAsync: Features after conversion: Id {LocationId} Location Name: {Location}, Latitude: {latitude}, Longitude: {longitude}, Location Type: {locationType}",
+                        locationIdConverted.Value,
+                        locationConverted.Value,
+                        Wgs84geometry.Y,
+                        Wgs84geometry.X,
+                        locationTypeConverted.Value
                     );
+
+                    if (
+                        locationIdConverted.Value is not null
+                        && locationConverted.Value is not null
+                        && locationTypeConverted.Value is not null
+                    )
+                    {
+                        Add(
+                            new SecchiLocationDisplay(
+                                latitude: Wgs84geometry.Y,
+                                longitude: Wgs84geometry.X,
+                                locationId: (int)locationIdConverted.Value,
+                                locationName: (string)locationConverted.Value,
+                                locationType: (LocationType)locationTypeConverted.Value
+                            )
+                        );
+                    }
+                    else
+                    {
+                        // Log to error the contents of notConverted.
+                        logger.LogError(
+                            SecchiLocationLoaderLog,
+                            "GetPagedItemAsync: Feature: The following values did not convert: {notConverted}",
+                            notConverted
+                        );
+                    }
                 }
                 else
                 {
+                    // Log to error the contents of notConverted.
                     logger.LogError(
                         SecchiLocationLoaderLog,
-                        "GetPagedItemAsync: LocationId is not a field in the Secchi locations geodatabase."
+                        "GetPagedItemAsync: Feature: The following values did not convert: {notConverted}",
+                        notConverted
                     );
                 }
             }
 
+            // ----------- The following code is for debugging purposes only. -----------
+
+            // The purpose of the code below is to determine the field names and types of the feature table.
+            // This may be useful to add additional types to FeatureToType.cs.
+
+            /*
+
+            // Add the field names and types to a dictionary.
+            var featureTableDictionary = result.Fields.ToDictionary(
+                feature => feature.Name,
+                feature => feature.FieldType
+            );
+
+            // Log the featureTableDictionary.
+            foreach (var (key, value) in featureTableDictionary)
+            {
+                logger.LogTrace(
+                    SecchiLocationLoaderLog,
+                    "GetPagedItemAsync: FeatureTableDictionary: {key}, {value}",
+                    key,
+                    value
+                );
+            }
+
+            // Get the first feature, its attributes and types.
+
+            var firstFeature = result.FirstOrDefault();
+
+            if (firstFeature is null)
+            {
+                logger.LogError(
+                    SecchiLocationLoaderLog,
+                    "GetPagedItemAsync: firstFeature is null."
+                );
+                return new LoadMoreItemsResult { Count = 0 };
+            }
+
+            var firstFeatureAttributes = firstFeature.Attributes.Values;
+            var firstFeatureAttributeNames = firstFeatureAttributes.Select(attribute => attribute);
+            var firstFeatureAttributeTypes = firstFeatureAttributes.Select(attribute =>
+                attribute!.GetType()
+            );
+
+            // Log the firstFeatureAttributeNames and firstFeatureAttributeTypes.
+            foreach (var (name, type) in firstFeatureAttributeNames.Zip(firstFeatureAttributeTypes))
+            {
+                logger.LogTrace(
+                    SecchiLocationLoaderLog,
+                    "GetPagedItemAsync: firstFeatureAttributeNames: {name}, firstFeatureAttributeTypes: {type}",
+                    name,
+                    type
+                );
+            }
+
+            foreach (var feature in result)
+            {
+                logger.LogTrace(
+                    SecchiLocationLoaderLog,
+                    "GetPagedItemAsync: feature.Attributes: {featureAttributes}",
+                    feature.Attributes
+                );
+
+                var featureAttributes = feature.Attributes.Values;
+                var attribute = featureAttributes.FirstOrDefault();
+                if (attribute is null)
+                {
+                    logger.LogError(
+                        SecchiLocationLoaderLog,
+                        "GetPagedItemAsync: attribute is null."
+                    );
+                    continue;
+                }
+            }
+
+            */
+
+            // ----------- The above code is for debugging purposes only. -----------
+
             pageIndex++;
 
+            /* For SqliteService, use the following:
             hasMoreItems = queryResult.Count() == pageSize;
-            // hasMoreItems = false;
-
             return new LoadMoreItemsResult { Count = (uint)queryResult.Count() };
+            */
+            hasMoreItems = queriedFeatureCount == pageSize;
+            return new LoadMoreItemsResult { Count = (uint)queriedFeatureCount };
         }
         catch (Exception exception)
         {

@@ -734,18 +734,18 @@
                                                                 <MenuFlyout Placement="Bottom">
                                                                     <MenuFlyoutItem
                                                                         Click="{x:Bind LocationType_Click}"
-                                                                        Tag="Permanent"
-                                                                        Text="Permanent" />
+                                                                        Tag="Ongoing"
+                                                                        Text="Ongoing" />
                                                                     <MenuFlyoutItem
                                                                         Click="{x:Bind LocationType_Click}"
-                                                                        Tag="OneTime"
-                                                                        Text="One-Time" />
+                                                                        Tag="Occasional"
+                                                                        Text="Occasional" />
                                                                 </MenuFlyout>
                                                             </DropDownButton.Flyout>
                                                         </DropDownButton>
                                                         <ToolTipService.ToolTip>
                                                             <ToolTip
-                                                                Content="Add this location as permanent to trigger ongoing data collection or one-time for a single sample."
+                                                                Content="Add this location as ongoing to trigger ongoing data collection or occasional for limited collection."
                                                                 HorizontalOffset="200"
                                                                 VerticalOffset="-48" />
                                                         </ToolTipService.ToolTip>

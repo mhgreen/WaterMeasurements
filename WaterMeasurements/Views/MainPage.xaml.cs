@@ -132,6 +132,9 @@ public partial class MainPage : Page
 
     private double geoTriggerDistance = 0;
 
+    private bool secchiLocationAdded = false;
+    private bool secchiLocationAddPageSelected = false;
+
     [RelayCommand]
     private void ReCenter()
     {
@@ -712,44 +715,56 @@ public partial class MainPage : Page
             sender.Name
         );
 
+        if (args.InvokedItem != sender.SelectedItem)
+        {
+            // Track when specific pages have been navigated away from.
+            // This can be used to do things like reload geotriggers when the user navigates away from the add location page.
+            // Set a flag when a page is navigated to, such as SecchiNavLocationAdd, and check for it here.
+            if (secchiLocationAddPageSelected)
+            {
+                if (args.InvokedItemContainer.Name is not "SecchiNavLocationAdd")
+                {
+                    // Log to trace that the secchiLocationAddPageSelected is false.
+                    Logger.Trace(
+                        "MainPage.xaml.cs, SecchiNavView_ItemInvoked(): Was on add location, navigated away."
+                    );
+                    secchiLocationAddPageSelected = false;
+                }
+            }
+        }
+
         switch (args.InvokedItemContainer.Name)
         {
             case "SecchiNavMeasurementAdd":
-                // Log that upload was selected.
                 Logger.Debug(
                     "MainPage.xaml.cs, SecchiNavView_ItemInvoked(): Add Measurement selected."
                 );
                 secchiPageSelection.SecchiSelectView = "SecchiDataEntry";
                 break;
             case "SecchiNavLocationAdd":
-                // Log that upload was selected.
                 Logger.Debug(
                     "MainPage.xaml.cs, SecchiNavView_ItemInvoked(): Add Location selected."
                 );
                 secchiPageSelection.SecchiSelectView = "SecchiAddLocation";
+                secchiLocationAddPageSelected = true;
                 break;
             case "SecchiNavCollected":
-                // Log that upload was selected.
                 Logger.Debug("MainPage.xaml.cs, SecchiNavView_ItemInvoked(): Collected selected.");
                 secchiPageSelection.SecchiSelectView = "SecchiCollectionTable";
                 break;
             case "SecchiNavDiscard":
-                // Log that discard was selected.
                 Logger.Debug(
                     "MainPage.xaml.cs, SecchiNavView_ItemInvoked(): Discard item selected."
                 );
                 break;
             case "SecchiNavUpload":
-                // Log that upload was selected.
                 Logger.Debug("MainPage.xaml.cs, SecchiNavView_ItemInvoked(): Upload selected.");
                 break;
             case "SecchiNavInfo":
-                // Log that discard was selected.
                 Logger.Debug("MainPage.xaml.cs, SecchiNavView_ItemInvoked(): Info item selected.");
                 break;
 
             case "SettingsItem":
-                // Log that settings was selected.
                 Logger.Debug("MainPage.xaml.cs, SecchiNavView_ItemInvoked(): Settings selected.");
                 secchiPageSelection.SecchiSelectView = "SecchiSettings";
                 break;
@@ -1075,11 +1090,11 @@ public partial class MainPage : Page
 
             switch (tag)
             {
-                case "OneTime":
+                case "Occasional":
                     secchiAddLocation.LocationType = LocationType.Occasional;
                     SecchiLocationTypeDropDown.Content = "Occasional";
                     break;
-                case "Permanent":
+                case "Ongoing":
                     secchiAddLocation.LocationType = LocationType.Ongoing;
                     SecchiLocationTypeDropDown.Content = "Ongoing";
                     break;
