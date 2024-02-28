@@ -130,6 +130,25 @@
             <ColumnDefinition />
         </Grid.ColumnDefinitions>
 
+        <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup>
+                <VisualState x:Name="ValidLocationName">
+                    <VisualState.StateTriggers>
+                        <!--  Validate location name  -->
+                        <ui:RegexStateTrigger
+                    Expression="^[A-Z0-9.,_+-{}\[\]\ ()|:@^?']{2,200}$"
+                    Options="IgnoreCase"
+                    Value="{Binding Text, ElementName=SecchiLocationName, Mode=OneWay}" />
+                    </VisualState.StateTriggers>
+                    <VisualState.Setters>
+                        <Setter Target="SecchiLocationStatus.Text" Value="" />
+                        <Setter Target="SecchiLocationStatus.Foreground" Value="{ThemeResource SystemFillColorSuccessBrush}" />
+                        <Setter Target="LocationSaveButton.IsEnabled" Value="true" />
+                    </VisualState.Setters>
+                </VisualState>
+            </VisualStateGroup>
+        </VisualStateManager.VisualStateGroups>
+
         <Grid
             x:Name="TitleBar"
             Grid.Row="0"
@@ -708,26 +727,37 @@
 
                                                 <StackPanel>
                                                     <TextBlock
-                                                        Opacity="0.8"
+                                                        Opacity="1"
                                                         Style="{ThemeResource SettingsSectionHeaderTextBlockStyle}"
                                                         Text="Location Name" />
                                                     <ToolTipService.ToolTip>
                                                         <ToolTip
-                                                            Content="Add a location to collect Secchi measurements. A location may be permanent, and will be uploaded for ongoing measurements, or may be a one-time measurement."
+                                                            Content="Add a location to collect Secchi measurements. A location may be ongoing, and will result in a geolocation trigger each time it is encountered, or may be occassional and selected for a session."
                                                             HorizontalOffset="200"
-                                                            VerticalOffset="-48" />
+                                                            VerticalOffset="-100" />
                                                     </ToolTipService.ToolTip>
                                                 </StackPanel>
 
-                                                <StackPanel Margin="0,5,0,0">
-                                                    <TextBox
-                                                        x:Name="Location1"
-                                                        ui:TextBoxExtensions.ValidationMode="Dynamic"
-                                                        ui:TextBoxExtensions.ValidationType="Characters"
-                                                        InputScope="AlphanumericFullWidth" />
+                                                <StackPanel Margin="0,0,0,0">
+                                                    <TextBox x:Name="SecchiLocationName"
+                                                             Text="{x:Bind secchiLocationSelections.LocationName, Mode=TwoWay}"
+                                                             />
+                                                    <TextBlock
+                                                            x:Name="SecchiLocationStatus"
+                                                            Margin="0,4,0,24"
+                                                            Foreground="{ThemeResource SystemFillColorCriticalBrush}"
+                                                            Style="{StaticResource CaptionTextBlockStyle}"
+                                                            Text="Not a valid location name" />
+
+                                                    <ToolTipService.ToolTip>
+                                                        <ToolTip
+                                                                Content="Upper and lower case letters, numbers, spaces, as well as symbols []+-()_,.'{}=@|:^?"
+                                                                HorizontalOffset="200"
+                                                                VerticalOffset="-48" />
+                                                    </ToolTipService.ToolTip>
                                                 </StackPanel>
 
-                                                <StackPanel Margin="0,20,0,0" Orientation="Horizontal">
+                                                <StackPanel Margin="0,0,0,0" Orientation="Horizontal">
                                                     <StackPanel>
                                                         <DropDownButton x:Name="SecchiLocationTypeDropDown" Content="Type">
                                                             <DropDownButton.Flyout>
@@ -823,7 +853,6 @@
                                                 <StackPanel Margin="0,0,0,0">
                                                     <StackPanel
                                                         x:Name="LocationButtonStackPanel"
-                                                        Margin="{StaticResource SmallTopMargin}"
                                                         HorizontalAlignment="Right"
                                                         Orientation="Horizontal"
                                                         Spacing="5">
@@ -831,7 +860,7 @@
                                                             x:Name="LocationSaveButton"
                                                             x:Uid="Main_SecchiSaveButton"
                                                             Command="{x:Bind SaveSecchiLocationCommand, Mode=OneWay}"
-                                                            />
+                                                            IsEnabled="False" />
 
                                                         <ToolTipService.ToolTip>
                                                             <ToolTip
@@ -856,8 +885,9 @@
                                                         ScrollViewer.VerticalScrollBarVisibility="Visible" />
                                                 </StackPanel>
 
-
                                             </StackPanel>
+
+
                                         </Grid>
                                     </controls:Case>
 

@@ -69,7 +69,7 @@ public partial class MainPage : Page
     private readonly SystemLocationDataSource systemLocation = new();
 
     // Current view for Secchi data and locations.
-    // Obserable isdefined  in MainPageModel.cs.
+    // Obserable is defined  in MainPageModel.cs.
     private readonly SecchiPageSelection secchiPageSelection;
 
     // Current ArcGIS API key
@@ -134,6 +134,18 @@ public partial class MainPage : Page
 
     private bool secchiLocationAdded = false;
     private bool secchiLocationAddPageSelected = false;
+
+    // Track whether location types, sources, and names have been set.
+    // Obserables are defined in MainPageModel.cs.
+    private readonly SecchiLocationSelections secchiLocationSelections =
+        new()
+        {
+            LocationTypeSet = false,
+            LocationSourceSet = false,
+            LocationNameSet = false,
+            LocationName = "",
+            LocationCanBeSaved = false
+        };
 
     [RelayCommand]
     private void ReCenter()
@@ -1075,6 +1087,8 @@ public partial class MainPage : Page
         // Log to trace that the LocationType_Click method was called.
         Logger.Trace("MainPage.xaml.cs, LocationType_Click: LocationType_Click method called.");
 
+        secchiLocationSelections.LocationTypeSet = true;
+
         if (sender is null)
         {
             // Log to trace that the sender is null.
@@ -1121,6 +1135,8 @@ public partial class MainPage : Page
 
         // Log to trace that the LocationSource_Click method was called.
         Logger.Trace("MainPage.xaml.cs, LocationSource_Click: LocationSource_Click method called.");
+
+        secchiLocationSelections.LocationSourceSet = true;
 
         if (sender is null)
         {

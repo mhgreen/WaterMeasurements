@@ -26,7 +26,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Ardalis.GuardClauses" Version="4.4.0" />
+    <PackageReference Include="Ardalis.GuardClauses" Version="4.5.0" />
     <PackageReference Include="CommunityToolkit.Labs.Uwp.Controls.DataTable" Version="0.1.230830" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.2" />
     <PackageReference Include="CommunityToolkit.WinUI.Collections" Version="8.0.240109" />
@@ -37,19 +37,19 @@
     <PackageReference Include="CommunityToolkit.WinUI.Triggers" Version="8.0.240109" />
     <PackageReference Include="Dapper" Version="2.1.28" />
     <PackageReference Include="Dapper.Contrib" Version="2.0.78" />
-    <PackageReference Include="Dapper.SimpleSqlBuilder" Version="3.5.1" />
+    <PackageReference Include="Dapper.SimpleSqlBuilder" Version="3.6.2" />
     <PackageReference Include="Esri.ArcGISRuntime.Toolkit.WinUI" Version="200.3.0" />
     <PackageReference Include="Esri.ArcGISRuntime.WinUI" Version="200.3.0" />
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.2" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
-    <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.4.231219000" />
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.4.240211001" />
     <PackageReference Include="Microsoft.Xaml.Behaviors.WinUI.Managed" Version="2.0.9" />
     <PackageReference Include="Rebus" Version="8.2.2" />
     <PackageReference Include="Rebus.NLog" Version="6.0.0" />
     <PackageReference Include="Rebus.RabbitMq" Version="9.0.1" />
-    <PackageReference Include="Rebus.ServiceProvider" Version="10.1.0" />
+    <PackageReference Include="Rebus.ServiceProvider" Version="10.1.1" />
     <PackageReference Include="Stateless" Version="5.15.0" />
-    <PackageReference Include="WinUIEx" Version="2.3.3" />
+    <PackageReference Include="WinUIEx" Version="2.3.4" />
   </ItemGroup>
 
   <ItemGroup>
