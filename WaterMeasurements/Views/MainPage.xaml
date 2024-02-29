@@ -109,6 +109,7 @@
         <helpers:LocationTypeToVisibilityConverter x:Key="LocationTypeToVisibilityConverter" />
         <helpers:RecordStatusToVisibilityConverter x:Key="RecordStatusToVisibilityConverter" />
         <helpers:RecordStatusToColorConverter x:Key="RecordStatusToColorConverter" />
+        <helpers:StringToBoolConverter x:Key="StringToBoolConverter" />
 
     </Page.Resources>
 
@@ -136,14 +137,13 @@
                     <VisualState.StateTriggers>
                         <!--  Validate location name  -->
                         <ui:RegexStateTrigger
-                    Expression="^[A-Z0-9.,_+-{}\[\]\ ()|:@^?']{2,200}$"
-                    Options="IgnoreCase"
-                    Value="{Binding Text, ElementName=SecchiLocationName, Mode=OneWay}" />
+                            Expression="^[A-Z0-9.,_+-{}\[\] ()|:@^?']{2,200}$"
+                            Options="IgnoreCase"
+                            Value="{Binding Text, ElementName=SecchiLocationName, Mode=OneWay}"/>
                     </VisualState.StateTriggers>
                     <VisualState.Setters>
                         <Setter Target="SecchiLocationStatus.Text" Value="" />
                         <Setter Target="SecchiLocationStatus.Foreground" Value="{ThemeResource SystemFillColorSuccessBrush}" />
-                        <Setter Target="LocationSaveButton.IsEnabled" Value="true" />
                     </VisualState.Setters>
                 </VisualState>
             </VisualStateGroup>
@@ -744,7 +744,7 @@
                                                              />
                                                     <TextBlock
                                                             x:Name="SecchiLocationStatus"
-                                                            Margin="0,4,0,24"
+                                                            Margin="0,4,0,15"
                                                             Foreground="{ThemeResource SystemFillColorCriticalBrush}"
                                                             Style="{StaticResource CaptionTextBlockStyle}"
                                                             Text="Not a valid location name" />
@@ -812,7 +812,7 @@
 
                                                 <StackPanel
                                                     x:Name="LatLongEntry"
-                                                    Margin="0,15,0,0"
+                                                    Margin="0,15,0,15"
                                                     Visibility="Collapsed">
                                                     <Grid ColumnSpacing="10">
                                                         <Grid.ColumnDefinitions>
@@ -834,6 +834,7 @@
                                                             Text="Longitude" />
 
                                                         <TextBox
+                                                            x:Name="EnteredLatitude"
                                                             Grid.Row="1"
                                                             Grid.Column="0"
                                                             Margin="0,10,0,0"
@@ -841,6 +842,7 @@
                                                             ui:TextBoxExtensions.ValidationType="Decimal"
                                                             InputScope="NumberFullWidth" />
                                                         <TextBox
+                                                            x:Name="EnteredLongitude"
                                                             Grid.Row="1"
                                                             Grid.Column="1"
                                                             Margin="0,10,0,0"
@@ -860,7 +862,7 @@
                                                             x:Name="LocationSaveButton"
                                                             x:Uid="Main_SecchiSaveButton"
                                                             Command="{x:Bind SaveSecchiLocationCommand, Mode=OneWay}"
-                                                            IsEnabled="False" />
+                                                            IsEnabled="{x:Bind secchiLocationSelections.LocationCanBeSaved, Mode=OneWay}" />
 
                                                         <ToolTipService.ToolTip>
                                                             <ToolTip

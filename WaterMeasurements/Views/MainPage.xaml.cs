@@ -83,6 +83,10 @@ public partial class MainPage : Page
     {
         public LocationType? LocationType { get; set; }
         public LocationSource? LocationSource { get; set; }
+        public double? Latitude;
+        public double? Longitude;
+        public string? LocationName;
+        public MapPoint? Location;
     }
 
     private struct SecchiChannelNumbers
@@ -858,79 +862,189 @@ public partial class MainPage : Page
                 return;
             }
 
-            if (MapView.GeometryEditor.IsStarted)
+            switch (secchiAddLocation.LocationSource)
             {
-                var newLocation = MapView.GeometryEditor.Stop();
-                if (newLocation is not null)
-                {
-                    // Add the new location to the map.
-                    graphicsOverlay.Graphics.Add(
-                        new Graphic(newLocation, collectionLocationSymbol)
-                    );
+                case LocationSource.EnteredLatLong:
 
-                    // log the latitute and longitude of the new location.
-                    var lat = newLocation.Project(SpatialReferences.Wgs84).As<MapPoint>().Y;
-                    var lon = newLocation.Project(SpatialReferences.Wgs84).As<MapPoint>().X;
+                    // Log to trace the entered latitude and longitude.
                     Logger.Trace(
-                        "MainPage.xaml.cs, SaveSecchiLocation_Click: New Location is at: Lat {lat}, Lon {lon}.",
-                        lat,
-                        lon
+                        "MainPage.xaml.cs, SaveSecchiLocation_Click: EnteredLatLong: Latitude: {latitude}, Longitude: {longitude}.",
+                        EnteredLatitude.Text,
+                        EnteredLongitude.Text
                     );
-                    // Create the feature.
-                    if (secchiLocationFeatures is null)
+
+                    secchiAddLocation.Location = new MapPoint(
+                        double.Parse(EnteredLongitude.Text),
+                        double.Parse(EnteredLatitude.Text),
+                        SpatialReferences.Wgs84
+                    );
+
+                    //TODO: Use Location instead of latitude and longitude.
+
+                    if (secchiAddLocation.Latitude is null || secchiAddLocation.Longitude is null)
                     {
-                        // Log to trace that the secchiLocationFeatures is null.
+                        // Log to trace that the Latitude or Longitude is null.
                         Logger.Error(
-                            "MainPage.xaml.cs, SaveSecchiLocation_Click: secchiLocationFeatures is null."
+                            "MainPage.xaml.cs, SaveSecchiLocation_Click: Latitude or Longitude is null."
                         );
-                        return;
+                        break;
                     }
-                    var newFeature = (ArcGISFeature)secchiLocationFeatures.CreateFeature();
-                    newFeature.Geometry = newLocation;
-                    newFeature.Attributes["Latitude"] = lat;
-                    newFeature.Attributes["Longitude"] = lon;
-                    newFeature.Attributes["Location"] = "New Location";
-                    newFeature.Attributes["LocationId"] = 7;
-                    await secchiLocationFeatures.AddFeatureAsync(newFeature);
-                    newFeature.Refresh();
-
-                    // Log to trace the fields in secchiLocationFeatures.
-                    foreach (var field in secchiLocationFeatures.Fields)
+                    Logger.Trace(
+                        "MainPage.xaml.cs, SaveSecchiLocation_Click, EnteredLatLong: presentLocation: Lat {presentLocation.Y}, Lon {presentLocation.X}.",
+                        secchiAddLocation.Location.Y,
+                        secchiAddLocation.Location.X
+                    );
+                    if (graphicsOverlay is null)
                     {
-                        Logger.Trace(
-                            "MainPage.xaml.cs, secchiLocationFeatures (after new location): featureTable.TableName: {featureTable.TableName}, field.Name: {field.Name}, field.FieldType: {field.FieldType}.",
-                            secchiLocationFeatures.TableName,
-                            field.Name,
-                            field.FieldType.ToString()
+                        // Log to trace that the graphicsOverlay is null.
+                        Logger.Error(
+                            "MainPage.xaml.cs, SaveSecchiLocation_Click: graphicsOverlay is null."
                         );
                     }
-
-                    // create a where clause to get all the features
-                    var queryParameters = new QueryParameters() { WhereClause = "1=1" };
-
-                    // query the feature table
-                    var queryResult = secchiLocationFeatures
-                        .QueryFeaturesAsync(queryParameters)
-                        .Result;
-
-                    // iterate over the features and log their attributes
-                    foreach (var feature in queryResult)
+                    else
                     {
-                        foreach (var attribute in feature.Attributes)
+                        // Add the new location to the map.
+                        graphicsOverlay.Graphics.Add(
+                            new Graphic(secchiAddLocation.Location, collectionLocationSymbol)
+                        );
+                    }
+
+                    await MapView.SetViewpointCenterAsync(secchiAddLocation.Location, 2500);
+                    break;
+
+                case LocationSource.CurrentGPS:
+                    if (MapView.LocationDisplay.Location is null)
+                    {
+                        // Log to trace that the LocationDisplay.Location is null.
+                        Logger.Error(
+                            "MainPage.xaml.cs, SaveSecchiLocation_Click: LocationDisplay.Location is null."
+                        );
+                        break;
+                    }
+                    secchiAddLocation.Location = MapView.LocationDisplay.Location.Position;
+                    Logger.Trace(
+                        "MainPage.xaml.cs, SaveSecchiLocation_Click, CurrentGPS: presentLocation: Lat {presentLocation.Y}, Lon {presentLocation.X}.",
+                        secchiAddLocation.Location.Y,
+                        secchiAddLocation.Location.X
+                    );
+                    if (graphicsOverlay is null)
+                    {
+                        // Log to trace that the graphicsOverlay is null.
+                        Logger.Error(
+                            "MainPage.xaml.cs, SaveSecchiLocation_Click: graphicsOverlay is null."
+                        );
+                    }
+                    else
+                    {
+                        // Add the new location to the map.
+                        graphicsOverlay.Graphics.Add(
+                            new Graphic(secchiAddLocation.Location, collectionLocationSymbol)
+                        );
+                    }
+
+                    await MapView.SetViewpointCenterAsync(secchiAddLocation.Location, 2500);
+                    break;
+
+                case LocationSource.PointOnMap:
+                    if (MapView.GeometryEditor is null)
+                    {
+                        // Log to trace that the MapView.GeometryEditor is null.
+                        Logger.Error(
+                            "MainPage.xaml.cs, SaveSecchiLocation_Click: MapView.GeometryEditor is null."
+                        );
+                        break;
+                    }
+
+                    if (MapView.GeometryEditor.IsStarted)
+                    {
+                        var newLocation = MapView.GeometryEditor.Stop();
+                        if (newLocation is not null)
                         {
-                            Logger.Trace(
-                                "MainPage.xaml.cs, secchiLocationFeatures (after new location): feature.Attributes: attribute.Key: {attributeName}, attribute.Value: {attributeValue}.",
-                                attribute.Key,
-                                attribute.Value
+                            // Set the new location to the secchiAddLocation.Location.
+                            secchiAddLocation.Location = newLocation.As<MapPoint>();
+                            // Add the new location to the map.
+                            graphicsOverlay.Graphics.Add(
+                                new Graphic(newLocation, collectionLocationSymbol)
                             );
-                        }
-                    }
-                }
 
-                if (secchiAddLocation.LocationSource == LocationSource.PointOnMap)
-                {
-                    MapView.GeometryEditor.Start(GeometryType.Point);
-                }
+                            // log the latitute and longitude of the new location.
+                            var latitude = newLocation
+                                .Project(SpatialReferences.Wgs84)
+                                .As<MapPoint>()
+                                .Y;
+                            var longitude = newLocation
+                                .Project(SpatialReferences.Wgs84)
+                                .As<MapPoint>()
+                                .X;
+                            Logger.Trace(
+                                "MainPage.xaml.cs, SaveSecchiLocation_Click: New Location is at: Lat {lat}, Lon {lon}.",
+                                latitude,
+                                longitude
+                            );
+                            // Create the feature.
+                            if (secchiLocationFeatures is null)
+                            {
+                                // Log to trace that the secchiLocationFeatures is null.
+                                Logger.Error(
+                                    "MainPage.xaml.cs, SaveSecchiLocation_Click: secchiLocationFeatures is null."
+                                );
+                                return;
+                            }
+                            /*
+                            var newFeature = (ArcGISFeature)secchiLocationFeatures.CreateFeature();
+                            newFeature.Geometry = newLocation;
+                            newFeature.Attributes["Latitude"] = latitude;
+                            newFeature.Attributes["Longitude"] = longitude;
+                            newFeature.Attributes["Location"] = "New Location";
+                            newFeature.Attributes["LocationId"] = 7;
+                            await secchiLocationFeatures.AddFeatureAsync(newFeature);
+                            newFeature.Refresh();
+
+                            // Log to trace the fields in secchiLocationFeatures.
+                            foreach (var field in secchiLocationFeatures.Fields)
+                            {
+                                Logger.Trace(
+                                    "MainPage.xaml.cs, secchiLocationFeatures (after new location): featureTable.TableName: {featureTable.TableName}, field.Name: {field.Name}, field.FieldType: {field.FieldType}.",
+                                    secchiLocationFeatures.TableName,
+                                    field.Name,
+                                    field.FieldType.ToString()
+                                );
+                            }
+
+                            // create a where clause to get all the features
+                            var queryParameters = new QueryParameters() { WhereClause = "1=1" };
+
+                            // query the feature table
+                            var queryResult = secchiLocationFeatures
+                                .QueryFeaturesAsync(queryParameters)
+                                .Result;
+
+                            // iterate over the features and log their attributes
+                            foreach (var feature in queryResult)
+                            {
+                                foreach (var attribute in feature.Attributes)
+                                {
+                                    Logger.Trace(
+                                        "MainPage.xaml.cs, secchiLocationFeatures (after new location): feature.Attributes: attribute.Key: {attributeName}, attribute.Value: {attributeValue}.",
+                                        attribute.Key,
+                                        attribute.Value
+                                    );
+                                }
+                            }
+                            */
+                        }
+
+                        // Since the drop-down is set to "Point on Map", start the geometry editor.
+                        // This provides for a consistent user experience if the page is navigated away from and then back.
+                        MapView.GeometryEditor.Start(GeometryType.Point);
+                    }
+                    break;
+
+                default:
+                    Logger.Error(
+                        "MainPage.xaml.cs, SaveSecchiLocation_Click: LocationSource not set."
+                    );
+                    break;
             }
         }
         catch (Exception exception)
@@ -1089,44 +1203,56 @@ public partial class MainPage : Page
 
         secchiLocationSelections.LocationTypeSet = true;
 
-        if (sender is null)
+        try
         {
-            // Log to trace that the sender is null.
-            Logger.Trace("MainPage.xaml.cs, LocationType_Click: sender is null.");
-            return;
-        }
-
-        var menuFlyoutItem = sender as MenuFlyoutItem;
-
-        if (menuFlyoutItem != null)
-        {
-            var tag = menuFlyoutItem.Tag as string;
-
-            switch (tag)
+            if (sender is null)
             {
-                case "Occasional":
-                    secchiAddLocation.LocationType = LocationType.Occasional;
-                    SecchiLocationTypeDropDown.Content = "Occasional";
-                    break;
-                case "Ongoing":
-                    secchiAddLocation.LocationType = LocationType.Ongoing;
-                    SecchiLocationTypeDropDown.Content = "Ongoing";
-                    break;
-                default:
-                    // Log to trace that an invalid tag value was encountered.
-                    Logger.Trace(
-                        "MainPage.xaml.cs, LocationType_Click: Invalid tag value: {tag}",
-                        tag
-                    );
-                    break;
+                // Log to trace that the sender is null.
+                Logger.Trace("MainPage.xaml.cs, LocationType_Click: sender is null.");
+                return;
             }
-        }
 
-        // Log to trace the value of locationType with a label.
-        Logger.Trace(
-            "MainPage.xaml.cs, LocationType_Click: Location Type: {locationType}",
-            secchiAddLocation.LocationType
-        );
+            var menuFlyoutItem = sender as MenuFlyoutItem;
+
+            if (menuFlyoutItem != null)
+            {
+                var tag = menuFlyoutItem.Tag as string;
+
+                switch (tag)
+                {
+                    case "Occasional":
+                        secchiAddLocation.LocationType = LocationType.Occasional;
+                        SecchiLocationTypeDropDown.Content = "Occasional";
+                        break;
+                    case "Ongoing":
+                        secchiAddLocation.LocationType = LocationType.Ongoing;
+                        SecchiLocationTypeDropDown.Content = "Ongoing";
+                        break;
+                    default:
+                        // Log to trace that an invalid tag value was encountered.
+                        Logger.Trace(
+                            "MainPage.xaml.cs, LocationType_Click: Invalid tag value: {tag}",
+                            tag
+                        );
+                        break;
+                }
+            }
+
+            // Log to trace the value of locationType with a label.
+            Logger.Trace(
+                "MainPage.xaml.cs, LocationType_Click: Location Type: {locationType}",
+                secchiAddLocation.LocationType
+            );
+        }
+        catch (Exception exception)
+        {
+            // Log to trace the exception message.
+            Logger.Error(
+                exception,
+                "MainPage.xaml.cs, LocationType_Click: An error occurred in LocationType_Click: {exception}",
+                exception.Message
+            );
+        }
     }
 
     private void LocationSource_Click(object sender, RoutedEventArgs eventArgs)
@@ -1137,93 +1263,104 @@ public partial class MainPage : Page
         Logger.Trace("MainPage.xaml.cs, LocationSource_Click: LocationSource_Click method called.");
 
         secchiLocationSelections.LocationSourceSet = true;
-
-        if (sender is null)
+        try
         {
-            // Log to trace that the sender is null.
-            Logger.Trace("MainPage.xaml.cs, LocationSource_Click: sender is null.");
-            return;
-        }
-
-        var menuFlyoutItem = sender as MenuFlyoutItem;
-
-        if (menuFlyoutItem != null)
-        {
-            if (MapView.GeometryEditor is null)
+            if (sender is null)
             {
-                // Log to trace that the MapView.GeometryEditor is null.
-                Logger.Error(
-                    "MainPage.xaml.cs, SaveSecchiLocation_Click: MapView.GeometryEditor is null."
-                );
+                // Log to trace that the sender is null.
+                Logger.Trace("MainPage.xaml.cs, LocationSource_Click: sender is null.");
                 return;
             }
 
-            if (MapView.LocationDisplay.Location is null)
+            var menuFlyoutItem = sender as MenuFlyoutItem;
+
+            if (menuFlyoutItem != null)
             {
-                // Log to trace that the LocationDisplay.Location is null.
-                Logger.Error(
-                    "MainPage.xaml.cs, SaveSecchiLocation_Click: LocationDisplay.Location is null."
-                );
-                return;
+                if (MapView.GeometryEditor is null)
+                {
+                    // Log to trace that the MapView.GeometryEditor is null.
+                    Logger.Error(
+                        "MainPage.xaml.cs, SaveSecchiLocation_Click: MapView.GeometryEditor is null."
+                    );
+                    return;
+                }
+
+                if (MapView.LocationDisplay.Location is null)
+                {
+                    // Log to trace that the LocationDisplay.Location is null.
+                    Logger.Error(
+                        "MainPage.xaml.cs, SaveSecchiLocation_Click: LocationDisplay.Location is null."
+                    );
+                    return;
+                }
+
+                var tag = menuFlyoutItem.Tag as string;
+
+                switch (tag)
+                {
+                    case "CurrentGPS":
+                        if (MapView.GeometryEditor.IsStarted)
+                        {
+                            MapView.GeometryEditor.Stop();
+                        }
+                        secchiAddLocation.LocationSource = LocationSource.CurrentGPS;
+                        LatLongEntry.Visibility = Visibility.Collapsed;
+                        SecchiLocationSourceDropDown.Content = "Current GPS";
+                        break;
+                    case "PointOnMap":
+                        secchiAddLocation.LocationSource = LocationSource.PointOnMap;
+
+                        var presentLocation = MapView.LocationDisplay.Location.Position;
+
+                        Logger.Trace(
+                            "MainPage.xaml.cs, SaveSecchiLocation_Click, PointOnMap: presentLocation: Lat {presentLocation.Y}, Lon {presentLocation.X}.",
+                            presentLocation.Y,
+                            presentLocation.X
+                        );
+
+                        MapView.SetViewpointCenterAsync(presentLocation, 2500);
+
+                        // Use the geometry editor to allow the user to select a location on the map.
+                        MapView.GeometryEditor.Start(GeometryType.Point);
+
+                        MapView.SetViewpointCenterAsync(presentLocation, 2500);
+                        LatLongEntry.Visibility = Visibility.Collapsed;
+                        SecchiLocationSourceDropDown.Content = "Map Point";
+                        break;
+                    case "EnterLatLong":
+                        if (secchiAddLocation.LocationSource == LocationSource.PointOnMap)
+                        {
+                            MapView.GeometryEditor.Stop();
+                        }
+                        secchiAddLocation.LocationSource = LocationSource.EnteredLatLong;
+                        SecchiLocationSourceDropDown.Content = "Enter Lat/Long";
+                        LatLongEntry.Visibility = Visibility.Visible;
+                        break;
+                    default:
+                        // Log to trace that an invalid tag value was encountered.
+                        Logger.Trace(
+                            "MainPage.xaml.cs, LocationSource_Click: Invalid tag value: {tag}",
+                            tag
+                        );
+                        break;
+                }
             }
 
-            var tag = menuFlyoutItem.Tag as string;
-
-            switch (tag)
-            {
-                case "CurrentGPS":
-                    if (MapView.GeometryEditor.IsStarted)
-                    {
-                        MapView.GeometryEditor.Stop();
-                    }
-                    secchiAddLocation.LocationSource = LocationSource.CurrentGPS;
-                    LatLongEntry.Visibility = Visibility.Collapsed;
-                    SecchiLocationSourceDropDown.Content = "Current GPS";
-                    break;
-                case "PointOnMap":
-                    secchiAddLocation.LocationSource = LocationSource.PointOnMap;
-
-                    var presentLocation = MapView.LocationDisplay.Location.Position;
-
-                    Logger.Trace(
-                        "MainPage.xaml.cs, SaveSecchiLocation_Click: presentLocation: Lat {presentLocation.Y}, Lon {presentLocation.X}.",
-                        presentLocation.Y,
-                        presentLocation.X
-                    );
-
-                    MapView.SetViewpointCenterAsync(presentLocation, 2500);
-
-                    // Use the geometry editor to allow the user to select a location on the map.
-                    MapView.GeometryEditor.Start(GeometryType.Point);
-
-                    MapView.SetViewpointCenterAsync(presentLocation, 2500);
-                    LatLongEntry.Visibility = Visibility.Collapsed;
-                    SecchiLocationSourceDropDown.Content = "Map Point";
-                    break;
-                case "EnterLatLong":
-                    if (secchiAddLocation.LocationSource == LocationSource.PointOnMap)
-                    {
-                        MapView.GeometryEditor.Stop();
-                    }
-                    secchiAddLocation.LocationSource = LocationSource.EnteredLatLong;
-                    SecchiLocationSourceDropDown.Content = "Enter Lat/Long";
-                    LatLongEntry.Visibility = Visibility.Visible;
-                    break;
-                default:
-                    // Log to trace that an invalid tag value was encountered.
-                    Logger.Trace(
-                        "MainPage.xaml.cs, LocationSource_Click: Invalid tag value: {tag}",
-                        tag
-                    );
-                    break;
-            }
+            // Log to trace the value of locationSource with a label.
+            Logger.Trace(
+                "MainPage.xaml.cs, LocationSource_Click: Location Source: {locationSource}",
+                secchiAddLocation.LocationSource
+            );
         }
-
-        // Log to trace the value of locationSource with a label.
-        Logger.Trace(
-            "MainPage.xaml.cs, LocationSource_Click: Location Source: {locationSource}",
-            secchiAddLocation.LocationSource
-        );
+        catch (Exception exception)
+        {
+            // Log to trace the exception message.
+            Logger.Error(
+                exception,
+                "MainPage.xaml.cs, LocationSource_Click: An error occurred in LocationSource_Click: {exception}",
+                exception.Message
+            );
+        }
     }
 
     private void Edit_Location_Click(object sender, RoutedEventArgs eventArgs)
@@ -1232,13 +1369,27 @@ public partial class MainPage : Page
         Logger.Trace("MainPage.xaml.cs, Edit_Location_Click: Edit_Location_Click method called.");
 
         var button = sender as Button;
+        try
+        {
+            Guard.Against.Null(button, nameof(button), "Button in Edit_Location_Click is null.");
 
-        Guard.Against.Null(button, nameof(button), "Button in Edit_Location_Click is null.");
+            var locationId = button.Tag;
 
-        var locationId = button.Tag;
-
-        // Log to trace the value of sender and eventArgs.
-        Logger.Trace("MainPage.xaml.cs, Edit_Location_Click: LocationId: {locationId}", locationId);
+            // Log to trace the value of sender and eventArgs.
+            Logger.Trace(
+                "MainPage.xaml.cs, Edit_Location_Click: LocationId: {locationId}",
+                locationId
+            );
+        }
+        catch (Exception exception)
+        {
+            // Log to trace the exception message.
+            Logger.Error(
+                exception,
+                "MainPage.xaml.cs, Edit_Location_Click: An error occurred in Edit_Location_Click: {exception}",
+                exception.Message
+            );
+        }
     }
 
     #endregion Event handlers

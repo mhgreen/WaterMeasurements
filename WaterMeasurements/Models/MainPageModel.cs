@@ -35,6 +35,10 @@ public partial class SecchiLocationSelections : ObservableRecipient
         {
             LocationCanBeSaved = true;
         }
+        else
+        {
+            LocationCanBeSaved = false;
+        }
     }
 
     [ObservableProperty]
@@ -65,7 +69,7 @@ public partial class SecchiLocationSelections : ObservableRecipient
     private bool locationNameSet;
 
     [ObservableProperty]
-    private string locationName;
+    private string locationName = "";
 
     partial void OnLocationNameChanged(string? oldValue, string newValue)
     {
@@ -74,6 +78,23 @@ public partial class SecchiLocationSelections : ObservableRecipient
             LocationNameSet = true;
             LocationName = newValue;
             CanSaveLocation();
+        }
+        else
+        {
+            LocationNameSet = false;
+        }
+    }
+
+    partial void OnLocationNameChanging(string value)
+    {
+        if (LocationCanBeSaved)
+        {
+            LocationCanBeSaved = false;
+
+            if (LocationNameSet)
+            {
+                LocationNameSet = false;
+            }
         }
     }
 
