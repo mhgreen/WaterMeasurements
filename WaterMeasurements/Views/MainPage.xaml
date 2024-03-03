@@ -702,10 +702,7 @@
                                                 Visibility="Visible">
 
                                                 <StackPanel>
-                                                    <TextBlock
-                                                        Opacity="1"
-                                                        Style="{ThemeResource SettingsSectionHeaderTextBlockStyle}"
-                                                        Text="Location Name" />
+                                                    <TextBlock Style="{ThemeResource SettingsSectionHeaderTextBlockStyle}" Text="Location Name" />
                                                     <ToolTipService.ToolTip>
                                                         <ToolTip
                                                             Content="Add a location to collect Secchi measurements. A location may be ongoing, and will result in a geolocation trigger each time it is encountered, or may be occassional and selected for a session."
@@ -739,7 +736,10 @@
 
                                                 <StackPanel Margin="0,15,0,0" Orientation="Horizontal">
                                                     <StackPanel>
-                                                        <DropDownButton x:Name="SecchiLocationTypeDropDown" Content="Type">
+                                                        <DropDownButton
+                                                            x:Name="SecchiLocationTypeDropDown"
+                                                            Content="Type"
+                                                            FontWeight="SemiBold">
                                                             <DropDownButton.Flyout>
                                                                 <MenuFlyout Placement="Bottom">
                                                                     <MenuFlyoutItem
@@ -762,7 +762,10 @@
                                                     </StackPanel>
 
                                                     <StackPanel>
-                                                        <DropDownButton x:Name="SecchiLocationSourceDropDown" Content="Source">
+                                                        <DropDownButton
+                                                            x:Name="SecchiLocationSourceDropDown"
+                                                            Content="Source"
+                                                            FontWeight="SemiBold">
                                                             <DropDownButton.Flyout>
                                                                 <MenuFlyout Placement="Bottom">
                                                                     <MenuFlyoutItem
@@ -792,7 +795,7 @@
 
                                                 <StackPanel
                                                     x:Name="LatLongEntry"
-                                                    Margin="0,15,0,15"
+                                                    Margin="0,15,0,10"
                                                     Visibility="Collapsed">
                                                     <Grid ColumnSpacing="10">
                                                         <Grid.ColumnDefinitions>
@@ -802,27 +805,34 @@
                                                         <Grid.RowDefinitions>
                                                             <RowDefinition Height="*" />
                                                             <RowDefinition Height="*" />
+                                                            <RowDefinition Height="*" />
                                                         </Grid.RowDefinitions>
 
                                                         <TextBlock
                                                             Grid.Row="0"
                                                             Grid.Column="0"
+                                                            Margin="0,0,0,5"
+                                                            Style="{ThemeResource SettingsSectionHeaderTextBlockStyle}"
                                                             Text="Latitude" />
                                                         <TextBlock
                                                             Grid.Row="0"
                                                             Grid.Column="1"
+                                                            Margin="0,0,0,5"
+                                                            Style="{ThemeResource SettingsSectionHeaderTextBlockStyle}"
                                                             Text="Longitude" />
 
                                                         <TextBox
                                                             x:Name="EnteredLatitude"
                                                             Grid.Row="1"
                                                             Grid.Column="0"
-                                                            Margin="0,10,0,0"
-                                                            ui:TextBoxExtensions.ValidationMode="Dynamic"
-                                                            ui:TextBoxExtensions.ValidationType="Decimal"
-                                                            InputScope="NumberFullWidth" />
+                                                            Margin="0,0,0,0"
+                                                            IsSpellCheckEnabled="False"
+                                                            Text="{x:Bind SecchiNewLocationView.LatitudeEntry, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                            TextChanged="{x:Bind SecchiNewLocationView.LatitudeIsChanging, Mode=OneWay}" />
                                                         <TextBlock
                                                             x:Name="EnteredLatitudeError"
+                                                            Grid.Row="2"
+                                                            Grid.Column="0"
                                                             Margin="0,0,0,0"
                                                             Foreground="{ThemeResource SystemFillColorCriticalBrush}"
                                                             Style="{StaticResource CaptionTextBlockStyle}"
@@ -832,7 +842,7 @@
                                                             x:Name="EnteredLongitude"
                                                             Grid.Row="1"
                                                             Grid.Column="1"
-                                                            Margin="0,10,0,0"
+                                                            Margin="0,0,0,0"
                                                             ui:TextBoxExtensions.ValidationMode="Dynamic"
                                                             ui:TextBoxExtensions.ValidationType="Decimal"
                                                             InputScope="NumberFullWidth" />
@@ -864,7 +874,7 @@
                                                     <ListView
                                                         x:Name="SecchiLocationsListView"
                                                         MaxHeight="200"
-                                                        Margin="0,20,0,0"
+                                                        Margin="0,10,0,0"
                                                         IncrementalLoadingThreshold="2"
                                                         IncrementalLoadingTrigger="Edge"
                                                         IsItemClickEnabled="True"

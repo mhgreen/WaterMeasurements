@@ -240,9 +240,6 @@
   <data name="Error_Invalid_Location_Name" xml:space="preserve">
     <value>Invalid name, letters, numbers, and .,_+-{}[] ()|:@^?' characters</value>
   </data>
-  <data name="Error_Name_Needed" xml:space="preserve">
-    <value>Name needed</value>
-  </data>
   <data name="Error_NotBetweenOneAndTwoHundred" xml:space="preserve">
     <value>Name has a maximum length of 200 characters.</value>
   </data>
@@ -257,5 +254,11 @@
   </data>
   <data name="Error_LongitudeNotInEnvelope" xml:space="preserve">
     <value>Longitude outside of map area</value>
+  </data>
+  <data name="Error_CoordinateInvalid" xml:space="preserve">
+    <value>Coordinate not valid</value>
+  </data>
+  <data name="Error_Location_Name_Needed" xml:space="preserve">
+    <value>Location name needed</value>
   </data>
 </root>
