@@ -36,7 +36,7 @@ namespace WaterMeasurements.ViewModels;
 
 public sealed partial class LocationNameValidAttribute : ValidationAttribute
 {
-    [GeneratedRegex("^[A-Z0-9.,_+-{}\\[\\] ()|:@^?']{1,100}$", RegexOptions.IgnoreCase, "en-US")]
+    [GeneratedRegex("^[A-Z0-9.,_+-{}\\[\\] ()|:@^?']*$", RegexOptions.IgnoreCase, "en-US")]
     private static partial Regex MyRegex();
 
     protected override ValidationResult IsValid(object? value, ValidationContext validationContext)
@@ -57,7 +57,7 @@ public sealed partial class LocationNameValidAttribute : ValidationAttribute
 
 public sealed partial class CoordinateValidAttribute : ValidationAttribute
 {
-    [GeneratedRegex(@"^[\+\-]?\d*\.?\d+$")]
+    [GeneratedRegex(@"^[\+\-]?\d*\.?\d*$")]
     private static partial Regex MyRegex();
 
     protected override ValidationResult IsValid(object? value, ValidationContext validationContext)
@@ -97,6 +97,7 @@ public partial class SecchiNewLocationViewModel : ObservableValidator
     private readonly string latitudeNotInEnvelope;
     private readonly string longitudeNeeded;
     private readonly string longitudeNotInEnvelope;
+    private readonly string typeAndSourceNeeded;
 
     // Extent of current map
     private Geometry? extent;
@@ -105,6 +106,10 @@ public partial class SecchiNewLocationViewModel : ObservableValidator
 
     private bool locationNameValid;
     private bool latitudeEntryValid;
+    private bool longitudeEntryValid;
+    private bool haveType;
+    private bool haveSource;
+    private bool haveSourceAndType;
 
     private bool collectOutAndBack = false;
 
@@ -151,12 +156,18 @@ public partial class SecchiNewLocationViewModel : ObservableValidator
         longitudeNeeded = ResourceExtensions.GetLocalized("Error_LongitudeNeeded");
         longitudeNotInEnvelope = ResourceExtensions.GetLocalized("Error_LongitudeNotInEnvelope");
         coordinateInvalid = ResourceExtensions.GetLocalized("Error_CoordinateInvalid");
+        typeAndSourceNeeded = ResourceExtensions.GetLocalized("Error_TypeAndSourceNeeded");
 
         locationNameValid = false;
         latitudeEntryValid = false;
+        longitudeEntryValid = false;
+        haveType = false;
+        haveSource = false;
+        haveSourceAndType = false;
 
         locationName = string.Empty;
         latitudeEntry = string.Empty;
+        longitudeEntry = string.Empty;
 
         // Initialize the view model.
         _ = Initialize();
@@ -166,6 +177,8 @@ public partial class SecchiNewLocationViewModel : ObservableValidator
     {
         try
         {
+            SourceAndTypeError = typeAndSourceNeeded;
+
             Guard.Against.Null(
                 LocalSettingsService,
                 nameof(LocalSettingsService),
@@ -205,6 +218,12 @@ public partial class SecchiNewLocationViewModel : ObservableValidator
 
     [ObservableProperty]
     private string? longitudeEntryErrorVisibility = "Collapsed";
+
+    [ObservableProperty]
+    private string? sourceAndTypeError;
+
+    [ObservableProperty]
+    private string? sourceAndTypeErrorVisibility = "Visible";
 
     [ObservableProperty]
     private bool locationTypeSet;
@@ -312,6 +331,7 @@ public partial class SecchiNewLocationViewModel : ObservableValidator
                         );
                         LocationNameError = locationNeeded;
                         LocationNameErrorVisibility = "Visible";
+                        LocationCanBeSaved = false;
                     }
                     if (firstValidationResult.ToString() == "NotOneToHundred")
                     {
@@ -321,6 +341,7 @@ public partial class SecchiNewLocationViewModel : ObservableValidator
                         );
                         LocationNameError = notOneToHundred;
                         LocationNameErrorVisibility = "Visible";
+                        LocationCanBeSaved = false;
                     }
                     if (firstValidationResult.ToString() == "InvalidLocationName")
                     {
@@ -330,11 +351,14 @@ public partial class SecchiNewLocationViewModel : ObservableValidator
                         );
                         LocationNameError = invalidLocationName;
                         LocationNameErrorVisibility = "Visible";
+                        LocationCanBeSaved = false;
                     }
                 }
             }
             else
             {
+                LocationNameSet = true;
+                CanSaveLocation();
                 LocationNameErrorVisibility = "Collapsed";
             }
         }
@@ -403,6 +427,7 @@ public partial class SecchiNewLocationViewModel : ObservableValidator
                         );
                         LatitudeEntryError = latitudeNeeded;
                         LatitudeEntryErrorVisibility = "Visible";
+                        LocationCanBeSaved = false;
                     }
 
                     if (firstValidationResult.ToString() == "InvalidCoordinate")
@@ -413,6 +438,7 @@ public partial class SecchiNewLocationViewModel : ObservableValidator
                         );
                         LatitudeEntryError = coordinateInvalid;
                         LatitudeEntryErrorVisibility = "Visible";
+                        LocationCanBeSaved = false;
                     }
                 }
             }
@@ -435,9 +461,12 @@ public partial class SecchiNewLocationViewModel : ObservableValidator
                     );
                     LatitudeEntryError = latitudeNotInEnvelope;
                     LatitudeEntryErrorVisibility = "Visible";
+                    LocationCanBeSaved = false;
                 }
                 else
                 {
+                    latitudeEntryValid = true;
+                    CanSaveLocation();
                     LatitudeEntryErrorVisibility = "Collapsed";
                 }
             }
@@ -454,20 +483,177 @@ public partial class SecchiNewLocationViewModel : ObservableValidator
     }
 
     [ObservableProperty]
-    private double longitudeEntry;
+    [Required(ErrorMessage = "LongitudeNeeded")]
+    [CoordinateValid(ErrorMessage = "InvalidCoordinate")]
+    private string longitudeEntry;
+
+    [RelayCommand]
+    public void LongitudeIsChanging()
+    {
+        // Log to trace that the LongitudeIsChanging command was called.
+        logger.LogTrace(
+            SecchiNewLocationViewModelLog,
+            "SecchiNewLocationViewModel: LongitudeIsChanging invoked."
+        );
+        // Log the Longitude.
+        logger.LogTrace(
+            SecchiNewLocationViewModelLog,
+            "SecchiNewLocationViewModel: LongitudeIsChanging, Longitude: {Longitude}.",
+            LongitudeEntry
+        );
+        try
+        {
+            var results = new List<ValidationResult>();
+            longitudeEntryValid = Validator.TryValidateProperty(
+                LongitudeEntry,
+                new ValidationContext(this, null, null) { MemberName = nameof(LongitudeEntry) },
+                results
+            );
+            // Log isValid to debug.
+            logger.LogTrace(
+                SecchiNewLocationViewModelLog,
+                "SecchiNewLocationViewModel: LongitudeEntryIsChanging longitudeEntryValid: {isValid}.",
+                longitudeEntryValid
+            );
+            if (longitudeEntryValid is false)
+            {
+                var firstValidationResult = results.FirstOrDefault();
+                if (firstValidationResult != null)
+                {
+                    logger.LogDebug(
+                        SecchiNewLocationViewModelLog,
+                        "SecchiNewLocationViewModel: LongitudeEntryIsChanging firstValidationResult: {firstValidationResult}.",
+                        firstValidationResult
+                    );
+                }
+                if (firstValidationResult is not null)
+                {
+                    if (firstValidationResult.ToString() == "LongitudeNeeded")
+                    {
+                        logger.LogTrace(
+                            SecchiNewLocationViewModelLog,
+                            "SecchiNewLocationViewModel: LongitudeEntryIsChanging NeedName error."
+                        );
+                        LongitudeEntryError = longitudeNeeded;
+                        LongitudeEntryErrorVisibility = "Visible";
+                        LocationCanBeSaved = false;
+                    }
+
+                    if (firstValidationResult.ToString() == "InvalidCoordinate")
+                    {
+                        logger.LogTrace(
+                            SecchiNewLocationViewModelLog,
+                            "SecchiNewLocationViewModel: LongitudeEntryIsChanging InvalidCoordinate error."
+                        );
+                        LongitudeEntryError = coordinateInvalid;
+                        LongitudeEntryErrorVisibility = "Visible";
+                        LocationCanBeSaved = false;
+                    }
+                }
+            }
+            else
+            {
+                if (envelope is null)
+                {
+                    logger.LogError(
+                        SecchiNewLocationViewModelLog,
+                        "SecchiNewLocationViewModel: LongitudeEntryIsChanging envelope is null."
+                    );
+                    return;
+                }
+                var coordinateDouble = Convert.ToDouble(LongitudeEntry);
+                if (coordinateDouble < envelope.XMin || coordinateDouble > envelope.XMax)
+                {
+                    logger.LogTrace(
+                        SecchiNewLocationViewModelLog,
+                        "SecchiNewLocationViewModel: LongitudeEntryIsChanging LongitudeNotInEnvelope error."
+                    );
+                    LongitudeEntryError = longitudeNotInEnvelope;
+                    LongitudeEntryErrorVisibility = "Visible";
+                    LocationCanBeSaved = false;
+                }
+                else
+                {
+                    longitudeEntryValid = true;
+                    CanSaveLocation();
+                    LongitudeEntryErrorVisibility = "Collapsed";
+                }
+            }
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(
+                SecchiNewLocationViewModelLog,
+                exception,
+                "SecchiNewLocationViewModel: LongitudeEntryIsChanging exception: {exception}.",
+                exception.Message.ToString()
+            );
+        }
+    }
 
     [ObservableProperty]
     private bool locationCanBeSaved = false;
 
+    [ObservableProperty]
+    // If location source is active, which is set in MainPage.xaml.cs,
+    // then valid latitude and longitude values are needed to save the location.
+    private bool locationSourceActive = false;
+
+    partial void OnLocationSourceActiveChanged(bool oldValue, bool newValue)
+    {
+        // Log to trace that LocationSourceActiveChanged was called.
+        logger.LogTrace(
+            SecchiNewLocationViewModelLog,
+            "SecchiNewLocationViewModel: OnLocationSourceActiveChanged invoked."
+        );
+        // Log to trace the newValue and oldValue.
+        logger.LogTrace(
+            SecchiNewLocationViewModelLog,
+            "SecchiNewLocationViewModel: OnLocationSourceActiveChanged, oldValue: {oldValue}, newValue: {newValue}.",
+            oldValue,
+            newValue
+        );
+        if (newValue)
+        {
+            LocationSourceActive = newValue;
+            CanSaveLocation();
+        }
+    }
+
     private void CanSaveLocation()
     {
-        if (LocationTypeSet && LocationSourceSet && LocationNameSet)
+        if (LocationSourceSet && LocationTypeSet)
         {
-            LocationCanBeSaved = true;
+            SourceAndTypeErrorVisibility = "Collapsed";
+        }
+
+        if (LocationSourceActive)
+        {
+            if (
+                LocationTypeSet
+                && LocationSourceSet
+                && LocationNameSet
+                && latitudeEntryValid
+                && longitudeEntryValid
+            )
+            {
+                LocationCanBeSaved = true;
+            }
+            else
+            {
+                LocationCanBeSaved = false;
+            }
         }
         else
         {
-            LocationCanBeSaved = false;
+            if (LocationTypeSet && LocationSourceSet && LocationNameSet)
+            {
+                LocationCanBeSaved = true;
+            }
+            else
+            {
+                LocationCanBeSaved = false;
+            }
         }
     }
 }

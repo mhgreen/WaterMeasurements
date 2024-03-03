@@ -793,6 +793,16 @@
 
                                                 </StackPanel>
 
+                                                <StackPanel>
+                                                    <TextBlock
+                                                        x:Name="NeedTypeAndSourceError"
+                                                        Margin="0,0,0,0"
+                                                        Foreground="{ThemeResource SystemFillColorCriticalBrush}"
+                                                        Style="{StaticResource CaptionTextBlockStyle}"
+                                                        Text="{x:Bind SecchiNewLocationView.SourceAndTypeError, Mode=OneWay}"
+                                                        Visibility="{x:Bind SecchiNewLocationView.SourceAndTypeErrorVisibility, Mode=OneWay}" />
+                                                </StackPanel>
+
                                                 <StackPanel
                                                     x:Name="LatLongEntry"
                                                     Margin="0,15,0,10"
@@ -843,9 +853,18 @@
                                                             Grid.Row="1"
                                                             Grid.Column="1"
                                                             Margin="0,0,0,0"
-                                                            ui:TextBoxExtensions.ValidationMode="Dynamic"
-                                                            ui:TextBoxExtensions.ValidationType="Decimal"
-                                                            InputScope="NumberFullWidth" />
+                                                            IsSpellCheckEnabled="False"
+                                                            Text="{x:Bind SecchiNewLocationView.LongitudeEntry, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                            TextChanged="{x:Bind SecchiNewLocationView.LongitudeIsChanging, Mode=OneWay}" />
+                                                        <TextBlock
+                                                            x:Name="EnteredLongitudeError"
+                                                            Grid.Row="2"
+                                                            Grid.Column="1"
+                                                            Margin="0,0,0,0"
+                                                            Foreground="{ThemeResource SystemFillColorCriticalBrush}"
+                                                            Style="{StaticResource CaptionTextBlockStyle}"
+                                                            Text="{x:Bind SecchiNewLocationView.LongitudeEntryError, Mode=OneWay}"
+                                                            Visibility="{x:Bind SecchiNewLocationView.LongitudeEntryErrorVisibility, Mode=OneWay}" />
                                                     </Grid>
                                                 </StackPanel>
 

@@ -1294,6 +1294,7 @@ public partial class MainPage : Page
                         }
                         secchiAddLocation.LocationSource = LocationSource.CurrentGPS;
                         LatLongEntry.Visibility = Visibility.Collapsed;
+                        SecchiNewLocationView.LocationSourceActive = false;
                         SecchiLocationSourceDropDown.Content = "Current GPS";
                         SecchiNewLocationView.LocationSourceSet = true;
                         break;
@@ -1315,6 +1316,7 @@ public partial class MainPage : Page
 
                         MapView.SetViewpointCenterAsync(presentLocation, 2500);
                         LatLongEntry.Visibility = Visibility.Collapsed;
+                        SecchiNewLocationView.LocationSourceActive = false;
                         SecchiLocationSourceDropDown.Content = "Map Point";
                         SecchiNewLocationView.LocationSourceSet = true;
                         break;
@@ -1326,6 +1328,7 @@ public partial class MainPage : Page
                         secchiAddLocation.LocationSource = LocationSource.EnteredLatLong;
                         SecchiLocationSourceDropDown.Content = "Enter Lat/Long";
                         LatLongEntry.Visibility = Visibility.Visible;
+                        SecchiNewLocationView.LocationSourceActive = true;
                         SecchiNewLocationView.LocationSourceSet = true;
                         break;
                     default:
