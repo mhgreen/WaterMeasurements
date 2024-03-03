@@ -1,12 +1,11 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using System.Diagnostics;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Microsoft.UI.Xaml;
-
 using NLog;
 using NLog.Extensions.Logging;
-
 using WaterMeasurements.Activation;
 using WaterMeasurements.Contracts.Services;
 using WaterMeasurements.Core.Contracts.Services;
@@ -15,7 +14,6 @@ using WaterMeasurements.Models;
 using WaterMeasurements.Services;
 using WaterMeasurements.ViewModels;
 using WaterMeasurements.Views;
-using System.Diagnostics;
 
 namespace WaterMeasurements;
 
@@ -63,8 +61,8 @@ public partial class App : Application
             .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
             .Build();
 
-        Host = Microsoft.Extensions.Hosting.Host
-            .CreateDefaultBuilder()
+        Host = Microsoft
+            .Extensions.Hosting.Host.CreateDefaultBuilder()
             .UseContentRoot(AppContext.BaseDirectory)
             .ConfigureServices(
                 (context, services) =>
@@ -102,8 +100,9 @@ public partial class App : Application
                     services.AddTransient<MapConfigurationViewModel>();
                     services.AddTransient<DataCollectionViewModel>();
                     services.AddTransient<SecchiConfigurationViewModel>();
+                    services.AddTransient<SecchiNewLocationViewModel>();
 
-                    // Application Services                    
+                    // Application Services
                     services.AddSingleton<INetworkStatusService, NetworkStatusService>();
                     services.AddSingleton<IGeoDatabaseService, GeoDatabaseService>();
                     services.AddSingleton<IGetPreplannedMapService, GetPreplannedMapService>();
@@ -138,7 +137,7 @@ public partial class App : Application
         // https://docs.microsoft.com/windows/windows-app-sdk/api/winrt/microsoft.ui.xaml.application.unhandledexception.
     }
 
-    protected async override void OnLaunched(LaunchActivatedEventArgs args)
+    protected override async void OnLaunched(LaunchActivatedEventArgs args)
     {
         base.OnLaunched(args);
 

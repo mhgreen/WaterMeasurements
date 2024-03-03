@@ -237,4 +237,25 @@
   <data name="Settings_Secchi_Add_Location.Text" xml:space="preserve">
     <value>Adding a location for Secchi data collection</value>
   </data>
+  <data name="Error_Invalid_Location_Name" xml:space="preserve">
+    <value>Invalid name, letters, numbers, and .,_+-{}[] ()|:@^?' characters</value>
+  </data>
+  <data name="Error_Name_Needed" xml:space="preserve">
+    <value>Name needed</value>
+  </data>
+  <data name="Error_NotBetweenOneAndTwoHundred" xml:space="preserve">
+    <value>Name has a maximum length of 200 characters.</value>
+  </data>
+  <data name="Error_LatitudeNeeded" xml:space="preserve">
+    <value>Latitude needed</value>
+  </data>
+  <data name="Error_LatitudeNotInEnvelope" xml:space="preserve">
+    <value>Latitude outside of map area</value>
+  </data>
+  <data name="Error_LongitudeNeeded" xml:space="preserve">
+    <value>Longitude needed</value>
+  </data>
+  <data name="Error_LongitudeNotInEnvelope" xml:space="preserve">
+    <value>Longitude outside of map area</value>
+  </data>
 </root>

@@ -131,24 +131,6 @@
             <ColumnDefinition />
         </Grid.ColumnDefinitions>
 
-        <VisualStateManager.VisualStateGroups>
-            <VisualStateGroup>
-                <VisualState x:Name="ValidLocationName">
-                    <VisualState.StateTriggers>
-                        <!--  Validate location name  -->
-                        <ui:RegexStateTrigger
-                            Expression="^[A-Z0-9.,_+-{}\[\] ()|:@^?']{2,200}$"
-                            Options="IgnoreCase"
-                            Value="{Binding Text, ElementName=SecchiLocationName, Mode=OneWay}"/>
-                    </VisualState.StateTriggers>
-                    <VisualState.Setters>
-                        <Setter Target="SecchiLocationStatus.Text" Value="" />
-                        <Setter Target="SecchiLocationStatus.Foreground" Value="{ThemeResource SystemFillColorSuccessBrush}" />
-                    </VisualState.Setters>
-                </VisualState>
-            </VisualStateGroup>
-        </VisualStateManager.VisualStateGroups>
-
         <Grid
             x:Name="TitleBar"
             Grid.Row="0"
@@ -304,9 +286,6 @@
                                 <StackPanel Margin="0,0,0,0">
 
                                     <controls:SettingsExpander Description="Keys for development and production" Header="ArcGIS Keys">
-                                        <controls:SettingsExpander.HeaderIcon>
-                                            <FontIcon FontFamily="{StaticResource AppIconFont}" Glyph="&#xE904;" />
-                                        </controls:SettingsExpander.HeaderIcon>
 
                                         <controls:SettingsExpander.Items>
 
@@ -364,10 +343,7 @@
                                     </controls:SettingsExpander>
 
 
-                                    <controls:SettingsExpander
-                                        Description="Main map settings from ArcGIS online"
-                                        Header="Web Map Settings"
-                                        HeaderIcon="{ui:FontIcon Glyph=&#xE91B;}">
+                                    <controls:SettingsExpander Description="Main map settings from ArcGIS online" Header="Web Map Settings">
 
                                         <controls:SettingsExpander.Items>
 
@@ -739,25 +715,29 @@
                                                 </StackPanel>
 
                                                 <StackPanel Margin="0,0,0,0">
-                                                    <TextBox x:Name="SecchiLocationName"
-                                                             Text="{x:Bind secchiLocationSelections.LocationName, Mode=TwoWay}"
-                                                             />
+                                                    <TextBox
+                                                        x:Name="SecchiLocationName"
+                                                        Margin="0,0,0,0"
+                                                        IsSpellCheckEnabled="False"
+                                                        Text="{x:Bind SecchiNewLocationView.LocationName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                        TextChanged="{x:Bind SecchiNewLocationView.LocationNameIsChanging, Mode=OneWay}" />
                                                     <TextBlock
-                                                            x:Name="SecchiLocationStatus"
-                                                            Margin="0,4,0,15"
-                                                            Foreground="{ThemeResource SystemFillColorCriticalBrush}"
-                                                            Style="{StaticResource CaptionTextBlockStyle}"
-                                                            Text="Not a valid location name" />
+                                                        x:Name="LocationNameError"
+                                                        Margin="0,0,0,0"
+                                                        Foreground="{ThemeResource SystemFillColorCriticalBrush}"
+                                                        Style="{StaticResource CaptionTextBlockStyle}"
+                                                        Text="{x:Bind SecchiNewLocationView.LocationNameError, Mode=OneWay}"
+                                                        Visibility="{x:Bind SecchiNewLocationView.LocationNameErrorVisibility, Mode=OneWay}" />
 
                                                     <ToolTipService.ToolTip>
                                                         <ToolTip
-                                                                Content="Upper and lower case letters, numbers, spaces, as well as symbols []+-()_,.'{}=@|:^?"
-                                                                HorizontalOffset="200"
-                                                                VerticalOffset="-48" />
+                                                            Content="Upper and lower case letters, numbers, spaces, as well as symbols []+-()_,.'{}=@|:^?"
+                                                            HorizontalOffset="200"
+                                                            VerticalOffset="-48" />
                                                     </ToolTipService.ToolTip>
                                                 </StackPanel>
 
-                                                <StackPanel Margin="0,0,0,0" Orientation="Horizontal">
+                                                <StackPanel Margin="0,15,0,0" Orientation="Horizontal">
                                                     <StackPanel>
                                                         <DropDownButton x:Name="SecchiLocationTypeDropDown" Content="Type">
                                                             <DropDownButton.Flyout>
@@ -841,6 +821,13 @@
                                                             ui:TextBoxExtensions.ValidationMode="Dynamic"
                                                             ui:TextBoxExtensions.ValidationType="Decimal"
                                                             InputScope="NumberFullWidth" />
+                                                        <TextBlock
+                                                            x:Name="EnteredLatitudeError"
+                                                            Margin="0,0,0,0"
+                                                            Foreground="{ThemeResource SystemFillColorCriticalBrush}"
+                                                            Style="{StaticResource CaptionTextBlockStyle}"
+                                                            Text="{x:Bind SecchiNewLocationView.LatitudeEntryError, Mode=OneWay}"
+                                                            Visibility="{x:Bind SecchiNewLocationView.LatitudeEntryErrorVisibility, Mode=OneWay}" />
                                                         <TextBox
                                                             x:Name="EnteredLongitude"
                                                             Grid.Row="1"
@@ -862,7 +849,7 @@
                                                             x:Name="LocationSaveButton"
                                                             x:Uid="Main_SecchiSaveButton"
                                                             Command="{x:Bind SaveSecchiLocationCommand, Mode=OneWay}"
-                                                            IsEnabled="{x:Bind secchiLocationSelections.LocationCanBeSaved, Mode=OneWay}" />
+                                                            IsEnabled="{x:Bind SecchiNewLocationView.LocationCanBeSaved, Mode=OneWay}" />
 
                                                         <ToolTipService.ToolTip>
                                                             <ToolTip
@@ -1057,7 +1044,5 @@
             </controls:SwitchPresenter>
 
         </StackPanel>
-
     </Grid>
-
 </Page>

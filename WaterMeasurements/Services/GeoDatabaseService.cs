@@ -1,96 +1,77 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Drawing.Text;
 using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Security.Cryptography.Pkcs;
 using System.Text;
 using System.Threading.Tasks;
-
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection;
-
-using Esri.ArcGISRuntime.Portal;
-using Esri.ArcGISRuntime.Mapping;
+using CommunityToolkit.Mvvm.Messaging;
+using CommunityToolkit.Mvvm.Messaging.Messages;
+using Esri.ArcGISRuntime.Data;
 using Esri.ArcGISRuntime.Geometry;
+using Esri.ArcGISRuntime.Geotriggers;
+using Esri.ArcGISRuntime.Mapping;
+using Esri.ArcGISRuntime.Portal;
 using Esri.ArcGISRuntime.Symbology;
 using Esri.ArcGISRuntime.Tasks;
 using Esri.ArcGISRuntime.Tasks.Offline;
-using Esri.ArcGISRuntime.Data;
-
-using CommunityToolkit.Mvvm.Messaging;
-using CommunityToolkit.Mvvm.Messaging.Messages;
-
-using Stateless;
-
+using Esri.ArcGISRuntime.UI.Controls;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-
-using WaterMeasurements.Models;
-using WaterMeasurements.Views;
-using WaterMeasurements.Services;
+using Stateless;
 using WaterMeasurements.Contracts.Services;
 using WaterMeasurements.Contracts.Services.Instances;
+using WaterMeasurements.Models;
+using WaterMeasurements.Services;
 using WaterMeasurements.Services.Instances;
-
-using Esri.ArcGISRuntime.UI.Controls;
-using System.ComponentModel;
-using CommunityToolkit.Mvvm.ComponentModel;
-using System.Diagnostics;
-using System.Drawing.Text;
-using Esri.ArcGISRuntime.Geotriggers;
-using System.Runtime.CompilerServices;
-using System.Security.Cryptography.Pkcs;
+using WaterMeasurements.Views;
 using static System.Net.Mime.MediaTypeNames;
 
 namespace WaterMeasurements.Services;
 
 // GeoDatabase retrieve message.
-public class GeoDatabaseRequestMessage(GeoDatabaseRetrieveRequest geoDatabaseRetrieveRequest) : ValueChangedMessage<GeoDatabaseRetrieveRequest>(geoDatabaseRetrieveRequest)
-{
-}
+public class GeoDatabaseRequestMessage(GeoDatabaseRetrieveRequest geoDatabaseRetrieveRequest)
+    : ValueChangedMessage<GeoDatabaseRetrieveRequest>(geoDatabaseRetrieveRequest) { }
 
-public class FeatureTableRequestMessage(string featureTable) : ValueChangedMessage<string>(featureTable)
-{
-}
+public class FeatureTableRequestMessage(string featureTable)
+    : ValueChangedMessage<string>(featureTable) { }
 
 // GeoDatabase delete message.
-public class GeoDatabaseDeleteMessage(GeoDatabaseDeleteRequest geoDatabaseDeleteRequest) : ValueChangedMessage<GeoDatabaseDeleteRequest>(geoDatabaseDeleteRequest)
-{
-}
+public class GeoDatabaseDeleteMessage(GeoDatabaseDeleteRequest geoDatabaseDeleteRequest)
+    : ValueChangedMessage<GeoDatabaseDeleteRequest>(geoDatabaseDeleteRequest) { }
 
 // Message for geodatabase download progress.
 public class GeoDatabaseDownloadProgressMessage(
     GeoDatabaseDownloadInstanceProgress geoDatabaseDownloadProgress
-    )
-        : ValueChangedMessage<GeoDatabaseDownloadInstanceProgress>(geoDatabaseDownloadProgress)
-{
-}
+) : ValueChangedMessage<GeoDatabaseDownloadInstanceProgress>(geoDatabaseDownloadProgress) { }
 
 // Notification that the feature table has changed.
-public class FeatureTableMessage(FeatureTable featureTable) : ValueChangedMessage<FeatureTable>(featureTable)
-{
-}
+public class FeatureTableMessage(FeatureTable featureTable)
+    : ValueChangedMessage<FeatureTable>(featureTable) { }
 
 // Message to request a Geodatabase state change.
-public class GeodatabaseStateChangeMessage(GeodatabaseStateChange geodatabaseStateChange) : ValueChangedMessage<GeodatabaseStateChange>(geodatabaseStateChange)
-{
-}
+public class GeodatabaseStateChangeMessage(GeodatabaseStateChange geodatabaseStateChange)
+    : ValueChangedMessage<GeodatabaseStateChange>(geodatabaseStateChange) { }
 
 // Message to send a feature to the geodatabase service.
-public class AddFeatureMessage(FeatureMessage featureMessage) : ValueChangedMessage<FeatureMessage>(featureMessage)
-{
-}
+public class AddFeatureMessage(FeatureMessage featureMessage)
+    : ValueChangedMessage<FeatureMessage>(featureMessage) { }
 
 public partial class GeoDatabaseService : IGeoDatabaseService
 {
-
     private readonly ILogger<GeoDatabaseService> logger;
+
     // Set the EventId for logging messages.
     internal EventId GeoDatabaseLog = new(4, "GeoDatabaseService");
     private readonly ILogger<GeoDatabaseInstance> geoDatabaseInstanceLogger;
 
     // Dictionary to keep track of instances by name.
-    private static readonly Dictionary<
-        string,
-        GeoDatabaseInstance
-    > geoDatabaseInstances = [];
+    private static readonly Dictionary<string, GeoDatabaseInstance> geoDatabaseInstances = [];
 
     public GeoDatabaseService(
         ILogger<GeoDatabaseService> logger,
@@ -108,7 +89,6 @@ public partial class GeoDatabaseService : IGeoDatabaseService
 
     private void Initialize()
     {
-    
         // Register a message handler for the GeoDatabaseRequestMessage.
         WeakReferenceMessenger.Default.Register<GeoDatabaseService, GeoDatabaseRequestMessage>(
             this,
@@ -121,11 +101,7 @@ public partial class GeoDatabaseService : IGeoDatabaseService
                 );
 
                 // Check to see if the instance already exists.
-                if (
-                    geoDatabaseInstances.ContainsKey(
-                        message.Value.Name
-                    )
-                )
+                if (geoDatabaseInstances.ContainsKey(message.Value.Name))
                 {
                     // Log that the instance already exists.
                     logger.LogDebug(
@@ -133,9 +109,7 @@ public partial class GeoDatabaseService : IGeoDatabaseService
                         "GeoDatabaseService, GeoDatabaseRequestMessage: Instance already exists. Deleting the existing one and replacing it with the one requested."
                     );
                     // If the instance exists, then delete it and create a new one.
-                    geoDatabaseInstances.Remove(
-                        message.Value.Name
-                    );
+                    geoDatabaseInstances.Remove(message.Value.Name);
                     geoDatabaseInstances.Add(
                         message.Value.Name,
                         new GeoDatabaseInstance(

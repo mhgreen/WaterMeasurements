@@ -21,6 +21,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
 using NLog;
 using NLog.Fluent;
 using Stateless;
@@ -63,6 +64,7 @@ public partial class MainPage : Page
     public MapConfigurationViewModel MapConfigurationView { get; }
     public DataCollectionViewModel DataCollectionView { get; }
     public SecchiConfigurationViewModel SecchiConfigurationView { get; }
+    public SecchiNewLocationViewModel SecchiNewLocationView { get; }
 
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
@@ -136,20 +138,7 @@ public partial class MainPage : Page
 
     private double geoTriggerDistance = 0;
 
-    private bool secchiLocationAdded = false;
     private bool secchiLocationAddPageSelected = false;
-
-    // Track whether location types, sources, and names have been set.
-    // Obserables are defined in MainPageModel.cs.
-    private readonly SecchiLocationSelections secchiLocationSelections =
-        new()
-        {
-            LocationTypeSet = false,
-            LocationSourceSet = false,
-            LocationNameSet = false,
-            LocationName = "",
-            LocationCanBeSaved = false
-        };
 
     [RelayCommand]
     private void ReCenter()
@@ -221,6 +210,7 @@ public partial class MainPage : Page
         MapConfigurationView = App.GetService<MapConfigurationViewModel>();
         DataCollectionView = App.GetService<DataCollectionViewModel>();
         SecchiConfigurationView = App.GetService<SecchiConfigurationViewModel>();
+        SecchiNewLocationView = App.GetService<SecchiNewLocationViewModel>();
 
         Logger.Debug("MainPage.xaml.cs, MainPage: Starting");
 
@@ -509,6 +499,9 @@ public partial class MainPage : Page
                 "MainPage.xaml.cs, Initialize: GeoTriggerDistanceMeters: {geoTriggerDistance}",
                 geoTriggerDistance
             );
+
+            SecchiNewLocationView.LocationTypeSet = false;
+            SecchiNewLocationView.LocationSourceSet = false;
 
             /*
             // Configure SecchiLocationsListView to use the SecchiLocationsIncrementalLoading collection.
@@ -833,6 +826,9 @@ public partial class MainPage : Page
             "MainPage.xaml.cs, SaveSecchiLocation_Click: SaveSecchiLocation_Click method called."
         );
 
+        double latitude;
+        double longitude;
+
         try
         {
             if (MapView.LocationDisplay.Location is null)
@@ -873,41 +869,34 @@ public partial class MainPage : Page
                         EnteredLongitude.Text
                     );
 
-                    secchiAddLocation.Location = new MapPoint(
-                        double.Parse(EnteredLongitude.Text),
-                        double.Parse(EnteredLatitude.Text),
-                        SpatialReferences.Wgs84
-                    );
-
-                    //TODO: Use Location instead of latitude and longitude.
-
-                    if (secchiAddLocation.Latitude is null || secchiAddLocation.Longitude is null)
-                    {
-                        // Log to trace that the Latitude or Longitude is null.
-                        Logger.Error(
-                            "MainPage.xaml.cs, SaveSecchiLocation_Click: Latitude or Longitude is null."
-                        );
-                        break;
-                    }
-                    Logger.Trace(
-                        "MainPage.xaml.cs, SaveSecchiLocation_Click, EnteredLatLong: presentLocation: Lat {presentLocation.Y}, Lon {presentLocation.X}.",
-                        secchiAddLocation.Location.Y,
-                        secchiAddLocation.Location.X
-                    );
                     if (graphicsOverlay is null)
                     {
                         // Log to trace that the graphicsOverlay is null.
                         Logger.Error(
                             "MainPage.xaml.cs, SaveSecchiLocation_Click: graphicsOverlay is null."
                         );
+                        return;
                     }
-                    else
-                    {
-                        // Add the new location to the map.
-                        graphicsOverlay.Graphics.Add(
-                            new Graphic(secchiAddLocation.Location, collectionLocationSymbol)
-                        );
-                    }
+
+                    secchiAddLocation.Location = new MapPoint(
+                        double.Parse(EnteredLongitude.Text),
+                        double.Parse(EnteredLatitude.Text),
+                        SpatialReferences.Wgs84
+                    );
+
+                    latitude = secchiAddLocation.Location.As<MapPoint>().Y;
+                    longitude = secchiAddLocation.Location.As<MapPoint>().X;
+
+                    // Log to trace the latitude and lon values of the mapPoint.
+                    Logger.Trace(
+                        "MainPage.xaml.cs, GeometryEditor_PropertyChanged: Added point to map at: Lat {latitude}, Lon {lon}.",
+                        latitude,
+                        longitude
+                    );
+
+                    graphicsOverlay.Graphics.Add(
+                        new Graphic(secchiAddLocation.Location, collectionLocationSymbol)
+                    );
 
                     await MapView.SetViewpointCenterAsync(secchiAddLocation.Location, 2500);
                     break;
@@ -968,11 +957,11 @@ public partial class MainPage : Page
                             );
 
                             // log the latitute and longitude of the new location.
-                            var latitude = newLocation
+                            latitude = newLocation
                                 .Project(SpatialReferences.Wgs84)
                                 .As<MapPoint>()
                                 .Y;
-                            var longitude = newLocation
+                            longitude = newLocation
                                 .Project(SpatialReferences.Wgs84)
                                 .As<MapPoint>()
                                 .X;
@@ -1150,27 +1139,27 @@ public partial class MainPage : Page
 
                     var presentLocation = MapView.LocationDisplay.Location.Position;
 
-                    var lat = presentLocation.Y;
-                    var lon = presentLocation.X;
+                    var latitude = presentLocation.Y;
+                    var longitude = presentLocation.X;
 
-                    // Log to trace the lat and lon values of the mapPoint.
+                    // Log to trace the latitude and lon values of the mapPoint.
                     Logger.Trace(
-                        "MainPage.xaml.cs, GeometryEditor_PropertyChanged: MapPoint: Lat {lat}, Lon {lon}.",
-                        lat,
-                        lon
+                        "MainPage.xaml.cs, GeometryEditor_PropertyChanged: MapPoint: Lat {latitude}, Lon {lon}.",
+                        latitude,
+                        longitude
                     );
 
                     MapView.GeometryEditor.Stop();
                     if (graphicsOverlay is not null)
                     {
                         graphicsOverlay.Graphics.Add(new Graphic(geometry, newLocationSymbol));
-                        lat = geometry.As<MapPoint>().Y;
-                        lon = geometry.As<MapPoint>().X;
-                        // Log to trace the lat and lon values of the mapPoint.
+                        latitude = geometry.As<MapPoint>().Y;
+                        longitude = geometry.As<MapPoint>().X;
+                        // Log to trace the latitude and lon values of the mapPoint.
                         Logger.Trace(
-                            "MainPage.xaml.cs, GeometryEditor_PropertyChanged: Added point to map at: Lat {lat}, Lon {lon}.",
-                            lat,
-                            lon
+                            "MainPage.xaml.cs, GeometryEditor_PropertyChanged: Added point to map at: Lat {latitude}, Lon {lon}.",
+                            latitude,
+                            longitude
                         );
                     }
                     else
@@ -1201,8 +1190,6 @@ public partial class MainPage : Page
         // Log to trace that the LocationType_Click method was called.
         Logger.Trace("MainPage.xaml.cs, LocationType_Click: LocationType_Click method called.");
 
-        secchiLocationSelections.LocationTypeSet = true;
-
         try
         {
             if (sender is null)
@@ -1223,10 +1210,12 @@ public partial class MainPage : Page
                     case "Occasional":
                         secchiAddLocation.LocationType = LocationType.Occasional;
                         SecchiLocationTypeDropDown.Content = "Occasional";
+                        SecchiNewLocationView.LocationTypeSet = true;
                         break;
                     case "Ongoing":
                         secchiAddLocation.LocationType = LocationType.Ongoing;
                         SecchiLocationTypeDropDown.Content = "Ongoing";
+                        SecchiNewLocationView.LocationTypeSet = true;
                         break;
                     default:
                         // Log to trace that an invalid tag value was encountered.
@@ -1234,6 +1223,7 @@ public partial class MainPage : Page
                             "MainPage.xaml.cs, LocationType_Click: Invalid tag value: {tag}",
                             tag
                         );
+                        SecchiNewLocationView.LocationTypeSet = false;
                         break;
                 }
             }
@@ -1262,7 +1252,6 @@ public partial class MainPage : Page
         // Log to trace that the LocationSource_Click method was called.
         Logger.Trace("MainPage.xaml.cs, LocationSource_Click: LocationSource_Click method called.");
 
-        secchiLocationSelections.LocationSourceSet = true;
         try
         {
             if (sender is null)
@@ -1306,6 +1295,7 @@ public partial class MainPage : Page
                         secchiAddLocation.LocationSource = LocationSource.CurrentGPS;
                         LatLongEntry.Visibility = Visibility.Collapsed;
                         SecchiLocationSourceDropDown.Content = "Current GPS";
+                        SecchiNewLocationView.LocationSourceSet = true;
                         break;
                     case "PointOnMap":
                         secchiAddLocation.LocationSource = LocationSource.PointOnMap;
@@ -1326,6 +1316,7 @@ public partial class MainPage : Page
                         MapView.SetViewpointCenterAsync(presentLocation, 2500);
                         LatLongEntry.Visibility = Visibility.Collapsed;
                         SecchiLocationSourceDropDown.Content = "Map Point";
+                        SecchiNewLocationView.LocationSourceSet = true;
                         break;
                     case "EnterLatLong":
                         if (secchiAddLocation.LocationSource == LocationSource.PointOnMap)
@@ -1335,6 +1326,7 @@ public partial class MainPage : Page
                         secchiAddLocation.LocationSource = LocationSource.EnteredLatLong;
                         SecchiLocationSourceDropDown.Content = "Enter Lat/Long";
                         LatLongEntry.Visibility = Visibility.Visible;
+                        SecchiNewLocationView.LocationSourceSet = true;
                         break;
                     default:
                         // Log to trace that an invalid tag value was encountered.

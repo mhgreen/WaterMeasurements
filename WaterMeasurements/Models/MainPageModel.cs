@@ -3,6 +3,7 @@ using Esri.ArcGISRuntime.Geometry;
 using Esri.ArcGISRuntime.Mapping;
 using Microsoft.Extensions.Logging;
 using Microsoft.UI.Dispatching;
+using NLog;
 using WaterMeasurements.ViewModels;
 
 namespace WaterMeasurements.Models;
@@ -25,79 +26,4 @@ public partial class SecchiPageSelection : ObservableRecipient
 {
     [ObservableProperty]
     public string? secchiSelectView;
-}
-
-public partial class SecchiLocationSelections : ObservableRecipient
-{
-    private void CanSaveLocation()
-    {
-        if (LocationTypeSet && LocationSourceSet && LocationNameSet)
-        {
-            LocationCanBeSaved = true;
-        }
-        else
-        {
-            LocationCanBeSaved = false;
-        }
-    }
-
-    [ObservableProperty]
-    private bool locationTypeSet;
-
-    partial void OnLocationTypeSetChanged(bool oldValue, bool newValue)
-    {
-        if (newValue)
-        {
-            LocationTypeSet = newValue;
-            CanSaveLocation();
-        }
-    }
-
-    [ObservableProperty]
-    private bool locationSourceSet;
-
-    partial void OnLocationSourceSetChanged(bool oldValue, bool newValue)
-    {
-        if (newValue)
-        {
-            LocationSourceSet = newValue;
-            CanSaveLocation();
-        }
-    }
-
-    [ObservableProperty]
-    private bool locationNameSet;
-
-    [ObservableProperty]
-    private string locationName = "";
-
-    partial void OnLocationNameChanged(string? oldValue, string newValue)
-    {
-        if (newValue != null)
-        {
-            LocationNameSet = true;
-            LocationName = newValue;
-            CanSaveLocation();
-        }
-        else
-        {
-            LocationNameSet = false;
-        }
-    }
-
-    partial void OnLocationNameChanging(string value)
-    {
-        if (LocationCanBeSaved)
-        {
-            LocationCanBeSaved = false;
-
-            if (LocationNameSet)
-            {
-                LocationNameSet = false;
-            }
-        }
-    }
-
-    [ObservableProperty]
-    private bool locationCanBeSaved = false;
 }

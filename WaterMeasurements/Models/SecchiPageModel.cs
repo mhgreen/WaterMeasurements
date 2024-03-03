@@ -37,7 +37,8 @@ public static class SecchiConfiguration
         SecchiLocationsGeodatabase,
         GeoTriggerDistanceMeters,
         SecchiObservationsSqliteLoaded,
-        SecchiLocationsSqliteLoaded
+        SecchiLocationsSqliteLoaded,
+        SecchiCollectOutAndBack
     }
 
     public static Dictionary<Key, string> Item { get; private set; } =
@@ -48,7 +49,8 @@ public static class SecchiConfiguration
             { Key.SecchiLocationsGeodatabase, "SecchiLocationsURL" },
             { Key.GeoTriggerDistanceMeters, "SecchiGeoTriggerDistance" },
             { Key.SecchiObservationsSqliteLoaded, "SecchiObservationsSqliteLoaded" },
-            { Key.SecchiLocationsSqliteLoaded, "SecchiLocationsSqliteLoaded" }
+            { Key.SecchiLocationsSqliteLoaded, "SecchiLocationsSqliteLoaded" },
+            { Key.SecchiCollectOutAndBack, "SecchiCollectOutAndBack" }
         };
 }
 
