@@ -85,10 +85,11 @@ public partial class MainPage : Page
     {
         public LocationType? LocationType { get; set; }
         public LocationSource? LocationSource { get; set; }
-        public double? Latitude;
-        public double? Longitude;
-        public string? LocationName;
-        public MapPoint? Location;
+        public int? LocationNumber { get; set; }
+        public double? Latitude { get; set; }
+        public double? Longitude { get; set; }
+        public string? LocationName { get; set; }
+        public MapPoint? Location { get; set; }
     }
 
     private struct SecchiChannelNumbers
@@ -858,6 +859,47 @@ public partial class MainPage : Page
                 return;
             }
 
+            if (secchiLocationFeatures is null)
+            {
+                // Log to trace that the secchiLocationFeatures is null.
+                Logger.Error(
+                    "MainPage.xaml.cs, SaveSecchiLocation_Click: secchiLocationFeatures is null."
+                );
+                return;
+            }
+
+            // create a where clause to get all the features
+            var queryParameters = new QueryParameters() { WhereClause = "1=1" };
+
+            // query the feature table
+            var queryResult = await secchiLocationFeatures.QueryFeaturesAsync(queryParameters);
+
+            // find the maximum LocationId
+            var maxLocationId = queryResult
+                .Select(feature => Convert.ToInt32(feature.Attributes["LocationId"]))
+                .Max();
+
+            // the next location number is one more than the maximum
+            var nextLocationNumber = maxLocationId + 1;
+
+            secchiAddLocation.LocationNumber = nextLocationNumber;
+
+            // Log to trace the nextLocationNumber.
+            Logger.Trace(
+                "MainPage.xaml.cs, SaveSecchiLocation_Click: nextLocationNumber: {nextLocationNumber}",
+                nextLocationNumber
+            );
+
+            // Set the location name to the value of SecchiNewLocationView.LocationName.
+            // This could be retrieved from either SecchiNewLocationView or from SecchiLocationName in MainPage.xaml
+            secchiAddLocation.LocationName = SecchiNewLocationView.LocationName;
+
+            // Log to trace SecchiNewLocationView.LocationName.
+            Logger.Trace(
+                "MainPage.xaml.cs, SaveSecchiLocation_Click: SecchiNewLocationView.LocationName: {LocationName}",
+                SecchiNewLocationView.LocationName
+            );
+
             switch (secchiAddLocation.LocationSource)
             {
                 case LocationSource.EnteredLatLong:
@@ -878,14 +920,19 @@ public partial class MainPage : Page
                         return;
                     }
 
+                    // Set the location to the entered latitude and longitude.
+                    // This is retrieved from either SecchiNewLocationView or from EnteredLatitude and EnteredLongitude in MainPage.xaml
                     secchiAddLocation.Location = new MapPoint(
-                        double.Parse(EnteredLongitude.Text),
-                        double.Parse(EnteredLatitude.Text),
+                        double.Parse(SecchiNewLocationView.LongitudeEntry),
+                        double.Parse(SecchiNewLocationView.LatitudeEntry),
                         SpatialReferences.Wgs84
                     );
 
                     latitude = secchiAddLocation.Location.As<MapPoint>().Y;
                     longitude = secchiAddLocation.Location.As<MapPoint>().X;
+
+                    secchiAddLocation.Latitude = latitude;
+                    secchiAddLocation.Longitude = longitude;
 
                     // Log to trace the latitude and lon values of the mapPoint.
                     Logger.Trace(
@@ -910,12 +957,21 @@ public partial class MainPage : Page
                         );
                         break;
                     }
+
                     secchiAddLocation.Location = MapView.LocationDisplay.Location.Position;
+
                     Logger.Trace(
                         "MainPage.xaml.cs, SaveSecchiLocation_Click, CurrentGPS: presentLocation: Lat {presentLocation.Y}, Lon {presentLocation.X}.",
                         secchiAddLocation.Location.Y,
                         secchiAddLocation.Location.X
                     );
+
+                    latitude = secchiAddLocation.Location.Y;
+                    longitude = secchiAddLocation.Location.X;
+
+                    secchiAddLocation.Latitude = latitude;
+                    secchiAddLocation.Longitude = longitude;
+
                     if (graphicsOverlay is null)
                     {
                         // Log to trace that the graphicsOverlay is null.
@@ -961,10 +1017,12 @@ public partial class MainPage : Page
                                 .Project(SpatialReferences.Wgs84)
                                 .As<MapPoint>()
                                 .Y;
+                            secchiAddLocation.Latitude = latitude;
                             longitude = newLocation
                                 .Project(SpatialReferences.Wgs84)
                                 .As<MapPoint>()
                                 .X;
+                            secchiAddLocation.Longitude = longitude;
                             Logger.Trace(
                                 "MainPage.xaml.cs, SaveSecchiLocation_Click: New Location is at: Lat {lat}, Lon {lon}.",
                                 latitude,

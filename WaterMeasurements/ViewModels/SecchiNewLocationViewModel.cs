@@ -107,9 +107,6 @@ public partial class SecchiNewLocationViewModel : ObservableValidator
     private bool locationNameValid;
     private bool latitudeEntryValid;
     private bool longitudeEntryValid;
-    private bool haveType;
-    private bool haveSource;
-    private bool haveSourceAndType;
 
     private bool collectOutAndBack = false;
 
@@ -161,9 +158,6 @@ public partial class SecchiNewLocationViewModel : ObservableValidator
         locationNameValid = false;
         latitudeEntryValid = false;
         longitudeEntryValid = false;
-        haveType = false;
-        haveSource = false;
-        haveSourceAndType = false;
 
         locationName = string.Empty;
         latitudeEntry = string.Empty;
@@ -223,7 +217,7 @@ public partial class SecchiNewLocationViewModel : ObservableValidator
     private string? sourceAndTypeError;
 
     [ObservableProperty]
-    private string? sourceAndTypeErrorVisibility = "Visible";
+    private string? sourceAndTypeErrorVisibility = "Collapsed";
 
     [ObservableProperty]
     private bool locationTypeSet;
