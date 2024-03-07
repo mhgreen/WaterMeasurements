@@ -80,18 +80,6 @@ public partial class MainPage : Page
     // Current WebMapId
     public string? webMapId;
 
-    // Source and type of location for adding a new location.
-    private struct SecchiAddLocation
-    {
-        public LocationType? LocationType { get; set; }
-        public LocationSource? LocationSource { get; set; }
-        public int? LocationNumber { get; set; }
-        public double? Latitude { get; set; }
-        public double? Longitude { get; set; }
-        public string? LocationName { get; set; }
-        public MapPoint? Location { get; set; }
-    }
-
     private struct SecchiChannelNumbers
     {
         public uint ObservationChannel { get; set; }
@@ -946,6 +934,11 @@ public partial class MainPage : Page
                     );
 
                     await MapView.SetViewpointCenterAsync(secchiAddLocation.Location, 2500);
+
+                    await SecchiView.AddNewLocation(secchiAddLocation);
+
+                    SecchiNewLocationView.LocationCanBeSaved = false;
+
                     break;
 
                 case LocationSource.CurrentGPS:
@@ -958,19 +951,22 @@ public partial class MainPage : Page
                         break;
                     }
 
-                    secchiAddLocation.Location = MapView.LocationDisplay.Location.Position;
-
-                    Logger.Trace(
-                        "MainPage.xaml.cs, SaveSecchiLocation_Click, CurrentGPS: presentLocation: Lat {presentLocation.Y}, Lon {presentLocation.X}.",
-                        secchiAddLocation.Location.Y,
-                        secchiAddLocation.Location.X
+                    secchiAddLocation.Location = new MapPoint(
+                        MapView.LocationDisplay.Location.Position.X,
+                        MapView.LocationDisplay.Location.Position.Y,
+                        SpatialReferences.Wgs84
                     );
 
                     latitude = secchiAddLocation.Location.Y;
-                    longitude = secchiAddLocation.Location.X;
-
                     secchiAddLocation.Latitude = latitude;
+                    longitude = secchiAddLocation.Location.X;
                     secchiAddLocation.Longitude = longitude;
+
+                    Logger.Trace(
+                        "MainPage.xaml.cs, SaveSecchiLocation_Click, CurrentGPS: presentLocation: Lat {latitude}, Lon {longitude}.",
+                        latitude,
+                        longitude
+                    );
 
                     if (graphicsOverlay is null)
                     {
@@ -988,6 +984,11 @@ public partial class MainPage : Page
                     }
 
                     await MapView.SetViewpointCenterAsync(secchiAddLocation.Location, 2500);
+
+                    await SecchiView.AddNewLocation(secchiAddLocation);
+
+                    SecchiNewLocationView.LocationCanBeSaved = false;
+
                     break;
 
                 case LocationSource.PointOnMap:
@@ -1037,48 +1038,10 @@ public partial class MainPage : Page
                                 );
                                 return;
                             }
-                            /*
-                            var newFeature = (ArcGISFeature)secchiLocationFeatures.CreateFeature();
-                            newFeature.Geometry = newLocation;
-                            newFeature.Attributes["Latitude"] = latitude;
-                            newFeature.Attributes["Longitude"] = longitude;
-                            newFeature.Attributes["Location"] = "New Location";
-                            newFeature.Attributes["LocationId"] = 7;
-                            await secchiLocationFeatures.AddFeatureAsync(newFeature);
-                            newFeature.Refresh();
 
-                            // Log to trace the fields in secchiLocationFeatures.
-                            foreach (var field in secchiLocationFeatures.Fields)
-                            {
-                                Logger.Trace(
-                                    "MainPage.xaml.cs, secchiLocationFeatures (after new location): featureTable.TableName: {featureTable.TableName}, field.Name: {field.Name}, field.FieldType: {field.FieldType}.",
-                                    secchiLocationFeatures.TableName,
-                                    field.Name,
-                                    field.FieldType.ToString()
-                                );
-                            }
+                            await SecchiView.AddNewLocation(secchiAddLocation);
 
-                            // create a where clause to get all the features
-                            var queryParameters = new QueryParameters() { WhereClause = "1=1" };
-
-                            // query the feature table
-                            var queryResult = secchiLocationFeatures
-                                .QueryFeaturesAsync(queryParameters)
-                                .Result;
-
-                            // iterate over the features and log their attributes
-                            foreach (var feature in queryResult)
-                            {
-                                foreach (var attribute in feature.Attributes)
-                                {
-                                    Logger.Trace(
-                                        "MainPage.xaml.cs, secchiLocationFeatures (after new location): feature.Attributes: attribute.Key: {attributeName}, attribute.Value: {attributeValue}.",
-                                        attribute.Key,
-                                        attribute.Value
-                                    );
-                                }
-                            }
-                            */
+                            SecchiNewLocationView.LocationCanBeSaved = false;
                         }
 
                         // Since the drop-down is set to "Point on Map", start the geometry editor.

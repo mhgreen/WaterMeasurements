@@ -51,6 +51,9 @@ public partial class SecchiViewModel : ObservableRecipient
     // Current observations feature table set by the FeatureTableMessage.
     private FeatureTable? currentObservationsTable = null;
 
+    // Current locations feature table set by the FeatureTableMessage.
+    private FeatureTable? currentLocationsTable = null;
+
     private readonly uint secchiObservationsChannel = 0;
     private readonly uint secchiLocationsChannel = 0;
     private readonly uint secchiGeotriggerChannel = 0;
@@ -311,6 +314,8 @@ public partial class SecchiViewModel : ObservableRecipient
                             "SecchiViewModel, StateMachine, SecchiServiceState.WaitingForLocations, OnEntryFrom: FeatureTable: {featureTable}.",
                             featureTable.TableName
                         );
+
+                        currentLocationsTable = featureTable;
 
                         // Log the fields in the feature table.
                         foreach (var field in featureTable.Fields)
@@ -1138,6 +1143,88 @@ public partial class SecchiViewModel : ObservableRecipient
                 SecchiViewModelLog,
                 exception,
                 "Exception generated in SecchiViewModel, ProcessSecchiMeasurements: {message}.",
+                exception.Message.ToString()
+            );
+        }
+    }
+
+    public async Task AddNewLocation(SecchiAddLocation secchiAddLocation)
+    {
+        // Log to debug that AddNewLocation was called.
+        logger.LogDebug(
+            SecchiViewModelLog,
+            "SecchiViewModel, AddNewLocation(): AddNewLocation called."
+        );
+
+        try
+        {
+            Guard.Against.Null(
+                secchiAddLocation,
+                nameof(secchiAddLocation),
+                "SecchiViewModel, AddNewLocation(): secchiAddLocation can not be null."
+            );
+
+            Guard.Against.Null(
+                Guard.Against.Null(
+                    secchiAddLocation.LocationType,
+                    nameof(secchiAddLocation.LocationType),
+                    "SecchiViewModel, AddNewLocation(): secchiAddLocation.Location can not be null."
+                )
+            );
+
+            Guard.Against.Null(
+                currentLocationsTable,
+                nameof(currentLocationsTable),
+                "SecchiViewModel, AddNewLocation(): currentLocationsTable can not be null."
+            );
+
+            var newFeature = (ArcGISFeature)currentLocationsTable.CreateFeature();
+            newFeature.Geometry = secchiAddLocation.Location;
+            newFeature.Attributes["Latitude"] = secchiAddLocation.Latitude;
+            newFeature.Attributes["Longitude"] = secchiAddLocation.Longitude;
+            newFeature.Attributes["Location"] = secchiAddLocation.LocationName;
+            newFeature.Attributes["LocationId"] = secchiAddLocation.LocationNumber;
+            newFeature.Attributes["LocationType"] = (int)secchiAddLocation.LocationType;
+            await currentLocationsTable.AddFeatureAsync(newFeature);
+            newFeature.Refresh();
+
+            // Log to trace the fields in secchiLocationFeatures.
+            foreach (var field in currentLocationsTable.Fields)
+            {
+                logger.LogTrace(
+                    SecchiViewModelLog,
+                    "SecchiViewModel, AddNewLocation(): Field: {field.Name}, Field type: {field.type}.",
+                    field.Name,
+                    field.FieldType.ToString()
+                );
+            }
+
+            // create a where clause to get all the features
+            var queryParameters = new QueryParameters() { WhereClause = "1=1" };
+
+            // query the feature table
+            var queryResult = currentLocationsTable.QueryFeaturesAsync(queryParameters).Result;
+
+            // iterate over the features and log their attributes
+            foreach (var feature in queryResult)
+            {
+                foreach (var attribute in feature.Attributes)
+                {
+                    logger.LogTrace(
+                        SecchiViewModelLog,
+                        "SecchiViewModel, AddNewLocation(): Key: {attribute.Key}, Value: {attribute.Value}.",
+                        attribute.Key,
+                        attribute.Value
+                    );
+                }
+            }
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(
+                SecchiViewModelLog,
+                exception,
+                "Exception generated in SecchiViewModel, AddNewLocation: {message}.",
                 exception.Message.ToString()
             );
         }

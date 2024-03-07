@@ -1,4 +1,6 @@
-﻿namespace WaterMeasurements.Models;
+﻿using Esri.ArcGISRuntime.Geometry;
+
+namespace WaterMeasurements.Models;
 
 // State of the SecchiViewModel service.
 public enum SecchiServiceState
@@ -76,3 +78,15 @@ public readonly record struct SecchiChannelNumbersMessage(
     uint LocationChannel,
     uint GeoTriggerChannel
 );
+
+// Source and type of location for adding a new location.
+public struct SecchiAddLocation
+{
+    public LocationType? LocationType { get; set; }
+    public LocationSource? LocationSource { get; set; }
+    public int? LocationNumber { get; set; }
+    public double? Latitude { get; set; }
+    public double? Longitude { get; set; }
+    public string? LocationName { get; set; }
+    public MapPoint? Location { get; set; }
+}
