@@ -624,7 +624,7 @@
                                                 <TextBlock
                                                     Opacity="0.8"
                                                     Style="{StaticResource TitleTextBlockStyle}"
-                                                    Text="HOA Test"
+                                                    Text="{x:Bind SecchiView.SecchiCollectionPointName, Mode=OneWay}"
                                                     TextAlignment="Left" />
 
                                                 <StackPanel HorizontalAlignment="Stretch" Orientation="Horizontal">

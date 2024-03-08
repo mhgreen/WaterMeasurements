@@ -318,7 +318,13 @@ public partial class MainPage : Page
                     message.Value
                 );
 
-                secchiPageSelection.SecchiSelectView = message.Value;
+                // Change the SecchiSelectView to the value of message.Value.
+                // Do this on the UI thread.
+
+                DispatcherQueue.TryEnqueue(() =>
+                {
+                    secchiPageSelection.SecchiSelectView = message.Value;
+                });
             }
         );
 

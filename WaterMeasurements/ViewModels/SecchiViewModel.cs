@@ -991,6 +991,9 @@ public partial class SecchiViewModel : ObservableRecipient
                                     new SetSecchiSelectViewMessage("SecchiDataEntry")
                                 );
 
+                                // SecchiCollectionPointName = locationName.ToString()!;
+
+
                                 uiDispatcherQueue.TryEnqueue(() =>
                                 {
                                     SecchiCollectionPointName = locationName.ToString()!;
@@ -1085,7 +1088,7 @@ public partial class SecchiViewModel : ObservableRecipient
                 currentObservationsTable.TableName
             );
 
-            var secchiObservation = currentObservationsTable.CreateFeature();
+            var secchiObservation = (ArcGISFeature)currentObservationsTable.CreateFeature();
             secchiObservation.SetAttributeValue("measurement1", secchiMeasurements.Measurement1);
             secchiObservation.SetAttributeValue("measurement2", secchiMeasurements.Measurement2);
             secchiObservation.SetAttributeValue("measurement3", secchiMeasurements.Measurement3);
@@ -1185,6 +1188,14 @@ public partial class SecchiViewModel : ObservableRecipient
             newFeature.Attributes["Location"] = secchiAddLocation.LocationName;
             newFeature.Attributes["LocationId"] = secchiAddLocation.LocationNumber;
             newFeature.Attributes["LocationType"] = (int)secchiAddLocation.LocationType;
+
+            // Send the feature via an AddFeatureMessage to the GeoDatabaseService.
+            WeakReferenceMessenger.Default.Send<AddFeatureMessage, uint>(
+                new AddFeatureMessage(new FeatureMessage("SecchiLocations", newFeature)),
+                secchiLocationsChannel
+            );
+
+            /*
             await currentLocationsTable.AddFeatureAsync(newFeature);
             newFeature.Refresh();
 
@@ -1218,6 +1229,7 @@ public partial class SecchiViewModel : ObservableRecipient
                     );
                 }
             }
+            */
         }
         catch (Exception exception)
         {
