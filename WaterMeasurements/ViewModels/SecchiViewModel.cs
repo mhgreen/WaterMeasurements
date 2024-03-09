@@ -904,8 +904,6 @@ public partial class SecchiViewModel : ObservableRecipient
         }
     }
 
-    // TODO: Consider moving this to MainPage.xaml.cs. If that does not seem like a good idea, find a better way to set SecchiCollectionPointName.
-
     private void HandleGeotriggerNotification(
         GeotriggerNotificationInfo info,
         DispatcherQueue uiDispatcherQueue
@@ -1151,7 +1149,7 @@ public partial class SecchiViewModel : ObservableRecipient
         }
     }
 
-    public async Task AddNewLocation(SecchiAddLocation secchiAddLocation)
+    public void AddNewLocation(SecchiAddLocation secchiAddLocation)
     {
         // Log to debug that AddNewLocation was called.
         logger.LogDebug(
@@ -1193,6 +1191,16 @@ public partial class SecchiViewModel : ObservableRecipient
             WeakReferenceMessenger.Default.Send<AddFeatureMessage, uint>(
                 new AddFeatureMessage(new FeatureMessage("SecchiLocations", newFeature)),
                 secchiLocationsChannel
+            );
+
+            SecchiLocations.Add(
+                new SecchiLocationDisplay(
+                    latitude: (double)secchiAddLocation.Latitude!,
+                    longitude: (double)secchiAddLocation.Longitude!,
+                    locationId: (int)secchiAddLocation.LocationNumber!,
+                    locationName: secchiAddLocation.LocationName!,
+                    locationType: (LocationType)secchiAddLocation.LocationType
+                )
             );
 
             /*

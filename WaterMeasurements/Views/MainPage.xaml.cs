@@ -941,7 +941,11 @@ public partial class MainPage : Page
 
                     await MapView.SetViewpointCenterAsync(secchiAddLocation.Location, 2500);
 
-                    await SecchiView.AddNewLocation(secchiAddLocation);
+                    SecchiView.AddNewLocation(secchiAddLocation);
+
+                    SecchiNewLocationView.LocationName = string.Empty;
+                    SecchiNewLocationView.LatitudeEntry = string.Empty;
+                    SecchiNewLocationView.LongitudeEntry = string.Empty;
 
                     SecchiNewLocationView.LocationCanBeSaved = false;
 
@@ -991,7 +995,9 @@ public partial class MainPage : Page
 
                     await MapView.SetViewpointCenterAsync(secchiAddLocation.Location, 2500);
 
-                    await SecchiView.AddNewLocation(secchiAddLocation);
+                    SecchiView.AddNewLocation(secchiAddLocation);
+
+                    SecchiNewLocationView.LocationName = string.Empty;
 
                     SecchiNewLocationView.LocationCanBeSaved = false;
 
@@ -1045,7 +1051,9 @@ public partial class MainPage : Page
                                 return;
                             }
 
-                            await SecchiView.AddNewLocation(secchiAddLocation);
+                            SecchiView.AddNewLocation(secchiAddLocation);
+
+                            SecchiNewLocationView.LocationName = string.Empty;
 
                             SecchiNewLocationView.LocationCanBeSaved = false;
                         }
@@ -1409,6 +1417,37 @@ public partial class MainPage : Page
             Logger.Error(
                 exception,
                 "MainPage.xaml.cs, Edit_Location_Click: An error occurred in Edit_Location_Click: {exception}",
+                exception.Message
+            );
+        }
+    }
+
+    private void Delete_Location_Click(object sender, RoutedEventArgs eventArgs)
+    {
+        // Log to trace that the Delete_Location_Click method was called.
+        Logger.Trace(
+            "MainPage.xaml.cs, Delete_Location_Click: Delete_Location_Click method called."
+        );
+
+        var button = sender as Button;
+        try
+        {
+            Guard.Against.Null(button, nameof(button), "Button in Delete_Location_Click is null.");
+
+            var locationId = button.Tag;
+
+            // Log to trace the value of sender and eventArgs.
+            Logger.Trace(
+                "MainPage.xaml.cs, Delete_Location_Click: LocationId: {locationId}",
+                locationId
+            );
+        }
+        catch (Exception exception)
+        {
+            // Log to trace the exception message.
+            Logger.Error(
+                exception,
+                "MainPage.xaml.cs, Delete_Location_Click: An error occurred in Delete_Location_Click: {exception}",
                 exception.Message
             );
         }

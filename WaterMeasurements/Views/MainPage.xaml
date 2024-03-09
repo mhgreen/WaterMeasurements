@@ -59,7 +59,10 @@
                 </Grid.RowDefinitions>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="50" />
+                    <ColumnDefinition Width="50" />
                 </Grid.ColumnDefinitions>
                 <Ellipse
                     x:Name="Ellipse"
@@ -70,6 +73,16 @@
                     HorizontalAlignment="Center"
                     VerticalAlignment="Center"
                     Fill="{x:Bind LocationType, Converter={StaticResource LocationTypeToColorConverter}}" />
+                <TextBlock
+                    x:Name="CollectionLimit"
+                    Grid.RowSpan="2"
+                    Margin="0,-3,0,0"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    FontWeight="Bold"
+                    Foreground="{ThemeResource ApplicationPageBackgroundThemeBrush}"
+                    Style="{ThemeResource BaseTextBlockStyle}"
+                    Text="S" />
                 <TextBlock
                     Grid.Column="1"
                     Margin="12,6,0,0"
@@ -87,7 +100,7 @@
                 <Button
                     x:Name="SecchiLocationEdit"
                     Grid.RowSpan="2"
-                    Grid.Column="1"
+                    Grid.Column="3"
                     Margin="0,7,0,0"
                     HorizontalAlignment="Right"
                     VerticalAlignment="Center"
@@ -95,6 +108,18 @@
                     Scale="0.8, 0.8, 0.8"
                     Tag="{x:Bind LocationId}">
                     <SymbolIcon Symbol="Edit" />
+                </Button>
+                <Button
+                    x:Name="SecchiLocationDelete"
+                    Grid.RowSpan="2"
+                    Grid.Column="4"
+                    Margin="0,7,0,0"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Center"
+                    Click="Delete_Location_Click"
+                    Scale="0.8, 0.8, 0.8"
+                    Tag="{x:Bind LocationId}">
+                    <SymbolIcon Symbol="Delete" />
                 </Button>
 
             </Grid>
