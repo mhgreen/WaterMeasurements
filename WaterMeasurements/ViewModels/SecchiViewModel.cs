@@ -1,4 +1,5 @@
 ﻿using System.Collections.ObjectModel;
+using System.Numerics;
 using System.Xml.Linq;
 using Ardalis.GuardClauses;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -1134,7 +1135,9 @@ public partial class SecchiViewModel : ObservableRecipient
 
             // Send the feature via an AddFeatureMessage to the GeoDatabaseService.
             WeakReferenceMessenger.Default.Send<AddFeatureMessage, uint>(
-                new AddFeatureMessage(new FeatureMessage("SecchiObservations", secchiObservation)),
+                new AddFeatureMessage(
+                    new FeatureAddMessage("SecchiObservations", secchiObservation)
+                ),
                 secchiObservationsChannel
             );
         }
@@ -1149,6 +1152,7 @@ public partial class SecchiViewModel : ObservableRecipient
         }
     }
 
+    // Send a message to the GeoDatabaseService adding a feature to the SecchiLocations feature table.
     public void AddNewLocation(SecchiAddLocation secchiAddLocation)
     {
         // Log to debug that AddNewLocation was called.
@@ -1189,7 +1193,7 @@ public partial class SecchiViewModel : ObservableRecipient
 
             // Send the feature via an AddFeatureMessage to the GeoDatabaseService.
             WeakReferenceMessenger.Default.Send<AddFeatureMessage, uint>(
-                new AddFeatureMessage(new FeatureMessage("SecchiLocations", newFeature)),
+                new AddFeatureMessage(new FeatureAddMessage("SecchiLocations", newFeature)),
                 secchiLocationsChannel
             );
 
@@ -1202,42 +1206,6 @@ public partial class SecchiViewModel : ObservableRecipient
                     locationType: (LocationType)secchiAddLocation.LocationType
                 )
             );
-
-            /*
-            await currentLocationsTable.AddFeatureAsync(newFeature);
-            newFeature.Refresh();
-
-            // Log to trace the fields in secchiLocationFeatures.
-            foreach (var field in currentLocationsTable.Fields)
-            {
-                logger.LogTrace(
-                    SecchiViewModelLog,
-                    "SecchiViewModel, AddNewLocation(): Field: {field.Name}, Field type: {field.type}.",
-                    field.Name,
-                    field.FieldType.ToString()
-                );
-            }
-
-            // create a where clause to get all the features
-            var queryParameters = new QueryParameters() { WhereClause = "1=1" };
-
-            // query the feature table
-            var queryResult = currentLocationsTable.QueryFeaturesAsync(queryParameters).Result;
-
-            // iterate over the features and log their attributes
-            foreach (var feature in queryResult)
-            {
-                foreach (var attribute in feature.Attributes)
-                {
-                    logger.LogTrace(
-                        SecchiViewModelLog,
-                        "SecchiViewModel, AddNewLocation(): Key: {attribute.Key}, Value: {attribute.Value}.",
-                        attribute.Key,
-                        attribute.Value
-                    );
-                }
-            }
-            */
         }
         catch (Exception exception)
         {
@@ -1245,6 +1213,106 @@ public partial class SecchiViewModel : ObservableRecipient
                 SecchiViewModelLog,
                 exception,
                 "Exception generated in SecchiViewModel, AddNewLocation: {message}.",
+                exception.Message.ToString()
+            );
+        }
+    }
+
+    // Send a message to the GeoDatabaseService to delete a feature from the SecchiLocations feature table.
+    public void DeleteLocation(int locationId)
+    {
+        // Log to debug that DeleteLocation was called.
+        logger.LogDebug(
+            SecchiViewModelLog,
+            "SecchiViewModel, DeleteLocation(): DeleteLocation called."
+        );
+
+        try
+        {
+            Guard.Against.Null(
+                SecchiLocations,
+                nameof(SecchiLocations),
+                "SecchiViewModel, DeleteLocation(): SecchiLocations can not be null."
+            );
+
+            Guard.Against.Null(
+                currentLocationsTable,
+                nameof(currentLocationsTable),
+                "SecchiViewModel, DeleteLocation(): currentLocationsTable can not be null."
+            );
+
+            // Log to debug the locationId.
+            logger.LogDebug(
+                SecchiViewModelLog,
+                "SecchiViewModel, DeleteLocation(): LocationId: {locationId}.",
+                locationId
+            );
+
+            // Create a query to get the feature to delete.
+            var queryParameters = new QueryParameters
+            {
+                WhereClause = $"LocationId = {locationId}"
+            };
+
+            // Query the feature table.
+            var queryResult = currentLocationsTable.QueryFeaturesAsync(queryParameters).Result;
+
+            // Log to debug the number of features returned by the query.
+            logger.LogDebug(
+                SecchiViewModelLog,
+                "SecchiViewModel, DeleteLocation(): Number of features returned by the query: {queryResult.Count()}.",
+                queryResult.Count()
+            );
+
+            // Iterate over the features and log their attributes.
+            foreach (var feature in queryResult)
+            {
+                foreach (var attribute in feature.Attributes)
+                {
+                    logger.LogDebug(
+                        SecchiViewModelLog,
+                        "SecchiViewModel, DeleteLocation(): FeatureTable: {currentLocationsTable.TableName}, attribute.Key: {attributeName}, attribute.Value: {attributeValue}.",
+                        currentLocationsTable.TableName,
+                        attribute.Key,
+                        attribute.Value
+                    );
+                }
+            }
+
+            // Delete the feature from the feature table.
+            currentLocationsTable.DeleteFeatureAsync(queryResult.First());
+
+            // Send the feature via a DeleteFeatureMessage to the GeoDatabaseService.
+            WeakReferenceMessenger.Default.Send<DeleteFeatureMessage, uint>(
+                new DeleteFeatureMessage(
+                    new FeatureDeleteMessage("SecchiLocations", queryResult.First())
+                ),
+                secchiLocationsChannel
+            );
+
+            // Find the item in SecchiLocations that matches locationID and remove that item.
+            var secchiLocationDisplay = SecchiLocations.FirstOrDefault(x =>
+                x.LocationId == locationId
+            );
+            if (secchiLocationDisplay != null)
+            {
+                SecchiLocations.Remove(secchiLocationDisplay);
+            }
+            else
+            {
+                logger.LogError(
+                    SecchiViewModelLog,
+                    "SecchiViewModel, DeleteLocation(): LocationId: {locationId} not found in SecchiLocations.",
+                    locationId
+                );
+            }
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(
+                SecchiViewModelLog,
+                exception,
+                "Exception generated in SecchiViewModel, DeleteLocation: {message}.",
                 exception.Message.ToString()
             );
         }

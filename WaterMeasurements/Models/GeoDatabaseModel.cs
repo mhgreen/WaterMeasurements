@@ -5,7 +5,6 @@ using System.Text;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Messaging;
-
 using Esri.ArcGISRuntime.Data;
 using Esri.ArcGISRuntime.Geometry;
 using Esri.ArcGISRuntime.Mapping;
@@ -25,10 +24,20 @@ public partial class GeodatabaseDownload : ObservableRecipient
 }
 
 // Record for the request to download a geodatabase.
-public readonly record struct GeoDatabaseRetrieveRequest(string Name, GeoDatabaseType GeoDatabaseType, uint Channel, string Url, bool CauseGeoDatabaseDownload);
+public readonly record struct GeoDatabaseRetrieveRequest(
+    string Name,
+    GeoDatabaseType GeoDatabaseType,
+    uint Channel,
+    string Url,
+    bool CauseGeoDatabaseDownload
+);
 
 // Record for the request to delete a geodatabase.
-public readonly record struct GeoDatabaseDeleteRequest(string Name, GeoDatabaseType GeoDatabaseType, string Url);
+public readonly record struct GeoDatabaseDeleteRequest(
+    string Name,
+    GeoDatabaseType GeoDatabaseType,
+    string Url
+);
 
 /*
 // Record to request the currentMapEnvelope from the GeodatabaseService.
@@ -45,8 +54,14 @@ public readonly record struct GeoDatabaseDownloadInstanceProgress(double Percent
 // Message to request a Geodatabase state change.
 public readonly record struct GeodatabaseStateChange(GeoDbOperation StateRequest);
 
-// Record for observation(s) and associated FeatureTable.
-public readonly record struct FeatureMessage(string FeatureTable, Feature FeatureToAdd);
+// Record to add a feature to a feature table.
+public readonly record struct FeatureAddMessage(string FeatureTable, Feature FeatureToAdd);
+
+// Record to delete a feature from a feature table.
+public readonly record struct FeatureDeleteMessage(string FeatureTable, Feature FeatureToDelete);
+
+// Record to update a feature in a feature table.
+public readonly record struct FeatureUpdateMessage(string FeatureTable, Feature FeatureToUpdate);
 
 // Geodatabase type.
 public enum GeoDatabaseType
@@ -87,7 +102,9 @@ public enum GeoDbServiceTrigger
     LocalGeoDatabaseExists,
     LocalGeoDatabaseDoesNotExist,
     GeoDatabaseStateChange,
-    GeoDatabaseFeatureReceived,
+    GeoDatabaseAddFeature,
+    GeoDatabaseDeleteFeature,
+    GeoDatabaseUpdateFeature,
     GeoDatabaseSecchiMeasurementReceived,
     FeatureTableRequestReceived,
     Cancel

@@ -58,9 +58,17 @@ public class FeatureTableMessage(FeatureTable featureTable)
 public class GeodatabaseStateChangeMessage(GeodatabaseStateChange geodatabaseStateChange)
     : ValueChangedMessage<GeodatabaseStateChange>(geodatabaseStateChange) { }
 
-// Message to send a feature to the geodatabase service.
-public class AddFeatureMessage(FeatureMessage featureMessage)
-    : ValueChangedMessage<FeatureMessage>(featureMessage) { }
+// Message to add a feature to the geodatabase service.
+public class AddFeatureMessage(FeatureAddMessage featureAddMessage)
+    : ValueChangedMessage<FeatureAddMessage>(featureAddMessage) { }
+
+// Message to delete a feature from the geodatabase service.
+public class DeleteFeatureMessage(FeatureDeleteMessage featureDeleteMessage)
+    : ValueChangedMessage<FeatureDeleteMessage>(featureDeleteMessage) { }
+
+// Message to update a feature in the geodatabase service.
+public class UpdateFeatureMessage(FeatureUpdateMessage featureUpdateMessage)
+    : ValueChangedMessage<FeatureUpdateMessage>(featureUpdateMessage) { }
 
 public partial class GeoDatabaseService : IGeoDatabaseService
 {

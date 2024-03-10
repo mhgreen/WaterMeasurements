@@ -140,8 +140,18 @@ public partial class GeoDatabaseInstance : IGeoDatabaseInstance
         );
 
         // Trigger for AddFeatureMessage.
-        var featureMessage = stateMachine.SetTriggerParameters<FeatureMessage>(
-            GeoDbServiceTrigger.GeoDatabaseFeatureReceived
+        var featureAddMessage = stateMachine.SetTriggerParameters<FeatureAddMessage>(
+            GeoDbServiceTrigger.GeoDatabaseAddFeature
+        );
+
+        // Trigger for DeleteFeatureMessage.
+        var featureDeleteMessage = stateMachine.SetTriggerParameters<FeatureDeleteMessage>(
+            GeoDbServiceTrigger.GeoDatabaseDeleteFeature
+        );
+
+        // Trigger for UpdateFeatureMessage.
+        var featureUpdateMessage = stateMachine.SetTriggerParameters<FeatureUpdateMessage>(
+            GeoDbServiceTrigger.GeoDatabaseUpdateFeature
         );
 
         // Trigger for FeatureTableRequestMessage.
@@ -234,10 +244,20 @@ public partial class GeoDatabaseInstance : IGeoDatabaseInstance
                     geoDatabaseStateChange,
                     (GeoDbOperation, _) => HandleGeodatabaseStateChange(GeoDbOperation.StateRequest)
                 )
-                // Handle the GeoDatabaseFeatureReceived trigger by calling AddFeatureToGeodatabase.
+                // Handle the GeoDatabaseAddFeature trigger by calling AddFeatureToGeodatabase.
                 .InternalTransition(
-                    featureMessage,
+                    featureAddMessage,
                     (featureMessage, _) => AddFeatureToGeodatabase(featureMessage)
+                )
+                // Handle the GeoDatabaseDeleteFeature trigger by calling DeleteFeatureFromGeodatabase.
+                .InternalTransition(
+                    featureDeleteMessage,
+                    (featureMessage, _) => DeleteFeatureFromGeodatabase(featureMessage)
+                )
+                // Handle the GeoDatabaseUpdateFeature trigger by calling UpdateFeatureInGeodatabase.
+                .InternalTransition(
+                    featureUpdateMessage,
+                    (featureMessage, _) => UpdateFeatureInGeodatabase(featureMessage)
                 )
                 // Handle the FeatureTableRequestReceived trigger by sending the feature table.
                 .InternalTransition(
@@ -394,7 +414,7 @@ public partial class GeoDatabaseInstance : IGeoDatabaseInstance
                 }
             );
 
-            // Register to get AddFeatureMessage and use that to trigger GeoDatabaseFeatureReceived.
+            // Register to get AddFeatureMessage and use that to trigger GeoDatabaseAddFeature.
             WeakReferenceMessenger.Default.Register<AddFeatureMessage, uint>(
                 this,
                 Channel,
@@ -411,7 +431,49 @@ public partial class GeoDatabaseInstance : IGeoDatabaseInstance
                         Name,
                         message.Value
                     );
-                    stateMachine.Fire(featureMessage, message.Value);
+                    stateMachine.Fire(featureAddMessage, message.Value);
+                }
+            );
+
+            // Register to get DeleteFeatureMessage and use that to trigger GeoDatabaseDeleteFeature.
+            WeakReferenceMessenger.Default.Register<DeleteFeatureMessage, uint>(
+                this,
+                Channel,
+                (recipient, message) =>
+                {
+                    Guard.Against.Null(
+                        message.Value,
+                        nameof(message.Value),
+                        "GeoDatabaseInstance, DeleteFeatureMessage: message.Value is null."
+                    );
+                    logger.LogDebug(
+                        GeoDatabaseLog,
+                        "GeoDatabaseInstance {name}, DeleteFeatureMessage {message}.",
+                        Name,
+                        message.Value
+                    );
+                    stateMachine.Fire(featureDeleteMessage, message.Value);
+                }
+            );
+
+            // Register to get UpdateFeatureMessage and use that to trigger GeoDatabaseUpdateFeature.
+            WeakReferenceMessenger.Default.Register<UpdateFeatureMessage, uint>(
+                this,
+                Channel,
+                (recipient, message) =>
+                {
+                    Guard.Against.Null(
+                        message.Value,
+                        nameof(message.Value),
+                        "GeoDatabaseInstance, UpdateFeatureMessage: message.Value is null."
+                    );
+                    logger.LogDebug(
+                        GeoDatabaseLog,
+                        "GeoDatabaseInstance {name}, UpdateFeatureMessage {message}.",
+                        Name,
+                        message.Value
+                    );
+                    stateMachine.Fire(featureUpdateMessage, message.Value);
                 }
             );
 
@@ -793,8 +855,8 @@ public partial class GeoDatabaseInstance : IGeoDatabaseInstance
         }
     }
 
-    // Handle the GeoDatabaseStateChange trigger, add the feature to the geodatabase.
-    private async void AddFeatureToGeodatabase(FeatureMessage featureMessage)
+    // Handle the GeoDatabaseAddFeature trigger, add the feature to the geodatabase.
+    private async void AddFeatureToGeodatabase(FeatureAddMessage featureMessage)
     {
         try
         {
@@ -804,11 +866,11 @@ public partial class GeoDatabaseInstance : IGeoDatabaseInstance
                 nameof(currentGeodatabase),
                 "GeoDatabaseInstance, AddFeatureToGeodatabase: currentGeodatabase is null."
             );
-            // Make sure that featureMessage is not null.
+            // Make sure that featureAddMessage is not null.
             Guard.Against.Null(
                 featureMessage,
                 nameof(featureMessage),
-                "GeoDatabaseInstance, AddFeatureToGeodatabase: featureMessage is null."
+                "GeoDatabaseInstance, AddFeatureToGeodatabase: featureAddMessage is null."
             );
 
             logger.LogDebug(
@@ -817,12 +879,12 @@ public partial class GeoDatabaseInstance : IGeoDatabaseInstance
                 Name
             );
 
-            // Log the contents of the featureMessage.
+            // Log the contents of the featureAddMessage.
             foreach (var attribute in featureMessage.FeatureToAdd.Attributes)
             {
                 logger.LogDebug(
                     GeoDatabaseLog,
-                    "GeoDatabaseInstance {name}, AddFeatureToGeodatabase: featureMessage.FeatureToAdd.Attributes: attribute.Key: {attributeName}, attribute.Value: {attributeValue}.",
+                    "GeoDatabaseInstance {name}, AddFeatureToGeodatabase: featureAddMessage.FeatureToAdd.Attributes: attribute.Key: {attributeName}, attribute.Value: {attributeValue}.",
                     Name,
                     attribute.Key,
                     attribute.Value
@@ -846,6 +908,124 @@ public partial class GeoDatabaseInstance : IGeoDatabaseInstance
                 GeoDatabaseLog,
                 exception,
                 "GeoDatabaseInstance {name}, AddFeatureToGeodatabase: Exception: {exception}.",
+                Name,
+                exception.Message
+            );
+        }
+    }
+
+    // Handle the GeoDatabaseDeleteFeature trigger, delete the feature from the geodatabase.
+    private async void DeleteFeatureFromGeodatabase(FeatureDeleteMessage featureMessage)
+    {
+        try
+        {
+            // Make sure that currentGeodatabase is not null.
+            Guard.Against.Null(
+                currentGeodatabase,
+                nameof(currentGeodatabase),
+                "GeoDatabaseInstance, DeleteFeatureFromGeodatabase: currentGeodatabase is null."
+            );
+            // Make sure that featureDeleteMessage is not null.
+            Guard.Against.Null(
+                featureMessage,
+                nameof(featureMessage),
+                "GeoDatabaseInstance, DeleteFeatureFromGeodatabase: featureDeleteMessage is null."
+            );
+
+            logger.LogDebug(
+                GeoDatabaseLog,
+                "GeoDatabaseInstance {name}, DeleteFeatureFromGeodatabase: Deleting feature from geodatabase.",
+                Name
+            );
+
+            // Log the contents of the featureDeleteMessage.
+            foreach (var attribute in featureMessage.FeatureToDelete.Attributes)
+            {
+                logger.LogDebug(
+                    GeoDatabaseLog,
+                    "GeoDatabaseInstance {name}, DeleteFeatureFromGeodatabase: featureDeleteMessage.FeatureToDelete.Attributes: attribute.Key: {attributeName}, attribute.Value: {attributeValue}.",
+                    Name,
+                    attribute.Key,
+                    attribute.Value
+                );
+            }
+
+            // Make sure that featureTable is not null.
+            Guard.Against.Null(
+                featureTable,
+                nameof(featureTable),
+                "GeoDatabaseInstance, DeleteFeatureFromGeodatabase: featureTable is null."
+            );
+
+            await featureTable.DeleteFeatureAsync(featureMessage.FeatureToDelete);
+
+            ListGeodatabaseContents(currentGeodatabase);
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(
+                GeoDatabaseLog,
+                exception,
+                "GeoDatabaseInstance {name}, DeleteFeatureFromGeodatabase: Exception: {exception}.",
+                Name,
+                exception.Message
+            );
+        }
+    }
+
+    // Handle the GeoDatabaseUpdateFeature trigger, update the feature in the geodatabase.
+    private async void UpdateFeatureInGeodatabase(FeatureUpdateMessage featureMessage)
+    {
+        try
+        {
+            // Make sure that currentGeodatabase is not null.
+            Guard.Against.Null(
+                currentGeodatabase,
+                nameof(currentGeodatabase),
+                "GeoDatabaseInstance, UpdateFeatureInGeodatabase: currentGeodatabase is null."
+            );
+            // Make sure that featureUpdateMessage is not null.
+            Guard.Against.Null(
+                featureMessage,
+                nameof(featureMessage),
+                "GeoDatabaseInstance, UpdateFeatureInGeodatabase: featureUpdateMessage is null."
+            );
+
+            logger.LogDebug(
+                GeoDatabaseLog,
+                "GeoDatabaseInstance {name}, UpdateFeatureInGeodatabase: Updating feature in geodatabase.",
+                Name
+            );
+
+            // Log the contents of the featureUpdateMessage.
+            foreach (var attribute in featureMessage.FeatureToUpdate.Attributes)
+            {
+                logger.LogDebug(
+                    GeoDatabaseLog,
+                    "GeoDatabaseInstance {name}, UpdateFeatureInGeodatabase: featureUpdateMessage.FeatureToUpdate.Attributes: attribute.Key: {attributeName}, attribute.Value: {attributeValue}.",
+                    Name,
+                    attribute.Key,
+                    attribute.Value
+                );
+            }
+
+            // Make sure that featureTable is not null.
+            Guard.Against.Null(
+                featureTable,
+                nameof(featureTable),
+                "GeoDatabaseInstance, UpdateFeatureInGeodatabase: featureTable is null."
+            );
+
+            await featureTable.UpdateFeatureAsync(featureMessage.FeatureToUpdate);
+
+            ListGeodatabaseContents(currentGeodatabase);
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(
+                GeoDatabaseLog,
+                exception,
+                "GeoDatabaseInstance {name}, UpdateFeatureInGeodatabase: Exception: {exception}.",
                 Name,
                 exception.Message
             );

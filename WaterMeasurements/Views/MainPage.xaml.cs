@@ -470,7 +470,7 @@ public partial class MainPage : Page
                 // Create a graphics overlay and add it to the map view.
                 graphicsOverlay = new GraphicsOverlay();
                 selectionOverlay = new GraphicsOverlay();
-                var secchiLocationPoints = new GraphicsOverlay();
+                // var secchiLocationPoints = new GraphicsOverlay();
                 MapView.GraphicsOverlays.Add(graphicsOverlay);
                 MapView.GraphicsOverlays.Add(selectionOverlay);
             }
@@ -935,8 +935,23 @@ public partial class MainPage : Page
                         longitude
                     );
 
+                    /*
                     graphicsOverlay.Graphics.Add(
                         new Graphic(secchiAddLocation.Location, collectionLocationSymbol)
+                    );
+                    */
+
+                    // Add the new location to the map with a tag of 'LocationId' and the value of secchiAddLocation.LocationNumber.
+                    // This is used to identify the location when it is selected.
+                    graphicsOverlay.Graphics.Add(
+                        new Graphic(
+                            secchiAddLocation.Location,
+                            new Dictionary<string, object?>
+                            {
+                                { "LocationId", secchiAddLocation.LocationNumber }
+                            },
+                            collectionLocationSymbol
+                        )
                     );
 
                     await MapView.SetViewpointCenterAsync(secchiAddLocation.Location, 2500);
@@ -987,9 +1002,24 @@ public partial class MainPage : Page
                     }
                     else
                     {
+                        /*
                         // Add the new location to the map.
                         graphicsOverlay.Graphics.Add(
                             new Graphic(secchiAddLocation.Location, collectionLocationSymbol)
+                        );
+                        */
+
+                        // Add the new location to the map with a tag of 'LocationId' and the value of secchiAddLocation.LocationNumber.
+                        // This is used to identify the location when it is selected.
+                        graphicsOverlay.Graphics.Add(
+                            new Graphic(
+                                secchiAddLocation.Location,
+                                new Dictionary<string, object?>
+                                {
+                                    { "LocationId", secchiAddLocation.LocationNumber }
+                                },
+                                collectionLocationSymbol
+                            )
                         );
                     }
 
@@ -1187,7 +1217,19 @@ public partial class MainPage : Page
                     MapView.GeometryEditor.Stop();
                     if (graphicsOverlay is not null)
                     {
-                        graphicsOverlay.Graphics.Add(new Graphic(geometry, newLocationSymbol));
+                        // graphicsOverlay.Graphics.Add(new Graphic(geometry, newLocationSymbol));
+                        // Add the new location to the map with a tag of 'LocationId' and the value of secchiAddLocation.LocationNumber.
+                        // This is used to identify the location when it is selected.
+                        graphicsOverlay.Graphics.Add(
+                            new Graphic(
+                                geometry,
+                                new Dictionary<string, object?>
+                                {
+                                    { "LocationId", secchiAddLocation.LocationNumber }
+                                },
+                                newLocationSymbol
+                            )
+                        );
                         latitude = geometry.As<MapPoint>().Y;
                         longitude = geometry.As<MapPoint>().X;
                         // Log to trace the latitude and lon values of the mapPoint.
@@ -1432,15 +1474,89 @@ public partial class MainPage : Page
         var button = sender as Button;
         try
         {
+            Guard.Against.Null(
+                secchiLocationFeatures,
+                nameof(secchiLocationFeatures),
+                "secchiLocationFeatures is null."
+            );
+
             Guard.Against.Null(button, nameof(button), "Button in Delete_Location_Click is null.");
 
-            var locationId = button.Tag;
+            var locationId = (int)button.Tag;
 
             // Log to trace the value of sender and eventArgs.
             Logger.Trace(
                 "MainPage.xaml.cs, Delete_Location_Click: LocationId: {locationId}",
                 locationId
             );
+
+            // SecchiView.DeleteLocation(locationId);
+
+            // Create a where clause to get the feature with the matching LocationId.
+            var whereClause = $"LocationId = {locationId}";
+
+            // Create a query parameter with the where clause.
+            var queryParameters = new QueryParameters() { WhereClause = whereClause };
+
+            // Query the feature table.
+            var queryResult = secchiLocationFeatures.QueryFeaturesAsync(queryParameters);
+            var result = queryResult.Result;
+
+            // Log to trace the result
+            // Logger.Trace("MainPage.xaml.cs, Delete_Location_Click: Query result: {result}", result);
+
+            // Get the first feature in the result.
+            var feature = result.FirstOrDefault();
+
+            // Log to trace the feature.
+            // Logger.Trace("MainPage.xaml.cs, Delete_Location_Click: Feature: {feature}", feature);
+
+            if (graphicsOverlay is null)
+            {
+                // Log to trace that the graphicsOverlay is null.
+                Logger.Error(
+                    "MainPage.xaml.cs, SaveSecchiLocation_Click: graphicsOverlay is null."
+                );
+            }
+            else
+            {
+                // Log to trace that graphicsOverlay is not null.
+                Logger.Trace(
+                    "MainPage.xaml.cs, Delete_Location_Click: graphicsOverlay is not null."
+                );
+
+                // Iterate over the graphicsOverlay and remove the graphic with the matching LocationId.
+                foreach (var graphic in graphicsOverlay.Graphics)
+                {
+                    // Log to trace the attributes of the graphic.
+                    Logger.Trace(
+                        "MainPage.xaml.cs, Delete_Location_Click: Graphic geometry: {graphic.Geometry}",
+                        graphic.Geometry
+                    );
+                }
+
+                foreach (var graphic in graphicsOverlay.Graphics)
+                {
+                    foreach (KeyValuePair<string, object?> attribute in graphic.Attributes)
+                    {
+                        Logger.Trace(
+                            "MainPage.xaml.cs, Delete_Location_Click: Key: {attribute.Key}, Value: {attribute.Value}",
+                            attribute.Key,
+                            attribute.Value
+                        );
+                    }
+                    /*
+                    if (graphic.Attributes["LocationId"] is int locationIdAttribute)
+                    {
+                        if (locationIdAttribute == locationId)
+                        {
+                            graphicsOverlay.Graphics.Remove(graphic);
+                            break;
+                        }
+                    }
+                    */
+                }
+            }
         }
         catch (Exception exception)
         {
