@@ -31,6 +31,7 @@ using WaterMeasurements.Services;
 using WaterMeasurements.Services.IncrementalLoaders;
 using WaterMeasurements.ViewModels;
 using Windows.ApplicationModel.Store;
+using Windows.UI.Popups;
 using WinRT;
 using static WaterMeasurements.Models.PrePlannedMapConfiguration;
 using Geometry = Esri.ArcGISRuntime.Geometry.Geometry;
@@ -507,6 +508,9 @@ public partial class MainPage : Page
                 Logger.Error("MainPage.xaml.cs, Initialize: MapView.GraphicsOverlays is null.");
             }
 
+            // Add a handler for the MapViewTapped event.
+            MapView.GeoViewTapped += OnMapViewTapped;
+
             // Create a geometry editor to allow the user to select a location on the map.
             geometryEditor = new GeometryEditor();
             MapView.GeometryEditor = geometryEditor;
@@ -650,6 +654,111 @@ public partial class MainPage : Page
     }
 
     #region Event handlers
+
+    private async void OnMapViewTapped(object? sender, GeoViewInputEventArgs eventArgs)
+    {
+        var tolerance = 22d; // Use larger tolerance for touch
+        var maximumResults = 1; // Only return one graphic
+        var onlyReturnPopups = false; // Don't return only popups
+
+        try
+        {
+            // If not already on SecchiAddLocation view, then move to it.
+            if (secchiPageSelection.SecchiSelectView != "SecchiAddLocation")
+            {
+                WeakReferenceMessenger.Default.Send<SetSecchiSelectViewMessage>(
+                    new SetSecchiSelectViewMessage("SecchiAddLocation")
+                );
+            }
+
+            if (graphicsOverlay is null)
+            {
+                // Log to trace that the graphicsOverlay is null.
+                Logger.Error("MainPage.xaml.cs, OnMapViewTapped: graphicsOverlay is null.");
+                return;
+            }
+            // Use the following method to identify graphics in a specific graphics overlay
+            var identifyResults = await MapView.IdentifyGraphicsOverlayAsync(
+                graphicsOverlay,
+                eventArgs.Position,
+                tolerance,
+                onlyReturnPopups,
+                maximumResults
+            );
+
+            // Check if we got results
+            if (identifyResults.Graphics.Count > 0)
+            {
+                if (identifyResults.Graphics[0].Attributes.TryGetValue("LocationId", out var value))
+                {
+                    if (value is null)
+                    {
+                        // Log to trace that the value is null.
+                        Logger.Error(
+                            "MainPage.xaml.cs, OnMapViewTapped: value is null, LocationId not present."
+                        );
+                        return;
+                    }
+                    // Get the LocationId from the graphic's attributes.
+                    var locationId = (int)value;
+
+                    // Find the location in the SecchiLocations list view.
+                    SecchiLocationsListView.SelectedItem =
+                        SecchiView.SecchiLocations.FirstOrDefault(location =>
+                            location.LocationId == locationId
+                        );
+                    // Scroll the list view to the selected item.
+                    SecchiLocationsListView.ScrollIntoView(SecchiLocationsListView.SelectedItem);
+
+                    // Get the map point from the graphic.
+                    var mapPoint = identifyResults.Graphics[0].Geometry as MapPoint;
+
+                    if (mapPoint is not null)
+                    {
+                        // Center the map on the selected location
+                        await MapView.SetViewpointCenterAsync(mapPoint);
+
+                        var graphicWithSymbol = new Graphic(mapPoint, highlightLocationSymbol);
+                        if (selectionOverlay != null)
+                        {
+                            // Log to trace that the selectionOverlay is being cleared.
+                            Logger.Trace(
+                                "MainPage.xaml.cs, SecchiLocationsListView_ItemClick: Clearing selectionOverlay."
+                            );
+                            selectionOverlay.Graphics.Clear();
+                            // Log to trace that the graphicWithSymbol is being added to the selectionOverlay.
+                            Logger.Trace(
+                                "MainPage.xaml.cs, SecchiLocationsListView_ItemClick: Adding graphicWithSymbol to selectionOverlay."
+                            );
+                            selectionOverlay.Graphics.Add(graphicWithSymbol);
+                        }
+                    }
+                    else
+                    {
+                        // Log to error that the mapPoint is null.
+                        Logger.Error(
+                            "MainPage.xaml.cs, OnMapViewTapped: mapPoint is null, LocationId not present."
+                        );
+                    }
+                }
+
+                // Log to trace that a graphic was tapped.
+                Logger.Trace(
+                    "MainPage.xaml.cs, OnMapViewTapped: Tapped on graphic, {identifyResults}",
+                    identifyResults.Graphics[0].Attributes["LocationId"]
+                );
+            }
+        }
+        catch (Exception exception)
+        {
+            // Log the exception message to error.
+            Logger.Error(
+                exception,
+                "MainPage.xaml.cs, OnMapViewTapped: An error occurred in OnMapViewTapped: {exception}",
+                exception.Message
+            );
+        }
+    }
 
     private void MapNavView_Loaded(object sender, RoutedEventArgs e)
     {
