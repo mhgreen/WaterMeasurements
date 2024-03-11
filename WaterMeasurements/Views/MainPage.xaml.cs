@@ -87,8 +87,11 @@ public partial class MainPage : Page
         public uint GeoTriggerChannel { get; set; }
     }
 
+    private SecchiChannelNumbers secchiChannelNumbers;
+
     private FeatureTable? secchiLocationFeatures;
-    private FeatureLayer? secchiLocationLayer;
+
+    // private FeatureLayer? secchiLocationLayer;
 
     private SecchiAddLocation secchiAddLocation;
 
@@ -210,7 +213,7 @@ public partial class MainPage : Page
             SecchiSelectView = "SecchiCollectionTable"
         };
 
-        SecchiChannelNumbers secchiChannelNumbers = new();
+        secchiChannelNumbers = new();
 
         InitializeComponent();
 
@@ -352,42 +355,6 @@ public partial class MainPage : Page
             );
         }
 
-        if (secchiChannelNumbers.LocationChannel is not 0)
-        {
-            // Register to get location featuretable messages on the secchiLocationsChannel.
-            WeakReferenceMessenger.Default.Register<FeatureTableMessage, uint>(
-                this,
-                secchiChannelNumbers.LocationChannel,
-                (recipient, message) =>
-                {
-                    Logger.Trace(
-                        "MainPage.xaml.cs, FeatureTableMessage, secchiLocationsChannel: {secchiLocationsChannel}, FeatureTable: {featureTable}.",
-                        secchiChannelNumbers.LocationChannel,
-                        message.Value.TableName
-                    );
-                    if (MapView.Map is not null)
-                    {
-                        secchiLocationFeatures = message.Value;
-                        secchiLocationLayer = new FeatureLayer(secchiLocationFeatures);
-                        MapView.Map.OperationalLayers.Add(secchiLocationLayer);
-                        secchiLocationLayer.Renderer = new SimpleRenderer(collectionLocationSymbol);
-                    }
-                    else
-                    {
-                        // Log to trace that the MapView.Map is null.
-                        Logger.Error(
-                            "MainPage.xaml.cs, MainPage FeatureTableMessage handler: MapView.Map is null."
-                        );
-                    }
-                }
-            );
-        }
-        else
-        {
-            // Log to trace that the secchiLocationsChannel is not set.
-            Logger.Error("MainPage.xaml.cs, MainPage: secchiLocationsChannel is not set.");
-        }
-
         // Register to get MapPageUnloadedMessage messages.
         WeakReferenceMessenger.Default.Register<MapPageUnloaded>(
             this,
@@ -429,7 +396,7 @@ public partial class MainPage : Page
 
             if (string.IsNullOrEmpty(apiKey))
             {
-                Logger.Debug("MainPage.xaml.cs, Initialize: ApiKey key is null or empty.");
+                Logger.Error("MainPage.xaml.cs, Initialize: ApiKey key is null or empty.");
             }
             else
             {
@@ -441,7 +408,7 @@ public partial class MainPage : Page
 
             if (string.IsNullOrEmpty(webMapId))
             {
-                Logger.Debug("MainPage.xaml.cs, Initialize: WebMapId key is null or empty.");
+                Logger.Error("MainPage.xaml.cs, Initialize: WebMapId key is null or empty.");
             }
             else
             {
@@ -453,7 +420,7 @@ public partial class MainPage : Page
 
             if (string.IsNullOrEmpty(preplannedMapName))
             {
-                Logger.Debug(
+                Logger.Error(
                     "MainPage.xaml.cs, Initialize: Preplanned map name key is null or empty."
                 );
             }
@@ -473,6 +440,66 @@ public partial class MainPage : Page
                 // var secchiLocationPoints = new GraphicsOverlay();
                 MapView.GraphicsOverlays.Add(graphicsOverlay);
                 MapView.GraphicsOverlays.Add(selectionOverlay);
+
+                // Load the Secchi locations onto the map in response to the FeatureTableMessage.
+                if (secchiChannelNumbers.LocationChannel is not 0)
+                {
+                    // Register to get location featuretable messages on the secchiLocationsChannel.
+                    WeakReferenceMessenger.Default.Register<FeatureTableMessage, uint>(
+                        this,
+                        secchiChannelNumbers.LocationChannel,
+                        (recipient, message) =>
+                        {
+                            Logger.Trace(
+                                "MainPage.xaml.cs, FeatureTableMessage, secchiLocationsChannel: {secchiLocationsChannel}, FeatureTable: {featureTable}.",
+                                secchiChannelNumbers.LocationChannel,
+                                message.Value.TableName
+                            );
+                            if (MapView.Map is not null)
+                            {
+                                secchiLocationFeatures = message.Value;
+
+                                // create a where clause to get all the features
+                                var queryParameters = new QueryParameters() { WhereClause = "1=1" };
+
+                                // query the feature table
+                                var queryResult = secchiLocationFeatures
+                                    .QueryFeaturesAsync(queryParameters)
+                                    .Result;
+
+                                foreach (var feature in queryResult)
+                                {
+                                    // Create a new graphic using the feature's geometry and the collection location symbol
+                                    var graphic = new Graphic(
+                                        feature.Geometry,
+                                        collectionLocationSymbol
+                                    );
+
+                                    // Add the LocationId from the feature's attributes to the graphic's attributes
+                                    graphic.Attributes.Add(
+                                        "LocationId",
+                                        feature.Attributes["LocationId"]
+                                    );
+
+                                    // Add the graphic to the graphics overlay
+                                    graphicsOverlay.Graphics.Add(graphic);
+                                }
+                            }
+                            else
+                            {
+                                // Log to trace that the MapView.Map is null.
+                                Logger.Error(
+                                    "MainPage.xaml.cs, MainPage FeatureTableMessage handler: MapView.Map is null, locations will not be displayed."
+                                );
+                            }
+                        }
+                    );
+                }
+                else
+                {
+                    // Log to trace that the secchiLocationsChannel is not set.
+                    Logger.Error("MainPage.xaml.cs, MainPage: secchiLocationsChannel is not set.");
+                }
             }
             else
             {
@@ -497,27 +524,6 @@ public partial class MainPage : Page
 
             SecchiNewLocationView.LocationTypeSet = false;
             SecchiNewLocationView.LocationSourceSet = false;
-
-            /*
-            // Configure SecchiLocationsListView to use the SecchiLocationsIncrementalLoading collection.
-            var secchiLocationsIncrementalLoading = new IncrementalLoadingCollection<
-                SecchiLocationIncrementalLoader,
-                SecchiLocationDisplay
-            >(itemsPerPage: 5);
-            SecchiLocationsListView.ItemsSource = secchiLocationsIncrementalLoading;
-            SecchiLocationsListView.IsItemClickEnabled = true;
-            SecchiLocationsListView.ItemClick += (source, eventArgs) =>
-            {
-                var item = eventArgs.ClickedItem as SecchiLocationDisplay;
-                if (item is not null)
-                {
-                    Logger.Debug(
-                        "MainPage.xaml.cs, Initialize: SecchiLocationsListView.ItemClick, ClickedItem: {item}",
-                        item.LocationName
-                    );
-                }
-            };
-            */
 
             // Register for PreplannedMapConfigurationStatusMessage messages.
             // Log the result of the message.
@@ -824,6 +830,8 @@ public partial class MainPage : Page
         double latitude;
         double longitude;
 
+        Graphic graphic = new();
+
         try
         {
             if (MapView.LocationDisplay.Location is null)
@@ -935,24 +943,14 @@ public partial class MainPage : Page
                         longitude
                     );
 
-                    /*
-                    graphicsOverlay.Graphics.Add(
-                        new Graphic(secchiAddLocation.Location, collectionLocationSymbol)
-                    );
-                    */
+                    // Create a new graphic using the feature's geometry and the collection location symbol
+                    graphic = new Graphic(secchiAddLocation.Location, collectionLocationSymbol);
 
-                    // Add the new location to the map with a tag of 'LocationId' and the value of secchiAddLocation.LocationNumber.
-                    // This is used to identify the location when it is selected.
-                    graphicsOverlay.Graphics.Add(
-                        new Graphic(
-                            secchiAddLocation.Location,
-                            new Dictionary<string, object?>
-                            {
-                                { "LocationId", secchiAddLocation.LocationNumber }
-                            },
-                            collectionLocationSymbol
-                        )
-                    );
+                    // Add the LocationId from the feature's attributes to the graphic's attributes
+                    graphic.Attributes.Add("LocationId", secchiAddLocation.LocationNumber);
+
+                    // Add the graphic to the graphics overlay
+                    graphicsOverlay.Graphics.Add(graphic);
 
                     await MapView.SetViewpointCenterAsync(secchiAddLocation.Location, 2500);
 
@@ -1002,25 +1000,14 @@ public partial class MainPage : Page
                     }
                     else
                     {
-                        /*
-                        // Add the new location to the map.
-                        graphicsOverlay.Graphics.Add(
-                            new Graphic(secchiAddLocation.Location, collectionLocationSymbol)
-                        );
-                        */
+                        // Create a new graphic using the feature's geometry and the collection location symbol
+                        graphic = new Graphic(secchiAddLocation.Location, collectionLocationSymbol);
 
-                        // Add the new location to the map with a tag of 'LocationId' and the value of secchiAddLocation.LocationNumber.
-                        // This is used to identify the location when it is selected.
-                        graphicsOverlay.Graphics.Add(
-                            new Graphic(
-                                secchiAddLocation.Location,
-                                new Dictionary<string, object?>
-                                {
-                                    { "LocationId", secchiAddLocation.LocationNumber }
-                                },
-                                collectionLocationSymbol
-                            )
-                        );
+                        // Add the LocationId from the feature's attributes to the graphic's attributes
+                        graphic.Attributes.Add("LocationId", secchiAddLocation.LocationNumber);
+
+                        // Add the graphic to the graphics overlay
+                        graphicsOverlay.Graphics.Add(graphic);
                     }
 
                     await MapView.SetViewpointCenterAsync(secchiAddLocation.Location, 2500);
@@ -1050,10 +1037,18 @@ public partial class MainPage : Page
                         {
                             // Set the new location to the secchiAddLocation.Location.
                             secchiAddLocation.Location = newLocation.As<MapPoint>();
-                            // Add the new location to the map.
-                            graphicsOverlay.Graphics.Add(
-                                new Graphic(newLocation, collectionLocationSymbol)
+
+                            // Create a new graphic using the feature's geometry and the collection location symbol
+                            graphic = new Graphic(
+                                secchiAddLocation.Location,
+                                collectionLocationSymbol
                             );
+
+                            // Add the LocationId from the feature's attributes to the graphic's attributes
+                            graphic.Attributes.Add("LocationId", secchiAddLocation.LocationNumber);
+
+                            // Add the graphic to the graphics overlay
+                            graphicsOverlay.Graphics.Add(graphic);
 
                             // log the latitute and longitude of the new location.
                             latitude = newLocation
@@ -1490,26 +1485,15 @@ public partial class MainPage : Page
                 locationId
             );
 
-            // SecchiView.DeleteLocation(locationId);
+            if (selectionOverlay is not null)
+            {
+                // Log to trace that the selectionOverlay is being cleared.
+                Logger.Trace("MainPage.xaml.cs, Delete_Location_Click: Clearing selectionOverlay.");
+                selectionOverlay.Graphics.Clear();
+            }
 
-            // Create a where clause to get the feature with the matching LocationId.
-            var whereClause = $"LocationId = {locationId}";
-
-            // Create a query parameter with the where clause.
-            var queryParameters = new QueryParameters() { WhereClause = whereClause };
-
-            // Query the feature table.
-            var queryResult = secchiLocationFeatures.QueryFeaturesAsync(queryParameters);
-            var result = queryResult.Result;
-
-            // Log to trace the result
-            // Logger.Trace("MainPage.xaml.cs, Delete_Location_Click: Query result: {result}", result);
-
-            // Get the first feature in the result.
-            var feature = result.FirstOrDefault();
-
-            // Log to trace the feature.
-            // Logger.Trace("MainPage.xaml.cs, Delete_Location_Click: Feature: {feature}", feature);
+            // Delete the location.
+            SecchiView.DeleteLocation(locationId);
 
             if (graphicsOverlay is null)
             {
@@ -1517,6 +1501,7 @@ public partial class MainPage : Page
                 Logger.Error(
                     "MainPage.xaml.cs, SaveSecchiLocation_Click: graphicsOverlay is null."
                 );
+                return;
             }
             else
             {
@@ -1525,27 +1510,26 @@ public partial class MainPage : Page
                     "MainPage.xaml.cs, Delete_Location_Click: graphicsOverlay is not null."
                 );
 
-                // Iterate over the graphicsOverlay and remove the graphic with the matching LocationId.
-                foreach (var graphic in graphicsOverlay.Graphics)
-                {
-                    // Log to trace the attributes of the graphic.
-                    Logger.Trace(
-                        "MainPage.xaml.cs, Delete_Location_Click: Graphic geometry: {graphic.Geometry}",
-                        graphic.Geometry
-                    );
-                }
+                var graphicCollection = graphicsOverlay.Graphics;
+
+                // Log to trace the graphicCollection.
+                Logger.Trace(
+                    "MainPage.xaml.cs, Delete_Location_Click: Graphic Collection: {graphicCollection}",
+                    graphicCollection
+                );
 
                 foreach (var graphic in graphicsOverlay.Graphics)
                 {
-                    foreach (KeyValuePair<string, object?> attribute in graphic.Attributes)
+                    foreach (var attribute in graphic.Attributes)
                     {
                         Logger.Trace(
-                            "MainPage.xaml.cs, Delete_Location_Click: Key: {attribute.Key}, Value: {attribute.Value}",
+                            "MainPage.xaml.cs, Delete_Location_Click: Geometry: {graphic.Geometry}, Key: {attribute.Key}, Value: {attribute.Value}",
+                            graphic.Geometry,
                             attribute.Key,
                             attribute.Value
                         );
                     }
-                    /*
+
                     if (graphic.Attributes["LocationId"] is int locationIdAttribute)
                     {
                         if (locationIdAttribute == locationId)
@@ -1554,7 +1538,6 @@ public partial class MainPage : Page
                             break;
                         }
                     }
-                    */
                 }
             }
         }

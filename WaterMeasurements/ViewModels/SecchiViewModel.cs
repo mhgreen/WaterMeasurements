@@ -1279,9 +1279,6 @@ public partial class SecchiViewModel : ObservableRecipient
                 }
             }
 
-            // Delete the feature from the feature table.
-            currentLocationsTable.DeleteFeatureAsync(queryResult.First());
-
             // Send the feature via a DeleteFeatureMessage to the GeoDatabaseService.
             WeakReferenceMessenger.Default.Send<DeleteFeatureMessage, uint>(
                 new DeleteFeatureMessage(
