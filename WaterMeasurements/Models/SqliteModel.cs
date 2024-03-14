@@ -5,7 +5,8 @@ namespace WaterMeasurements.Models;
 public enum DbType
 {
     SecchiObservations,
-    SecchiLocations
+    SecchiLocations,
+    SecchiLocationDetail
 }
 
 public enum RecordStatus
@@ -27,8 +28,41 @@ public enum LocationType
     Occasional
 }
 
+public enum LocationCollected
+{
+    NotCollected,
+    Collected
+}
+
+public enum CollectionDirection
+{
+    Both,
+    OneWay
+}
+
+public enum CollectOccasional
+{
+    DontCollect,
+    Collect
+}
+
 // Record to create a table from a feature table.
 public readonly record struct FeatureToTable(FeatureTable FeatureTable, DbType DbType);
+
+// Record to add a location record to a table.
+public readonly record struct AddLocationRecordToTable(Location Location, DbType DbType);
+
+// Record to delete a location record from a table.
+public readonly record struct DeleteLocationRecordFromTable(int LocationId, DbType DbType);
+
+// Record to update a location record in a table.
+public readonly record struct UpdateLocationRecordInTable(Location Location, DbType DbType);
+
+// Record to update location detail.
+public readonly record struct LocationDetail(
+    CollectionDirection CollectionDirection,
+    CollectOccasional CollectOccasional
+);
 
 // Record to request a group of records from Sqlite.
 public readonly record struct SqliteRecordsGroupRequest(
@@ -47,6 +81,15 @@ public readonly record struct SecchiObservation(
     DateTime DateCollected,
     double Latitude,
     double Longitude
+);
+
+// Record for location.
+public readonly record struct Location(
+    double Latitude,
+    double Longitude,
+    int LocationId,
+    string LocationName,
+    LocationType LocationType
 );
 
 // Record for Secchi location.
@@ -109,7 +152,8 @@ public static class SqliteConfiguration
         SqliteFolder,
         SqliteSetToInitialRun,
         SecchiObservationsLoaded,
-        SecchiLocationsLoaded
+        SecchiLocationsLoaded,
+        SecchiLocationDetailLoaded
     }
 
     public static Dictionary<Key, string> Item { get; private set; } =
@@ -119,6 +163,7 @@ public static class SqliteConfiguration
             { Key.SqliteFolder, "SqliteFolder" },
             { Key.SqliteSetToInitialRun, "SqliteSetToInitialRun" },
             { Key.SecchiObservationsLoaded, "SecchiObservationsSqliteLoaded" },
-            { Key.SecchiLocationsLoaded, "SecchiLocationsSqliteLoaded" }
+            { Key.SecchiLocationsLoaded, "SecchiLocationsSqliteLoaded" },
+            { Key.SecchiLocationDetailLoaded, "SecchiLocationDetailSqliteLoaded" }
         };
 }

@@ -24,20 +24,42 @@ public class FeatureToTableMessage(FeatureToTable featureToTable)
 public class FeatureToTableResultMessage(FeatureToTableResult featureToTableResult)
     : ValueChangedMessage<FeatureToTableResult>(featureToTableResult) { }
 
-// Message to nofify modules that a table is available.
+// Message to notify modules that a table is available.
 public class TableAvailableMessage(DbType dbType) : ValueChangedMessage<DbType>(dbType) { }
 
-// Message to add a SecchiObservation to the Sqlite database.
-public class AddSecchiObservationMessage(SecchiObservation secchiObservation)
-    : ValueChangedMessage<SecchiObservation>(secchiObservation) { }
+// Message to add a location record to a table.
+public class AddLocationRecordToTableMessage(AddLocationRecordToTable addLocationRecordToTable)
+    : ValueChangedMessage<AddLocationRecordToTable>(addLocationRecordToTable) { }
 
-// Message to add a SecchiLocation to the Sqlite database.
-public class AddSecchiLocationMessage(SecchiLocation secchiLocation)
-    : ValueChangedMessage<SecchiLocation>(secchiLocation) { }
+// Message to notify modules that a location record has been added to a table.
+public class LocationRecordAddedToTableMessage(DbType dbType)
+    : ValueChangedMessage<DbType>(dbType) { }
+
+// Message to delete a location record from a table.
+public class DeleteLocationRecordFromTableMessage(
+    DeleteLocationRecordFromTable deleteLocationRecordFromTable
+) : ValueChangedMessage<DeleteLocationRecordFromTable>(deleteLocationRecordFromTable) { }
+
+// Message to notify modules that a location record has been deleted from a table.
+public class LocationRecordDeletedFromTableMessage(DbType dbType)
+    : ValueChangedMessage<DbType>(dbType) { }
+
+// Message to update a location record in a table.
+public class UpdateLocationRecordInTableMessage(
+    UpdateLocationRecordInTable updateLocationRecordInTable
+) : ValueChangedMessage<UpdateLocationRecordInTable>(updateLocationRecordInTable) { }
+
+// Message to notify modules that a location record has been updated in a table.
+public class LocationRecordUpdatedInTableMessage(DbType dbType)
+    : ValueChangedMessage<DbType>(dbType) { }
 
 // Message to request a group of records from the Sqlite database.
 public class GetSqliteRecordsGroupRequest(SqliteRecordsGroupRequest sqliteRecordsGroupRequest)
     : ValueChangedMessage<SqliteRecordsGroupRequest>(sqliteRecordsGroupRequest) { }
+
+// Message to add a SecchiObservation to the Sqlite database.
+public class AddSecchiObservationMessage(SecchiObservation secchiObservation)
+    : ValueChangedMessage<SecchiObservation>(secchiObservation) { }
 
 // Message to provide modules with a SecchiLocation from the Sqlite database.
 public class SecchiLocationsSqliteRecordGroup(SecchiLocation secchiLocation)
@@ -130,20 +152,60 @@ public partial class SqliteService : ISqliteService
                 }
             );
 
-            // Register a message handler for AddSecchiLocationMessage.
-            WeakReferenceMessenger.Default.Register<AddSecchiLocationMessage>(
+            // Register a message handler for AddLocationRecordToTableMessage.
+            WeakReferenceMessenger.Default.Register<AddLocationRecordToTableMessage>(
                 this,
-                (recipient, message) =>
+                async (recipient, message) =>
                 {
-                    // Log the AddSecchiLocationMessage.
+                    // Log the AddLocationRecordToTableMessage.
                     logger.LogDebug(
                         SqliteLog,
-                        "SqliteService, AddSecchiLocationMessage: {message}.",
+                        "SqliteService, AddLocationRecordToTableMessage: {message}.",
                         message
                     );
 
-                    // Call AddSecchiLocation with the extracted secchiLocation.
-                    AddSecchiLocation(message.Value);
+                    // Call AddLocationRecordToTable with the extracted location and dbType.
+                    await AddLocationRecordToTable(message.Value.Location, message.Value.DbType);
+                }
+            );
+
+            // Register a message handler for DeleteLocationRecordFromTableMessage.
+            WeakReferenceMessenger.Default.Register<DeleteLocationRecordFromTableMessage>(
+                this,
+                async (recipient, message) =>
+                {
+                    // Log the DeleteLocationRecordFromTableMessage.
+                    logger.LogDebug(
+                        SqliteLog,
+                        "SqliteService, DeleteLocationRecordFromTableMessage: {message}.",
+                        message
+                    );
+
+                    // Call DeleteLocationRecordFromTable with the extracted locationId and dbType.
+                    await DeleteLocationRecordFromTable(
+                        message.Value.LocationId,
+                        message.Value.DbType
+                    );
+                }
+            );
+
+            // Register a message handler for UpdateLocationRecordInTableMessage.
+            WeakReferenceMessenger.Default.Register<UpdateLocationRecordInTableMessage>(
+                this,
+                async (recipient, message) =>
+                {
+                    // Log the UpdateLocationRecordInTableMessage.
+                    logger.LogDebug(
+                        SqliteLog,
+                        "SqliteService, UpdateLocationRecordInTableMessage: {message}.",
+                        message
+                    );
+
+                    // Call UpdateLocationRecordInTable with the extracted location and dbType.
+                    await UpdadateLocationRecordInTable(
+                        message.Value.Location,
+                        message.Value.DbType
+                    );
                 }
             );
 
@@ -260,6 +322,7 @@ public partial class SqliteService : ISqliteService
                     previouslyLoaded = await localSettingsService.ReadSettingAsync<bool>(
                         SqliteConfiguration.Item[Key.SecchiLocationsLoaded]
                     );
+
                     if (previouslyLoaded)
                     {
                         // Log to trace that the SecchiLocations table has already been loaded.
@@ -301,9 +364,12 @@ public partial class SqliteService : ISqliteService
             else if (dbType == DbType.SecchiLocations)
             {
                 // Add a sequential primary key to the featureTableFieldsDictionary.
-                featureTableFieldsDictionary["LocationId"] += " PRIMARY KEY AUTOINCREMENT";
+                featureTableFieldsDictionary["LocationId"] += " PRIMARY KEY";
+                // featureTableFieldsDictionary["LocationId"] += " PRIMARY KEY AUTOINCREMENT";
                 // Add a field to track the status of the observation (values are in enum RecordStatus).
                 featureTableFieldsDictionary["Status"] = "INTEGER NOT NULL";
+                // Add a field to track whether the location has been collected (values are in enum LocationCollected).
+                featureTableFieldsDictionary["LocationCollected"] = "INTEGER NOT NULL";
             }
             // Log the feature table fields dictionary to trace.
             logger.LogTrace(
@@ -361,7 +427,7 @@ public partial class SqliteService : ISqliteService
                 );
 
                 // Set the previouslyLoaded setting to true.
-                await SetPreviouslyLoadedState(dbType);
+                await SetPreviouslyLoadedState(dbType, true);
 
                 // Send a message that the table is available.
                 SendTableAvailableMessage(dbType);
@@ -420,6 +486,9 @@ public partial class SqliteService : ISqliteService
                 // Indicate that the feature is from the geodatabase and has been committed.
                 fieldValues["Status"] = (int)RecordStatus.Comitted;
 
+                // Initialize the feature to a state of NotCollected.
+                fieldValues["LocationCollected"] = (int)LocationCollected.NotCollected;
+
                 // Create the sqlite insert statement.
                 var insertStatement =
                     $"INSERT INTO {featureTableName} ({string.Join(", ", fieldValues.Keys)}) VALUES ({string.Join(", ", fieldValues.Values)});";
@@ -451,7 +520,7 @@ public partial class SqliteService : ISqliteService
             SendTableAvailableMessage(dbType);
 
             // Set the previouslyLoaded setting to true.
-            await SetPreviouslyLoadedState(dbType);
+            await SetPreviouslyLoadedState(dbType, true);
 
             if (sumOfInsertedRecords == features.Count())
             {
@@ -524,69 +593,195 @@ public partial class SqliteService : ISqliteService
         }
     }
 
-    private void AddSecchiLocation(SecchiLocation secchiLocation)
+    public async Task AddLocationRecordToTable(Location Location, DbType DbType)
     {
         try
         {
-            logger.LogTrace(SqliteLog, "AddSecchiLocation called.");
+            logger.LogTrace(SqliteLog, "AddLocationRecordToTable called.");
 
-            // Log the SecchiLocation to trace.
-            logger.LogTrace(SqliteLog, "SecchiLocation: {secchiLocation}", secchiLocation);
+            // Log the Location to trace.
+            logger.LogTrace(SqliteLog, "Location: {Location}", Location);
 
             // Create the sqlite insert statement.
-            var insertStatement =
-                $"INSERT INTO SecchiLocations (Latitude, Longitude, LocationId, Location, LocationType) VALUES ({secchiLocation.Latitude}, {secchiLocation.Longitude}, {secchiLocation.LocationId}, \"{secchiLocation.Location}\", {(int)secchiLocation.LocationType});";
-            logger.LogTrace(
-                SqliteLog,
-                "Sqlite insert statement: {insertStatement}",
-                insertStatement
-            );
             var builder = SimpleBuilder.Create(
-                $"""
-                    INSERT INTO SecchiLocations (Latitude, Longitude, LocationId, Location, LocationType)
-                    VALUES ({secchiLocation.Latitude}, {secchiLocation.Longitude}, {secchiLocation.LocationId}, \"{secchiLocation.Location}\", {(int)
-                    secchiLocation.LocationType})
-                """
-            );
-
-            // Log builder.sql to trace.
-            logger.LogTrace(SqliteLog, "Sqlite insert statement: {builder.Sql}", builder.Sql);
-
-            builder = SimpleBuilder.Create(
                 $@"
-                    INSERT INTO SecchiLocations (Latitude, Longitude, LocationId, Location, LocationType)
-                    VALUES ({secchiLocation.Latitude}, {secchiLocation.Longitude}, {secchiLocation.LocationId}, \""{secchiLocation.Location}\"", {(int)secchiLocation.LocationType})
+                    INSERT INTO {DbType} (Latitude, Longitude, LocationId, LocationName, LocationType, Status, LocationCollected)
+                    VALUES ({Location.Latitude}, {Location.Longitude}, {Location.LocationId}, \""{Location.LocationName}\"", {(int)Location.LocationType}, {(int)RecordStatus.WorkingSet}, {(int)LocationCollected.NotCollected})
                 "
             );
 
             // Log builder.sql to trace.
             logger.LogTrace(SqliteLog, "Sqlite insert statement: {builder.Sql}", builder.Sql);
 
-            /*
             // Open the connection to the sqlite database.
             using var database = await GetOpenConnectionAsync();
 
             // Execute the insert statement.
             using var insertCommand = database.CreateCommand();
-            insertCommand.CommandText = insertStatement;
+            insertCommand.CommandText = builder.Sql;
             var insertedRecords = insertCommand.ExecuteNonQuery();
 
             // Log the number of inserted records to trace.
             logger.LogTrace(
                 SqliteLog,
-                "Inserted {insertedRecords} records into SecchiLocations table.",
-                insertedRecords
+                "Inserted {insertedRecords} records into {DbType} table.",
+                insertedRecords,
+                DbType
             );
 
-            // Send a message that the table is available.
-            SendTableAvailableMessage(DbType.SecchiLocations);
-            */
+            // Send a message that the location record has been added to the table.
+            WeakReferenceMessenger.Default.Send(new LocationRecordAddedToTableMessage(DbType));
         }
         catch (Exception exception)
         {
             logger.LogError(
                 SqliteLog,
-                "Error adding SecchiLocation: {exception}.",
+                "Error adding location record to table: {exception}.",
+                exception.ToString()
+            );
+        }
+    }
+
+    public async Task DeleteLocationRecordFromTable(int locationId, DbType DbType)
+    {
+        try
+        {
+            logger.LogTrace(SqliteLog, "DeleteLocationRecordFromTable called.");
+            // Log the locationId to trace.
+            logger.LogTrace(SqliteLog, "LocationId: {locationId}", locationId);
+
+            // Create the sqlite delete statement.
+            var builder = SimpleBuilder.Create(
+                $@"DELETE FROM {DbType} WHERE LocationId = {locationId}"
+            );
+            // Log builder.sql to trace.
+            logger.LogTrace(SqliteLog, "Sqlite delete statement: {builder.Sql}", builder.Sql);
+
+            // Open the connection to the sqlite database.
+            using var database = await GetOpenConnectionAsync();
+
+            // Execute the delete statement.
+            using var deleteCommand = database.CreateCommand();
+            deleteCommand.CommandText = builder.Sql;
+            var deletedRecords = deleteCommand.ExecuteNonQuery();
+
+            // Log the number of deleted records to trace.
+            logger.LogTrace(
+                SqliteLog,
+                "Deleted {deletedRecords} records from {DbType} table.",
+                deletedRecords,
+                DbType
+            );
+
+            // Send a message that the location record has been deleted from the table.
+            WeakReferenceMessenger.Default.Send(new LocationRecordDeletedFromTableMessage(DbType));
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(
+                SqliteLog,
+                "Error deleting location record from table: {exception}.",
+                exception.ToString()
+            );
+        }
+    }
+
+    public async Task UpdadateLocationRecordInTable(Location Location, DbType DbType)
+    {
+        try
+        {
+            logger.LogTrace(SqliteLog, "UpdateLocationRecordInTable called.");
+            // Log the Location to trace.
+            logger.LogTrace(SqliteLog, "Location: {Location}", Location);
+
+            // Create the sqlite update statement.
+            var builder = SimpleBuilder.Create(
+                $@"UPDATE {DbType} SET Latitude = {Location.Latitude}, Longitude = {Location.Longitude}, LocationId = {Location.LocationId}, LocationName = \""{Location.LocationName}\"", LocationType = {(int)Location.LocationType}, Status = {(int)RecordStatus.WorkingSet}, LocationCollected = {(int)LocationCollected.NotCollected} WHERE LocationId = {Location.LocationId}"
+            );
+
+            // Log builder.sql to trace.
+            logger.LogTrace(SqliteLog, "Sqlite update statement: {builder.Sql}", builder.Sql);
+
+            // Open the connection to the sqlite database.
+            using var database = await GetOpenConnectionAsync();
+
+            // Execute the update statement.
+            using var updateCommand = database.CreateCommand();
+            updateCommand.CommandText = builder.Sql;
+            var updatedRecords = updateCommand.ExecuteNonQuery();
+
+            // Log the number of updated records to trace.
+            logger.LogTrace(
+                SqliteLog,
+                "Updated {updatedRecords} records in {DbType} table.",
+                updatedRecords,
+                DbType
+            );
+
+            // Send a message that the location record has been updated in the table.
+            WeakReferenceMessenger.Default.Send(new LocationRecordUpdatedInTableMessage(DbType));
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(
+                SqliteLog,
+                "Error updating location record in table: {exception}.",
+                exception.ToString()
+            );
+        }
+    }
+
+    private async Task CreateLocationDetailTable(DbType dbType)
+    {
+        Builder builder;
+
+        try
+        {
+            logger.LogTrace(SqliteLog, "CreateLocationDetailTable called.");
+
+            switch (dbType)
+            {
+                case DbType.SecchiLocationDetail:
+                    // Log to trace that the dbType is SecchiLocationDetail.
+                    logger.LogTrace(SqliteLog, "dbType is SecchiLocationDetail.");
+                    // Create the sqlite insert statement.
+                    builder = SimpleBuilder.Create(
+                        $@"
+                            CREATE TABLE IF NOT EXISTS {dbType} (
+                            LocationId INTEGER PRIMARY KEY,
+                            CollectionDirection INTEGER NOT NULL,
+                            CollectOccasional INTEGER NOT NULL,
+                            CONSTRAINT fk_locations FOREIGN KEY(LocationId) REFERENCES SecchiLocations(LocationId)
+                            );
+                        "
+                    );
+                    break;
+                default:
+                    // Log a warning that the dbType is not implemented.
+                    logger.LogWarning(SqliteLog, "dbType {dbType} is not implemented.", dbType);
+                    return;
+            }
+
+            // Open the connection to the sqlite database.
+            using var database = await GetOpenConnectionAsync();
+
+            // Create the Sqlite table using the featureTableCreateStatement.
+            using var createTableCommand = database.CreateCommand();
+            createTableCommand.CommandText = builder.Sql;
+            var createReturnCode = createTableCommand.ExecuteNonQuery();
+
+            logger.LogTrace(
+                SqliteLog,
+                "Sqlite table created from {featureTableName}. Return code: {returnCode}",
+                dbType,
+                createReturnCode
+            );
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(
+                SqliteLog,
+                "Error creating location detail table: {exception}.",
                 exception.ToString()
             );
         }
@@ -682,6 +877,12 @@ public partial class SqliteService : ISqliteService
             // Set SecchiLocationsLoaded to false.
             await localSettingsService.SaveSettingAsync(
                 SqliteConfiguration.Item[Key.SecchiLocationsLoaded],
+                false
+            );
+
+            // Set SecchiLocationDetailsLoaded to false.
+            await localSettingsService.SaveSettingAsync(
+                SqliteConfiguration.Item[Key.SecchiLocationDetailLoaded],
                 false
             );
 
@@ -862,7 +1063,7 @@ public partial class SqliteService : ISqliteService
         }
     }
 
-    private async Task SetPreviouslyLoadedState(DbType dbType)
+    private async Task SetPreviouslyLoadedState(DbType dbType, bool state)
     {
         Guard.Against.Null(
             localSettingsService,
@@ -877,10 +1078,11 @@ public partial class SqliteService : ISqliteService
                 {
                     DbType.SecchiObservations => Key.SecchiObservationsLoaded,
                     DbType.SecchiLocations => Key.SecchiLocationsLoaded,
+                    DbType.SecchiLocationDetail => Key.SecchiLocationDetailLoaded,
                     _ => throw new NotImplementedException()
                 }
             ],
-            true
+            state
         );
         // Log that the previouslyLoaded state has been set to true.
         logger.LogTrace(

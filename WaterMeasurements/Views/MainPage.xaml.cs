@@ -657,7 +657,7 @@ public partial class MainPage : Page
 
     private async void OnMapViewTapped(object? sender, GeoViewInputEventArgs eventArgs)
     {
-        var tolerance = 22d; // Use larger tolerance for touch
+        var tolerance = 20d; // Use larger tolerance for touch
         var maximumResults = 1; // Only return one graphic
         var onlyReturnPopups = false; // Don't return only popups
 
