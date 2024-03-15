@@ -60,8 +60,8 @@ public readonly record struct UpdateLocationRecordInTable(Location Location, DbT
 
 // Record to update location detail.
 public readonly record struct LocationDetail(
-    CollectionDirection CollectionDirection,
-    CollectOccasional CollectOccasional
+    CollectionDirection? CollectionDirection,
+    CollectOccasional? CollectOccasional
 );
 
 // Record to request a group of records from Sqlite.

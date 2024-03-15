@@ -606,7 +606,13 @@ public partial class SqliteService : ISqliteService
             var builder = SimpleBuilder.Create(
                 $@"
                     INSERT INTO {DbType} (Latitude, Longitude, LocationId, LocationName, LocationType, Status, LocationCollected)
-                    VALUES ({Location.Latitude}, {Location.Longitude}, {Location.LocationId}, \""{Location.LocationName}\"", {(int)Location.LocationType}, {(int)RecordStatus.WorkingSet}, {(int)LocationCollected.NotCollected})
+                    VALUES ({Location.Latitude},
+                    {Location.Longitude},
+                    {Location.LocationId},
+                    \""{Location.LocationName}\"",
+                    {(int)Location.LocationType},
+                    {(int)RecordStatus.WorkingSet},
+                    {(int)LocationCollected.NotCollected})
                 "
             );
 
@@ -731,7 +737,7 @@ public partial class SqliteService : ISqliteService
         }
     }
 
-    private async Task CreateLocationDetailTable(DbType dbType)
+    public async Task CreateLocationDetailTable(DbType dbType)
     {
         Builder builder;
 
@@ -777,11 +783,353 @@ public partial class SqliteService : ISqliteService
                 createReturnCode
             );
         }
+        catch (SqliteException sqliteException)
+        {
+            logger.LogError(
+                SqliteLog,
+                "Error creating Sqlite table from DbType {dbType}, Sqlite exception: {sqliteMessage}, with an error code of {SqliteErrorCode}",
+                dbType.ToString(),
+                sqliteException.Message,
+                sqliteException.SqliteErrorCode
+            );
+        }
         catch (Exception exception)
         {
             logger.LogError(
                 SqliteLog,
                 "Error creating location detail table: {exception}.",
+                exception.ToString()
+            );
+        }
+    }
+
+    public async Task UpdateLocationDetailRecordInDetailTable(
+        int locationId,
+        LocationDetail locationDetail,
+        DbType dbType
+    )
+    {
+        Builder builder;
+
+        try
+        {
+            logger.LogTrace(SqliteLog, "UpdateLocationDetailRecordInDetailTable called.");
+
+            Guard.Against.Null(
+                locationDetail.CollectionDirection,
+                nameof(locationDetail.CollectionDirection),
+                "Collected direction is null."
+            );
+            Guard.Against.Null(
+                locationDetail.CollectOccasional,
+                nameof(locationDetail.CollectOccasional),
+                "Collect occassional is null"
+            );
+
+            switch (dbType)
+            {
+                case DbType.SecchiLocationDetail:
+                    // Log to trace that the dbType is SecchiLocationDetail.
+                    logger.LogTrace(SqliteLog, "dbType is SecchiLocationDetail.");
+                    // Create the sqlite insert statement.
+                    builder = SimpleBuilder.Create(
+                        $@"
+                            UPDATE {dbType} SET CollectionDirection = 
+                            {(int)locationDetail.CollectionDirection},
+                            CollectOccasional = {(int)locationDetail.CollectOccasional}
+                            WHERE LocationId = {locationId}
+                        "
+                    );
+                    break;
+                default:
+                    // Log a warning that the dbType is not implemented.
+                    logger.LogWarning(SqliteLog, "dbType {dbType} is not implemented.", dbType);
+                    return;
+            }
+
+            // Open the connection to the sqlite database.
+            using var database = await GetOpenConnectionAsync();
+
+            // Execute the insert statement.
+            using var insertCommand = database.CreateCommand();
+            insertCommand.CommandText = builder.Sql;
+            var insertedRecords = insertCommand.ExecuteNonQuery();
+
+            // Log the number of inserted records to trace.
+            logger.LogTrace(
+                SqliteLog,
+                "Inserted {insertedRecords} records into {dbType} table.",
+                insertedRecords,
+                dbType
+            );
+        }
+        catch (SqliteException sqliteException)
+        {
+            logger.LogError(
+                SqliteLog,
+                "Error creating Sqlite table from DbType {dbType}, Sqlite exception: {sqliteMessage}, with an error code of {SqliteErrorCode}",
+                dbType.ToString(),
+                sqliteException.Message,
+                sqliteException.SqliteErrorCode
+            );
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(
+                SqliteLog,
+                "Error updating location detail table: {exception}.",
+                exception.ToString()
+            );
+        }
+    }
+
+    public async Task AddLocationDetailRecordToDetailTable(
+        int locationId,
+        LocationDetail locationDetail,
+        DbType dbType
+    )
+    {
+        Builder builder;
+
+        try
+        {
+            logger.LogTrace(SqliteLog, "AddLocationDetailRecord called.");
+
+            Guard.Against.Null(
+                locationDetail.CollectionDirection,
+                nameof(locationDetail.CollectionDirection),
+                "Collected direction is null."
+            );
+            Guard.Against.Null(
+                locationDetail.CollectOccasional,
+                nameof(locationDetail.CollectOccasional),
+                "Collect occassional is null"
+            );
+
+            switch (dbType)
+            {
+                case DbType.SecchiLocationDetail:
+                    // Log to trace that the dbType is SecchiLocationDetail.
+                    logger.LogTrace(SqliteLog, "dbType is SecchiLocationDetail.");
+                    // Create the sqlite insert statement.
+                    builder = SimpleBuilder.Create(
+                        $@"
+                            INSERT INTO {dbType} (LocationId, CollectionDirection, CollectOccasional) VALUES (
+                            {locationId},
+                            {(int)locationDetail.CollectionDirection},
+                            {(int)locationDetail.CollectOccasional})
+                        "
+                    );
+                    break;
+                default:
+                    // Log a warning that the dbType is not implemented.
+                    logger.LogWarning(SqliteLog, "dbType {dbType} is not implemented.", dbType);
+                    return;
+            }
+
+            // Open the connection to the sqlite database.
+            using var database = await GetOpenConnectionAsync();
+
+            // Execute the insert statement.
+            using var insertCommand = database.CreateCommand();
+            insertCommand.CommandText = builder.Sql;
+            var insertedRecords = insertCommand.ExecuteNonQuery();
+
+            // Log the number of inserted records to trace.
+            logger.LogTrace(
+                SqliteLog,
+                "Inserted {insertedRecords} records into {dbType} table.",
+                insertedRecords,
+                dbType
+            );
+        }
+        catch (SqliteException sqliteException)
+        {
+            logger.LogError(
+                SqliteLog,
+                "Error creating Sqlite table from DbType {dbType}, Sqlite exception: {sqliteMessage}, with an error code of {SqliteErrorCode}",
+                dbType.ToString(),
+                sqliteException.Message,
+                sqliteException.SqliteErrorCode
+            );
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(
+                SqliteLog,
+                "Error adding location detail record to table: {exception}.",
+                exception.ToString()
+            );
+        }
+    }
+
+    public async Task<LocationDetail> GetLocationDetailRecordFromDetailTable(
+        int locationId,
+        DbType dbType
+    )
+    {
+        Builder builder;
+
+        try
+        {
+            logger.LogTrace(SqliteLog, "GetLocationDetailRecord called.");
+
+            switch (dbType)
+            {
+                case DbType.SecchiLocationDetail:
+                    // Log to trace that the dbType is SecchiLocationDetail.
+                    logger.LogTrace(SqliteLog, "dbType is SecchiLocationDetail.");
+                    // Create the sqlite insert statement.
+                    builder = SimpleBuilder.Create(
+                        $@"
+                            SELECT * FROM {dbType} WHERE LocationId = {locationId}
+                        "
+                    );
+                    break;
+                default:
+                    // Log a warning that the dbType is not implemented.
+                    logger.LogWarning(SqliteLog, "dbType {dbType} is not implemented.", dbType);
+                    // return a new LocationDetail with values set to null.
+                    return new LocationDetail();
+            }
+
+            // Open the connection to the sqlite database.
+            using var database = await GetOpenConnectionAsync();
+
+            // Execute the insert statement.
+            using var selectCommand = database.CreateCommand();
+            selectCommand.CommandText = builder.Sql;
+            var selectedRecords = selectCommand.ExecuteNonQuery();
+
+            // Log the number of selected records to trace.
+            logger.LogTrace(
+                SqliteLog,
+                "Selected {selectedRecords} records from {dbType} table.",
+                selectedRecords,
+                dbType
+            );
+
+            // Read the data using the selectCommand
+            using var reader = selectCommand.ExecuteReader();
+
+            // If there are records, read the first one
+            if (reader.Read())
+            {
+                // Set the properties of the LocationDetail object based on the selected record
+                var collectionDirectionStr = reader["CollectionDirection"] as string;
+                var collectOccasionalStr = reader["CollectOccasional"] as string;
+
+                // If the values are not null, then parse them to the enum values.
+                if (collectionDirectionStr is not null && collectOccasionalStr is not null)
+                {
+                    var collectionDirection = Enum.Parse<CollectionDirection>(
+                        collectionDirectionStr
+                    );
+                    var collectOccasional = Enum.Parse<CollectOccasional>(collectOccasionalStr);
+
+                    // Initialize a new LocationDetail object, setting the properties to the values read from the database.
+                    var locationDetail = new LocationDetail
+                    {
+                        CollectionDirection = collectionDirection,
+                        CollectOccasional = collectOccasional
+                    };
+
+                    // Return the LocationDetail object
+                    return locationDetail;
+                }
+                else
+                {
+                    // If the values are null, then set the enum values to the default values.
+                    return new LocationDetail();
+                }
+            }
+            else
+            {
+                // If there are no records, then return a new LocationDetail object with the properties set to the default values.
+                return new LocationDetail();
+            }
+        }
+        catch (SqliteException sqliteException)
+        {
+            logger.LogError(
+                SqliteLog,
+                "Error creating Sqlite table from DbType {dbType}, Sqlite exception: {sqliteMessage}, with an error code of {SqliteErrorCode}",
+                dbType.ToString(),
+                sqliteException.Message,
+                sqliteException.SqliteErrorCode
+            );
+            // Return a new LocationDetail object with the properties set to the default values.
+            return new LocationDetail();
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(
+                SqliteLog,
+                "Error getting location detail record from table: {exception}.",
+                exception.ToString()
+            );
+            // Return a new LocationDetail object with the properties set to the default values.
+            return new LocationDetail();
+        }
+    }
+
+    public async Task DeleteLocationDetailRecordFromDetailTable(int locationId, DbType dbType)
+    {
+        Builder builder;
+
+        try
+        {
+            logger.LogTrace(SqliteLog, "DeleteLocationDetailRecord called.");
+
+            switch (dbType)
+            {
+                case DbType.SecchiLocationDetail:
+                    // Log to trace that the dbType is SecchiLocationDetail.
+                    logger.LogTrace(SqliteLog, "dbType is SecchiLocationDetail.");
+                    // Create the sqlite insert statement.
+                    builder = SimpleBuilder.Create(
+                        $@"
+                            DELETE FROM {dbType} WHERE LocationId = {locationId}
+                        "
+                    );
+                    break;
+                default:
+                    // Log a warning that the dbType is not implemented.
+                    logger.LogWarning(SqliteLog, "dbType {dbType} is not implemented.", dbType);
+                    return;
+            }
+
+            // Open the connection to the sqlite database.
+            using var database = await GetOpenConnectionAsync();
+
+            // Execute the insert statement.
+            using var deleteCommand = database.CreateCommand();
+            deleteCommand.CommandText = builder.Sql;
+            var deletedRecords = deleteCommand.ExecuteNonQuery();
+
+            // Log the number of deleted records to trace.
+            logger.LogTrace(
+                SqliteLog,
+                "Deleted {deletedRecords} records from {dbType} table.",
+                deletedRecords,
+                dbType
+            );
+        }
+        catch (SqliteException sqliteException)
+        {
+            logger.LogError(
+                SqliteLog,
+                "Error creating Sqlite table from DbType {dbType}, Sqlite exception: {sqliteMessage}, with an error code of {SqliteErrorCode}",
+                dbType.ToString(),
+                sqliteException.Message,
+                sqliteException.SqliteErrorCode
+            );
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(
+                SqliteLog,
+                "Error deleting location detail record from table: {exception}.",
                 exception.ToString()
             );
         }
@@ -914,7 +1262,11 @@ public partial class SqliteService : ISqliteService
         WeakReferenceMessenger.Default.Send(new TableAvailableMessage(dbType));
     }
 
-    private async Task GetRecordGroupFromSqlite(DbType dbType, int pageSize, int pageNumber)
+    public async Task<IEnumerable<Location>> GetRecordGroupFromSqlite(
+        DbType dbType,
+        int pageSize,
+        int pageNumber
+    )
     {
         try
         {
@@ -949,7 +1301,7 @@ public partial class SqliteService : ISqliteService
                     logger.LogTrace(SqliteLog, "Sqlite query: {builder.Sql}", builder.Sql);
 
                     // Execute the query and retrieve the results.
-                    var locations = await database.QueryAsync<SecchiLocation>(
+                    var locations = await database.QueryAsync<Location>(
                         builder.Sql,
                         builder.Parameters
                     );
@@ -966,16 +1318,15 @@ public partial class SqliteService : ISqliteService
                     // Iterate over the locations and log them to trace.
                     foreach (var location in locations)
                     {
-                        WeakReferenceMessenger.Default.Send(
-                            new SecchiLocationsSqliteRecordGroup(location)
-                        );
+                        logger.LogTrace(SqliteLog, "Location: {location}", location);
                     }
-                    break;
+
+                    return locations;
 
                 default:
                     // Log a warning that the dbType is not implemented.
                     logger.LogWarning(SqliteLog, "dbType {dbType} is not implemented.", dbType);
-                    break;
+                    return [];
             }
         }
         catch (SqliteException sqliteException)
@@ -987,6 +1338,7 @@ public partial class SqliteService : ISqliteService
                 sqliteException.Message,
                 sqliteException.SqliteErrorCode
             );
+            return [];
         }
         catch (Exception exception)
         {
@@ -995,6 +1347,7 @@ public partial class SqliteService : ISqliteService
                 "Error getting SecchiLocations: {exception}.",
                 exception.ToString()
             );
+            return [];
         }
     }
 
