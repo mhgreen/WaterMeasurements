@@ -107,7 +107,7 @@ public partial class SqliteService : ISqliteService
             // This is mostly for testing, but could also be used to reset the app to initial run state.
             await localSettingsService.SaveSettingAsync(
                 SqliteConfiguration.Item[Key.SqliteSetToInitialRun],
-                false
+                true
             );
             // ---------- Set to initial run manually ----------
 
@@ -283,7 +283,7 @@ public partial class SqliteService : ISqliteService
             Guard.Against.Null(
                 localSettingsService,
                 nameof(localSettingsService),
-                "Sqlite Service, FeatureToTable(): localSettingsService is null."
+                "Sqlite Service, FeatureToTable: localSettingsService is null."
             );
 
             // Check whether or not the feature table has been previously loaded.
@@ -344,6 +344,14 @@ public partial class SqliteService : ISqliteService
                         );
                     }
                     break;
+                default:
+                    // Log a warning that the dbType is not implemented.
+                    logger.LogError(
+                        SqliteLog,
+                        "Sqlite Service, FeatureToTable: dbType {dbType} is not implemented.",
+                        dbType
+                    );
+                    return;
             }
 
             // Iterate over the fields in the feature table creating a dictionary with the field name as the key and using GetSqliteType for the field value.
@@ -384,7 +392,7 @@ public partial class SqliteService : ISqliteService
             // Log the feature table fields to trace.
             logger.LogTrace(
                 SqliteLog,
-                "Feature table fields: {featureTableFields}",
+                "Sqlite Service, FeatureToTable: Feature table fields: {featureTableFields}",
                 string.Join(", ", featureTableFields)
             );
             // Create the feature table create statement.
@@ -392,7 +400,7 @@ public partial class SqliteService : ISqliteService
                 $"CREATE TABLE IF NOT EXISTS {featureTableName} ({string.Join(", ", featureTableFields)});";
             logger.LogTrace(
                 SqliteLog,
-                "Feature table create statement: {featureTableCreateStatement}",
+                "Sqlite Service, FeatureToTable: Feature table create statement: {featureTableCreateStatement}",
                 featureTableCreateStatement
             );
 
@@ -406,7 +414,7 @@ public partial class SqliteService : ISqliteService
 
             logger.LogTrace(
                 SqliteLog,
-                "Sqlite table created from {featureTableName}. Return code: {returnCode}",
+                "Sqlite Service, FeatureToTable: Sqlite table created from {featureTableName}. Return code: {returnCode}",
                 featureTableName,
                 createReturnCode
             );
@@ -421,7 +429,7 @@ public partial class SqliteService : ISqliteService
             {
                 logger.LogTrace(
                     SqliteLog,
-                    "Number of records in {featureTableName} feature table: {numberOfRecords}.",
+                    "Sqlite Service, FeatureToTable: Number of records in {featureTableName} feature table: {numberOfRecords}.",
                     featureTableName,
                     features.Count()
                 );
@@ -451,7 +459,7 @@ public partial class SqliteService : ISqliteService
             // Log the number of features in the feature table to trace.
             logger.LogTrace(
                 SqliteLog,
-                "Inserting {features.Count()} records into table {featureTableName}.",
+                "Sqlite Service, FeatureToTable: Inserting {features.Count()} records into table {featureTableName}.",
                 features.Count(),
                 featureTableName
             );
@@ -494,7 +502,7 @@ public partial class SqliteService : ISqliteService
                     $"INSERT INTO {featureTableName} ({string.Join(", ", fieldValues.Keys)}) VALUES ({string.Join(", ", fieldValues.Values)});";
                 logger.LogTrace(
                     SqliteLog,
-                    "Sqlite insert statement: {insertStatement}",
+                    "Sqlite Service, FeatureToTable: Sqlite insert statement: {insertStatement}",
                     insertStatement
                 );
 
@@ -510,7 +518,7 @@ public partial class SqliteService : ISqliteService
                 // log the sumOfInsertedRecords to trace.
                 logger.LogDebug(
                     SqliteLog,
-                    "For the table {featureTableName}: sumOfInsertedRecords is {sumOfInsertedRecords}.",
+                    "Sqlite Service, FeatureToTable: For the table {featureTableName}: sumOfInsertedRecords is {sumOfInsertedRecords}.",
                     featureTableName,
                     sumOfInsertedRecords
                 );
@@ -542,7 +550,7 @@ public partial class SqliteService : ISqliteService
                 // Log a warning that not all records from the featuretable were written to Sqlite.
                 logger.LogWarning(
                     SqliteLog,
-                    "Expected to insert {expectedInserts} but only {actualInserts} were inserted.",
+                    "Sqlite Service, FeatureToTable: Expected to insert {expectedInserts} but only {actualInserts} were inserted.",
                     features.Count(),
                     sumOfInsertedRecords
                 );
@@ -553,18 +561,34 @@ public partial class SqliteService : ISqliteService
                             dbType,
                             sumOfInsertedRecords,
                             -1,
-                            "Not all records from the featuretable were written to Sqlite.",
+                            "Sqlite Service, FeatureToTable: Not all records from the featuretable were written to Sqlite.",
                             FeatureToTableStatus.SuccessWithPartialRecords
                         )
                     )
                 );
+            }
+
+            // Create the corresponding location detail table.
+            switch (dbType)
+            {
+                case DbType.SecchiLocations:
+                    await CreateLocationDetailTable(DbType.SecchiLocationDetail);
+                    break;
+                default:
+                    // Log to trace that the dbType is not implemented.
+                    logger.LogError(
+                        SqliteLog,
+                        "Sqlite Service, FeatureToTable, create location detail table: dbType {dbType} is not implemented.",
+                        dbType
+                    );
+                    break;
             }
         }
         catch (SqliteException sqliteException)
         {
             logger.LogError(
                 SqliteLog,
-                "Error creating Sqlite table from DbType {dbType}, Sqlite exception: {sqliteMessage}, with an error code of {SqliteErrorCode}",
+                "Sqlite Service, FeatureToTable: Error creating Sqlite table from DbType {dbType}, Sqlite exception: {sqliteMessage}, with an error code of {SqliteErrorCode}",
                 dbType.ToString(),
                 sqliteException.Message,
                 sqliteException.SqliteErrorCode
@@ -586,7 +610,7 @@ public partial class SqliteService : ISqliteService
         {
             logger.LogError(
                 SqliteLog,
-                "Error creating Sqlite table from DbType {dbType}: {exception}.",
+                "Sqlite Service, FeatureToTable: Error creating Sqlite table from DbType {dbType}: {exception}.",
                 dbType.ToString(),
                 exception.ToString()
             );
@@ -630,7 +654,7 @@ public partial class SqliteService : ISqliteService
             // Log the number of inserted records to trace.
             logger.LogTrace(
                 SqliteLog,
-                "Inserted {insertedRecords} records into {DbType} table.",
+                "Sqlite Service, AddLocationRecordToTable: Inserted {insertedRecords} records into {DbType} table.",
                 insertedRecords,
                 DbType
             );
@@ -642,7 +666,7 @@ public partial class SqliteService : ISqliteService
         {
             logger.LogError(
                 SqliteLog,
-                "Error adding location record to table: {exception}.",
+                "Sqlite Service, AddLocationRecordToTable: Error adding location record to table: {exception}.",
                 exception.ToString()
             );
         }
@@ -674,7 +698,7 @@ public partial class SqliteService : ISqliteService
             // Log the number of deleted records to trace.
             logger.LogTrace(
                 SqliteLog,
-                "Deleted {deletedRecords} records from {DbType} table.",
+                "Sqlite Service, DeleteLocationRecordFromTable: Deleted {deletedRecords} records from {DbType} table.",
                 deletedRecords,
                 DbType
             );
@@ -686,7 +710,7 @@ public partial class SqliteService : ISqliteService
         {
             logger.LogError(
                 SqliteLog,
-                "Error deleting location record from table: {exception}.",
+                "Sqlite Service, DeleteLocationRecordFromTable: Error deleting location record from table: {exception}.",
                 exception.ToString()
             );
         }
@@ -706,7 +730,11 @@ public partial class SqliteService : ISqliteService
             );
 
             // Log builder.sql to trace.
-            logger.LogTrace(SqliteLog, "Sqlite update statement: {builder.Sql}", builder.Sql);
+            logger.LogTrace(
+                SqliteLog,
+                "Sqlite Service, UpdadateLocationRecordInTable: Sqlite update statement: {builder.Sql}",
+                builder.Sql
+            );
 
             // Open the connection to the sqlite database.
             using var database = await GetOpenConnectionAsync();
@@ -719,7 +747,7 @@ public partial class SqliteService : ISqliteService
             // Log the number of updated records to trace.
             logger.LogTrace(
                 SqliteLog,
-                "Updated {updatedRecords} records in {DbType} table.",
+                "Sqlite Service, UpdadateLocationRecordInTable: Updated {updatedRecords} records in {DbType} table.",
                 updatedRecords,
                 DbType
             );
@@ -731,7 +759,7 @@ public partial class SqliteService : ISqliteService
         {
             logger.LogError(
                 SqliteLog,
-                "Error updating location record in table: {exception}.",
+                "Sqlite Service, UpdadateLocationRecordInTable: Error updating location record in table: {exception}.",
                 exception.ToString()
             );
         }
@@ -739,55 +767,139 @@ public partial class SqliteService : ISqliteService
 
     public async Task CreateLocationDetailTable(DbType dbType)
     {
-        Builder builder;
+        var locationDetailTableName = dbType.ToString();
+        string locationTableName;
 
         try
         {
-            logger.LogTrace(SqliteLog, "CreateLocationDetailTable called.");
+            logger.LogTrace(
+                SqliteLog,
+                "Sqlite Service, CreateLocationDetailTable: CreateLocationDetailTable called."
+            );
+
+            logger.LogTrace(
+                SqliteLog,
+                "Sqlite Service, CreateLocationDetailTable: locationDetailTableName is {locationDetailTableName}.",
+                locationDetailTableName
+            );
+
+            Guard.Against.Null(
+                localSettingsService,
+                nameof(localSettingsService),
+                "Sqlite Service, CreateLocationDetailTable: localSettingsService is null."
+            );
 
             switch (dbType)
             {
                 case DbType.SecchiLocationDetail:
-                    // Log to trace that the dbType is SecchiLocationDetail.
-                    logger.LogTrace(SqliteLog, "dbType is SecchiLocationDetail.");
-                    // Create the sqlite insert statement.
-                    builder = SimpleBuilder.Create(
-                        $@"
-                            CREATE TABLE IF NOT EXISTS {dbType} (
-                            LocationId INTEGER PRIMARY KEY,
-                            CollectionDirection INTEGER NOT NULL,
-                            CollectOccasional INTEGER NOT NULL,
-                            CONSTRAINT fk_locations FOREIGN KEY(LocationId) REFERENCES SecchiLocations(LocationId)
-                            );
-                        "
+
+                    logger.LogTrace(
+                        SqliteLog,
+                        "Sqlite Service, CreateLocationDetailTable: dbType is SecchiLocationDetail."
                     );
+
+                    locationTableName = DbType.SecchiLocations.ToString();
+
+                    logger.LogTrace(
+                        SqliteLog,
+                        "Sqlite Service, CreateLocationDetailTable: locationTableName is {locationTableName}.",
+                        locationTableName
+                    );
+
+                    var detailPreviouslyLoaded = await localSettingsService.ReadSettingAsync<bool>(
+                        SqliteConfiguration.Item[Key.SecchiLocationDetailLoaded]
+                    );
+                    if (detailPreviouslyLoaded)
+                    {
+                        // Log to trace that the SecchiLocationDetail table has already been loaded.
+                        logger.LogTrace(
+                            SqliteLog,
+                            "Sqlite Service, CreateLocationDetailTable: Feature table {SecchiLocationDetail} has already been loaded, returning from CreateLocationDetailTable().",
+                            locationDetailTableName
+                        );
+                        SendTableAvailableMessage(DbType.SecchiLocationDetail);
+                        return;
+                    }
+                    else
+                    {
+                        // Log to trace that the SecchiLocationDetail table has not been loaded.
+                        logger.LogTrace(
+                            SqliteLog,
+                            "Sqlite Service, CreateLocationDetailTable: Feature table {SecchiLocationDetail} has not been loaded.",
+                            locationDetailTableName
+                        );
+                    }
+
+                    var locationsPreviouslyLoaded =
+                        await localSettingsService.ReadSettingAsync<bool>(
+                            SqliteConfiguration.Item[Key.SecchiLocationsLoaded]
+                        );
+
+                    if (locationsPreviouslyLoaded is false)
+                    {
+                        // Log to trace that the SecchiLocations table has not been loaded.
+                        logger.LogError(
+                            SqliteLog,
+                            "Sqlite Service, CreateLocationDetailTable: Feature table {SecchiLocations} has not been loaded. Location detail may not be created prior to locations existing.",
+                            locationTableName
+                        );
+                        return;
+                    }
                     break;
                 default:
                     // Log a warning that the dbType is not implemented.
-                    logger.LogWarning(SqliteLog, "dbType {dbType} is not implemented.", dbType);
+                    logger.LogWarning(
+                        SqliteLog,
+                        "Sqlite Service, CreateLocationDetailTable: dbType {dbType} is not implemented.",
+                        dbType
+                    );
                     return;
             }
+
+            var featureDetailTableCreateStatement =
+                $@"
+                    CREATE TABLE IF NOT EXISTS {locationDetailTableName} (
+                    LocationId INTEGER PRIMARY KEY,
+                    CollectionDirection INTEGER NOT NULL,
+                    CollectOccasional INTEGER NOT NULL,
+                    CONSTRAINT fk_locations FOREIGN KEY(LocationId) REFERENCES {locationTableName}(LocationId)
+                    );
+                ";
+
+            // Log to trace the builder.sql.
+            logger.LogTrace(
+                SqliteLog,
+                "Sqlite Service, CreateLocationDetailTable: Create SQL: {featureDetailTableCreateStatement}",
+                featureDetailTableCreateStatement
+            );
 
             // Open the connection to the sqlite database.
             using var database = await GetOpenConnectionAsync();
 
             // Create the Sqlite table using the featureTableCreateStatement.
             using var createTableCommand = database.CreateCommand();
-            createTableCommand.CommandText = builder.Sql;
+            createTableCommand.CommandText = featureDetailTableCreateStatement;
             var createReturnCode = createTableCommand.ExecuteNonQuery();
 
             logger.LogTrace(
                 SqliteLog,
-                "Sqlite table created from {featureTableName}. Return code: {returnCode}",
-                dbType,
+                "Sqlite Service, CreateLocationDetailTable: Sqlite detail table created for {locationTableName}. Return code: {returnCode}",
+                locationTableName,
                 createReturnCode
             );
+
+            // TODO: Check return code before seting the loaded state.
+
+            // Set the previouslyLoaded setting to true.
+            await SetPreviouslyLoadedState(dbType, true);
+
+            // TODO: Send a message that the table is available and return code.
         }
         catch (SqliteException sqliteException)
         {
             logger.LogError(
                 SqliteLog,
-                "Error creating Sqlite table from DbType {dbType}, Sqlite exception: {sqliteMessage}, with an error code of {SqliteErrorCode}",
+                "Sqlite Service, CreateLocationDetailTable: Error creating Sqlite table from DbType {dbType}, Sqlite exception: {sqliteMessage}, with an error code of {SqliteErrorCode}",
                 dbType.ToString(),
                 sqliteException.Message,
                 sqliteException.SqliteErrorCode
@@ -797,7 +909,7 @@ public partial class SqliteService : ISqliteService
         {
             logger.LogError(
                 SqliteLog,
-                "Error creating location detail table: {exception}.",
+                "Sqlite Service, CreateLocationDetailTable: Error creating location detail table: {exception}.",
                 exception.ToString()
             );
         }
@@ -813,7 +925,10 @@ public partial class SqliteService : ISqliteService
 
         try
         {
-            logger.LogTrace(SqliteLog, "UpdateLocationDetailRecordInDetailTable called.");
+            logger.LogTrace(
+                SqliteLog,
+                "Sqlite Service, UpdateLocationDetailRecordInDetailTable: UpdateLocationDetailRecordInDetailTable called."
+            );
 
             Guard.Against.Null(
                 locationDetail.CollectionDirection,
@@ -830,7 +945,10 @@ public partial class SqliteService : ISqliteService
             {
                 case DbType.SecchiLocationDetail:
                     // Log to trace that the dbType is SecchiLocationDetail.
-                    logger.LogTrace(SqliteLog, "dbType is SecchiLocationDetail.");
+                    logger.LogTrace(
+                        SqliteLog,
+                        "Sqlite Service, UpdateLocationDetailRecordInDetailTable: dbType is SecchiLocationDetail."
+                    );
                     // Create the sqlite insert statement.
                     builder = SimpleBuilder.Create(
                         $@"
@@ -840,10 +958,21 @@ public partial class SqliteService : ISqliteService
                             WHERE LocationId = {locationId}
                         "
                     );
+
+                    // Log to trace the builder.sql.
+                    logger.LogTrace(
+                        SqliteLog,
+                        "Sqlite Service, UpdateLocationDetailRecordInDetailTable: Update SQL: {builder.sql}",
+                        builder.Sql
+                    );
                     break;
                 default:
                     // Log a warning that the dbType is not implemented.
-                    logger.LogWarning(SqliteLog, "dbType {dbType} is not implemented.", dbType);
+                    logger.LogWarning(
+                        SqliteLog,
+                        "Sqlite Service, UpdateLocationDetailRecordInDetailTable: dbType {dbType} is not implemented.",
+                        dbType
+                    );
                     return;
             }
 
@@ -858,7 +987,7 @@ public partial class SqliteService : ISqliteService
             // Log the number of inserted records to trace.
             logger.LogTrace(
                 SqliteLog,
-                "Inserted {insertedRecords} records into {dbType} table.",
+                "Sqlite Service, UpdateLocationDetailRecordInDetailTable: Inserted {insertedRecords} records into {dbType} table.",
                 insertedRecords,
                 dbType
             );
@@ -867,7 +996,7 @@ public partial class SqliteService : ISqliteService
         {
             logger.LogError(
                 SqliteLog,
-                "Error creating Sqlite table from DbType {dbType}, Sqlite exception: {sqliteMessage}, with an error code of {SqliteErrorCode}",
+                "Sqlite Service, UpdateLocationDetailRecordInDetailTable: Error creating Sqlite table from DbType {dbType}, Sqlite exception: {sqliteMessage}, with an error code of {SqliteErrorCode}",
                 dbType.ToString(),
                 sqliteException.Message,
                 sqliteException.SqliteErrorCode
@@ -877,7 +1006,7 @@ public partial class SqliteService : ISqliteService
         {
             logger.LogError(
                 SqliteLog,
-                "Error updating location detail table: {exception}.",
+                "Sqlite Service, UpdateLocationDetailRecordInDetailTable: Error updating location detail table: {exception}.",
                 exception.ToString()
             );
         }
@@ -893,17 +1022,20 @@ public partial class SqliteService : ISqliteService
 
         try
         {
-            logger.LogTrace(SqliteLog, "AddLocationDetailRecord called.");
+            logger.LogTrace(
+                SqliteLog,
+                "Sqlite Service, AddLocationDetailRecordToDetailTable: AddLocationDetailRecord called."
+            );
 
             Guard.Against.Null(
                 locationDetail.CollectionDirection,
                 nameof(locationDetail.CollectionDirection),
-                "Collected direction is null."
+                "Sqlite Service, AddLocationDetailRecordToDetailTable: Collected direction is null."
             );
             Guard.Against.Null(
                 locationDetail.CollectOccasional,
                 nameof(locationDetail.CollectOccasional),
-                "Collect occassional is null"
+                "Sqlite Service, AddLocationDetailRecordToDetailTable: Collect occassional is null"
             );
 
             switch (dbType)
@@ -920,10 +1052,21 @@ public partial class SqliteService : ISqliteService
                             {(int)locationDetail.CollectOccasional})
                         "
                     );
+
+                    // Log to trace the builder.sql.
+                    logger.LogTrace(
+                        SqliteLog,
+                        "Sqlite Service, AddLocationDetailRecordToDetailTable: Sqlite insert statement: {builder.sql}",
+                        builder.Sql
+                    );
                     break;
                 default:
                     // Log a warning that the dbType is not implemented.
-                    logger.LogWarning(SqliteLog, "dbType {dbType} is not implemented.", dbType);
+                    logger.LogWarning(
+                        SqliteLog,
+                        "Sqlite Service, AddLocationDetailRecordToDetailTable: dbType {dbType} is not implemented.",
+                        dbType
+                    );
                     return;
             }
 
@@ -938,7 +1081,7 @@ public partial class SqliteService : ISqliteService
             // Log the number of inserted records to trace.
             logger.LogTrace(
                 SqliteLog,
-                "Inserted {insertedRecords} records into {dbType} table.",
+                "Sqlite Service, AddLocationDetailRecordToDetailTable: Inserted {insertedRecords} records into {dbType} table.",
                 insertedRecords,
                 dbType
             );
@@ -947,7 +1090,7 @@ public partial class SqliteService : ISqliteService
         {
             logger.LogError(
                 SqliteLog,
-                "Error creating Sqlite table from DbType {dbType}, Sqlite exception: {sqliteMessage}, with an error code of {SqliteErrorCode}",
+                "Sqlite Service, AddLocationDetailRecordToDetailTable: Error creating Sqlite table from DbType {dbType}, Sqlite exception: {sqliteMessage}, with an error code of {SqliteErrorCode}",
                 dbType.ToString(),
                 sqliteException.Message,
                 sqliteException.SqliteErrorCode
@@ -957,7 +1100,7 @@ public partial class SqliteService : ISqliteService
         {
             logger.LogError(
                 SqliteLog,
-                "Error adding location detail record to table: {exception}.",
+                "Sqlite Service, AddLocationDetailRecordToDetailTable: Error adding location detail record to table: {exception}.",
                 exception.ToString()
             );
         }
@@ -972,23 +1115,40 @@ public partial class SqliteService : ISqliteService
 
         try
         {
-            logger.LogTrace(SqliteLog, "GetLocationDetailRecord called.");
+            logger.LogTrace(
+                SqliteLog,
+                "Sqlite Service, GetLocationDetailRecordFromDetailTable: GetLocationDetailRecord called."
+            );
 
             switch (dbType)
             {
                 case DbType.SecchiLocationDetail:
                     // Log to trace that the dbType is SecchiLocationDetail.
-                    logger.LogTrace(SqliteLog, "dbType is SecchiLocationDetail.");
+                    logger.LogTrace(
+                        SqliteLog,
+                        "Sqlite Service, GetLocationDetailRecordFromDetailTable: dbType is SecchiLocationDetail."
+                    );
                     // Create the sqlite insert statement.
                     builder = SimpleBuilder.Create(
                         $@"
                             SELECT * FROM {dbType} WHERE LocationId = {locationId}
                         "
                     );
+
+                    // Log to trace the builder.sql.
+                    logger.LogTrace(
+                        SqliteLog,
+                        "Sqlite Service, GetLocationDetailRecordFromDetailTable: Sqlite select statement: {builder.sql}",
+                        builder.Sql
+                    );
                     break;
                 default:
                     // Log a warning that the dbType is not implemented.
-                    logger.LogWarning(SqliteLog, "dbType {dbType} is not implemented.", dbType);
+                    logger.LogWarning(
+                        SqliteLog,
+                        "Sqlite Service, GetLocationDetailRecordFromDetailTable: dbType {dbType} is not implemented.",
+                        dbType
+                    );
                     // return a new LocationDetail with values set to null.
                     return new LocationDetail();
             }
@@ -1004,7 +1164,7 @@ public partial class SqliteService : ISqliteService
             // Log the number of selected records to trace.
             logger.LogTrace(
                 SqliteLog,
-                "Selected {selectedRecords} records from {dbType} table.",
+                "Sqlite Service, GetLocationDetailRecordFromDetailTable: Selected {selectedRecords} records from {dbType} table.",
                 selectedRecords,
                 dbType
             );
@@ -1053,7 +1213,7 @@ public partial class SqliteService : ISqliteService
         {
             logger.LogError(
                 SqliteLog,
-                "Error creating Sqlite table from DbType {dbType}, Sqlite exception: {sqliteMessage}, with an error code of {SqliteErrorCode}",
+                "Sqlite Service, GetLocationDetailRecordFromDetailTable: Error creating Sqlite table from DbType {dbType}, Sqlite exception: {sqliteMessage}, with an error code of {SqliteErrorCode}",
                 dbType.ToString(),
                 sqliteException.Message,
                 sqliteException.SqliteErrorCode
@@ -1065,7 +1225,7 @@ public partial class SqliteService : ISqliteService
         {
             logger.LogError(
                 SqliteLog,
-                "Error getting location detail record from table: {exception}.",
+                "Sqlite Service, GetLocationDetailRecordFromDetailTable: Error getting location detail record from table: {exception}.",
                 exception.ToString()
             );
             // Return a new LocationDetail object with the properties set to the default values.
@@ -1079,7 +1239,10 @@ public partial class SqliteService : ISqliteService
 
         try
         {
-            logger.LogTrace(SqliteLog, "DeleteLocationDetailRecord called.");
+            logger.LogTrace(
+                SqliteLog,
+                "Sqlite Service, DeleteLocationDetailRecordFromDetailTable: DeleteLocationDetailRecord called."
+            );
 
             switch (dbType)
             {
@@ -1092,10 +1255,21 @@ public partial class SqliteService : ISqliteService
                             DELETE FROM {dbType} WHERE LocationId = {locationId}
                         "
                     );
+
+                    // Log to trace the builder.sql.
+                    logger.LogTrace(
+                        SqliteLog,
+                        "Sqlite Service, DeleteLocationDetailRecordFromDetailTable: Sqlite delete statement: {builder.sql}",
+                        builder.Sql
+                    );
                     break;
                 default:
                     // Log a warning that the dbType is not implemented.
-                    logger.LogWarning(SqliteLog, "dbType {dbType} is not implemented.", dbType);
+                    logger.LogWarning(
+                        SqliteLog,
+                        "Sqlite Service, DeleteLocationDetailRecordFromDetailTable: dbType {dbType} is not implemented.",
+                        dbType
+                    );
                     return;
             }
 
@@ -1110,7 +1284,7 @@ public partial class SqliteService : ISqliteService
             // Log the number of deleted records to trace.
             logger.LogTrace(
                 SqliteLog,
-                "Deleted {deletedRecords} records from {dbType} table.",
+                "Sqlite Service, DeleteLocationDetailRecordFromDetailTable: Deleted {deletedRecords} records from {dbType} table.",
                 deletedRecords,
                 dbType
             );
@@ -1119,7 +1293,7 @@ public partial class SqliteService : ISqliteService
         {
             logger.LogError(
                 SqliteLog,
-                "Error creating Sqlite table from DbType {dbType}, Sqlite exception: {sqliteMessage}, with an error code of {SqliteErrorCode}",
+                "Sqlite Service, DeleteLocationDetailRecordFromDetailTable: Error creating Sqlite table from DbType {dbType}, Sqlite exception: {sqliteMessage}, with an error code of {SqliteErrorCode}",
                 dbType.ToString(),
                 sqliteException.Message,
                 sqliteException.SqliteErrorCode
@@ -1129,7 +1303,7 @@ public partial class SqliteService : ISqliteService
         {
             logger.LogError(
                 SqliteLog,
-                "Error deleting location detail record from table: {exception}.",
+                "Sqlite Service, DeleteLocationDetailRecordFromDetailTable: Error deleting location detail record from table: {exception}.",
                 exception.ToString()
             );
         }
@@ -1180,7 +1354,7 @@ public partial class SqliteService : ISqliteService
         {
             logger.LogError(
                 SqliteLog,
-                "Error in SetToInitialRun: {exception}.",
+                "Sqlite Service, SetToInitialRun(): Error in SetToInitialRun: {exception}.",
                 exception.ToString()
             );
         }
@@ -1215,7 +1389,11 @@ public partial class SqliteService : ISqliteService
             }
 
             // Log the sqlite folder to trace.
-            logger.LogTrace(SqliteLog, "Sqlite folder: {sqliteFolderName}", sqliteFolderName);
+            logger.LogTrace(
+                SqliteLog,
+                "Sqlite Service, InitialRun(): Sqlite folder: {sqliteFolderName}",
+                sqliteFolderName
+            );
 
             // Set SecchiObservationsLoaded to false.
             await localSettingsService.SaveSettingAsync(
@@ -1241,11 +1419,15 @@ public partial class SqliteService : ISqliteService
             );
 
             // Log that the initial run has been completed.
-            logger.LogInformation(SqliteLog, "Initial run completed.");
+            logger.LogInformation(SqliteLog, "Sqlite Service, InitialRun: Initial run completed.");
         }
         catch (Exception exception)
         {
-            logger.LogError(SqliteLog, "Error in InitialRun: {exception}.", exception.ToString());
+            logger.LogError(
+                SqliteLog,
+                "Sqlite Service, InitialRun: Error in InitialRun: {exception}.",
+                exception.ToString()
+            );
         }
     }
 
@@ -1254,7 +1436,7 @@ public partial class SqliteService : ISqliteService
         // Log the table available message to trace.
         logger.LogTrace(
             SqliteLog,
-            "Sending TableAvailableMessage for {dbType}.",
+            "Sqlite Service, SendTableAvailableMessage: Sending TableAvailableMessage for {dbType}.",
             dbType.ToString()
         );
 
@@ -1272,7 +1454,7 @@ public partial class SqliteService : ISqliteService
         {
             logger.LogTrace(
                 SqliteLog,
-                "GetObservableCollection called with dbType of {dbType}.",
+                "Sqlite Service, GetRecordGroupFromSqlite: called with dbType of {dbType}.",
                 dbType
             );
 
@@ -1283,7 +1465,10 @@ public partial class SqliteService : ISqliteService
             {
                 case DbType.SecchiLocations:
                     //Log to trace that the dbType is SecchiLocations.
-                    logger.LogTrace(SqliteLog, "dbType is SecchiLocations.");
+                    logger.LogTrace(
+                        SqliteLog,
+                        "Sqlite Service, GetRecordGroupFromSqlite: dbType is SecchiLocations."
+                    );
 
                     // Calculate the offset so that the correct records for a page are retrieved.
                     var offset = pageSize * pageNumber;
@@ -1298,7 +1483,11 @@ public partial class SqliteService : ISqliteService
                         .Offset(offset);
 
                     // Log builder.sql to trace.
-                    logger.LogTrace(SqliteLog, "Sqlite query: {builder.Sql}", builder.Sql);
+                    logger.LogTrace(
+                        SqliteLog,
+                        "Sqlite Service, GetRecordGroupFromSqlite: Sqlite query: {builder.Sql}",
+                        builder.Sql
+                    );
 
                     // Execute the query and retrieve the results.
                     var locations = await database.QueryAsync<Location>(
@@ -1311,21 +1500,29 @@ public partial class SqliteService : ISqliteService
                         // Log a warning that the number of records returned is less than the page size.
                         logger.LogWarning(
                             SqliteLog,
-                            "Number of records returned is less than the page size, so a message can be sent."
+                            "Sqlite Service, GetRecordGroupFromSqlite: Number of records returned is less than the page size, so a message can be sent."
                         );
                     }
 
                     // Iterate over the locations and log them to trace.
                     foreach (var location in locations)
                     {
-                        logger.LogTrace(SqliteLog, "Location: {location}", location);
+                        logger.LogTrace(
+                            SqliteLog,
+                            "Sqlite Service, GetRecordGroupFromSqlite: Location: {location}",
+                            location
+                        );
                     }
 
                     return locations;
 
                 default:
                     // Log a warning that the dbType is not implemented.
-                    logger.LogWarning(SqliteLog, "dbType {dbType} is not implemented.", dbType);
+                    logger.LogWarning(
+                        SqliteLog,
+                        "Sqlite Service, GetRecordGroupFromSqlite: dbType {dbType} is not implemented.",
+                        dbType
+                    );
                     return [];
             }
         }
@@ -1333,7 +1530,7 @@ public partial class SqliteService : ISqliteService
         {
             logger.LogError(
                 SqliteLog,
-                "Error creating Sqlite table from DbType {dbType}, Sqlite exception: {sqliteMessage}, with an error code of {SqliteErrorCode}",
+                "Sqlite Service, GetRecordGroupFromSqlite: Error creating Sqlite table from DbType {dbType}, Sqlite exception: {sqliteMessage}, with an error code of {SqliteErrorCode}",
                 dbType.ToString(),
                 sqliteException.Message,
                 sqliteException.SqliteErrorCode
@@ -1344,7 +1541,7 @@ public partial class SqliteService : ISqliteService
         {
             logger.LogError(
                 SqliteLog,
-                "Error getting SecchiLocations: {exception}.",
+                "Sqlite Service, GetRecordGroupFromSqlite: Error getting SecchiLocations: {exception}.",
                 exception.ToString()
             );
             return [];
@@ -1421,7 +1618,7 @@ public partial class SqliteService : ISqliteService
         Guard.Against.Null(
             localSettingsService,
             nameof(localSettingsService),
-            "Sqlite Service, SetPreviouslyLoadedState(): localSettingsService is null."
+            "Sqlite Service, SetPreviouslyLoadedState: localSettingsService is null."
         );
 
         // Set the previouslyLoaded setting to true.
@@ -1440,7 +1637,7 @@ public partial class SqliteService : ISqliteService
         // Log that the previouslyLoaded state has been set to true.
         logger.LogTrace(
             SqliteLog,
-            "Set {dbType} previouslyLoaded state to true.",
+            "Sqlite Service, SetPreviouslyLoadedState: Set {dbType} previouslyLoaded state to true.",
             dbType.ToString()
         );
     }
@@ -1452,7 +1649,7 @@ public partial class SqliteService : ISqliteService
         /*
         logger.LogTrace(
             SqliteLog,
-            "Field type {fieldType} converted to {sqliteType}.",
+            "Sqlite Service, GetSqliteType: Field type {fieldType} converted to {sqliteType}.",
             fieldType,
             sqliteType
         );
