@@ -27,6 +27,11 @@ public class FeatureToTableResultMessage(FeatureToTableResult featureToTableResu
 // Message to notify modules that a table is available.
 public class TableAvailableMessage(DbType dbType) : ValueChangedMessage<DbType>(dbType) { }
 
+// Message to notify modules of the result of a location detail table creation.
+public class CreateLocationDetailResultMessage(
+    CreateLocationDetailResult createLocationDetailResult
+) : ValueChangedMessage<CreateLocationDetailResult>(createLocationDetailResult) { }
+
 // Message to add a location record to a table.
 public class AddLocationRecordToTableMessage(AddLocationRecordToTable addLocationRecordToTable)
     : ValueChangedMessage<AddLocationRecordToTable>(addLocationRecordToTable) { }
@@ -572,7 +577,38 @@ public partial class SqliteService : ISqliteService
             switch (dbType)
             {
                 case DbType.SecchiLocations:
-                    await CreateLocationDetailTable(DbType.SecchiLocationDetail);
+                    var createLocationDetailResult = await CreateLocationDetailTable(
+                        DbType.SecchiLocationDetail
+                    );
+                    if (
+                        createLocationDetailResult.Status
+                        == CreateLocationDetailStatus.SuccessNewCreated
+                    )
+                    {
+                        // Log to trace that the location detail table was created.
+                        logger.LogTrace(
+                            SqliteLog,
+                            "Sqlite Service, FeatureToTable, create location detail table: Location detail table created for {DbType}.",
+                            DbType.SecchiLocationDetail
+                        );
+                        // Send a LocationDetailTableCreatedMessage with the return code and error message.
+                        WeakReferenceMessenger.Default.Send(
+                            new CreateLocationDetailResultMessage(createLocationDetailResult)
+                        );
+                    }
+                    else
+                    {
+                        // Log to trace that the location detail table was not created.
+                        logger.LogError(
+                            SqliteLog,
+                            "Sqlite Service, FeatureToTable, create location detail table: Location detail table not created for {DbType}.",
+                            DbType.SecchiLocationDetail
+                        );
+                        // Send a LocationDetailTableCreatedMessage with the return code and error message.
+                        WeakReferenceMessenger.Default.Send(
+                            new CreateLocationDetailResultMessage(createLocationDetailResult)
+                        );
+                    }
                     break;
                 default:
                     // Log to trace that the dbType is not implemented.
@@ -646,6 +682,18 @@ public partial class SqliteService : ISqliteService
             // Open the connection to the sqlite database.
             using var database = await GetOpenConnectionAsync();
 
+            // Get the number of inserted records from the insert statement.
+            var insertedRecords = database.Execute(builder.Sql, builder.Parameters);
+
+            // Log the number of inserted records to trace.
+            logger.LogTrace(
+                SqliteLog,
+                "Sqlite Service, AddLocationRecordToTable: Inserted {insertedRecords} records into {DbType} table.",
+                insertedRecords,
+                DbType
+            );
+
+            /*
             // Execute the insert statement.
             using var insertCommand = database.CreateCommand();
             insertCommand.CommandText = builder.Sql;
@@ -658,6 +706,7 @@ public partial class SqliteService : ISqliteService
                 insertedRecords,
                 DbType
             );
+            */
 
             // Send a message that the location record has been added to the table.
             WeakReferenceMessenger.Default.Send(new LocationRecordAddedToTableMessage(DbType));
@@ -690,6 +739,18 @@ public partial class SqliteService : ISqliteService
             // Open the connection to the sqlite database.
             using var database = await GetOpenConnectionAsync();
 
+            // Get the number of deleted records from the delete statement.
+            var deletedRecords = database.Execute(builder.Sql, builder.Parameters);
+
+            // Log the number of deleted records to trace.
+            logger.LogTrace(
+                SqliteLog,
+                "Sqlite Service, DeleteLocationRecordFromTable: Deleted {deletedRecords} records from {DbType} table.",
+                deletedRecords,
+                DbType
+            );
+
+            /*
             // Execute the delete statement.
             using var deleteCommand = database.CreateCommand();
             deleteCommand.CommandText = builder.Sql;
@@ -702,6 +763,7 @@ public partial class SqliteService : ISqliteService
                 deletedRecords,
                 DbType
             );
+            */
 
             // Send a message that the location record has been deleted from the table.
             WeakReferenceMessenger.Default.Send(new LocationRecordDeletedFromTableMessage(DbType));
@@ -739,6 +801,18 @@ public partial class SqliteService : ISqliteService
             // Open the connection to the sqlite database.
             using var database = await GetOpenConnectionAsync();
 
+            // Get the number of updated records from the update statement.
+            var updatedRecords = database.Execute(builder.Sql, builder.Parameters);
+
+            // Log the number of updated records to trace.
+            logger.LogTrace(
+                SqliteLog,
+                "Sqlite Service, UpdadateLocationRecordInTable: Updated {updatedRecords} records in {DbType} table.",
+                updatedRecords,
+                DbType
+            );
+
+            /*
             // Execute the update statement.
             using var updateCommand = database.CreateCommand();
             updateCommand.CommandText = builder.Sql;
@@ -751,6 +825,7 @@ public partial class SqliteService : ISqliteService
                 updatedRecords,
                 DbType
             );
+            */
 
             // Send a message that the location record has been updated in the table.
             WeakReferenceMessenger.Default.Send(new LocationRecordUpdatedInTableMessage(DbType));
@@ -765,7 +840,7 @@ public partial class SqliteService : ISqliteService
         }
     }
 
-    public async Task CreateLocationDetailTable(DbType dbType)
+    public async Task<CreateLocationDetailResult> CreateLocationDetailTable(DbType dbType)
     {
         var locationDetailTableName = dbType.ToString();
         string locationTableName;
@@ -818,7 +893,13 @@ public partial class SqliteService : ISqliteService
                             locationDetailTableName
                         );
                         SendTableAvailableMessage(DbType.SecchiLocationDetail);
-                        return;
+                        // Return a CreateLocationDetailResult with a status of Success.
+                        return new CreateLocationDetailResult(
+                            dbType,
+                            CreateLocationDetailStatus.SuccessPreviouslyLoaded,
+                            0,
+                            string.Empty
+                        );
                     }
                     else
                     {
@@ -843,7 +924,12 @@ public partial class SqliteService : ISqliteService
                             "Sqlite Service, CreateLocationDetailTable: Feature table {SecchiLocations} has not been loaded. Location detail may not be created prior to locations existing.",
                             locationTableName
                         );
-                        return;
+                        return new CreateLocationDetailResult(
+                            dbType,
+                            CreateLocationDetailStatus.Failure,
+                            -1,
+                            $@"Feature table {locationTableName} has not been loaded, unable to create detail table."
+                        );
                     }
                     break;
                 default:
@@ -853,7 +939,12 @@ public partial class SqliteService : ISqliteService
                         "Sqlite Service, CreateLocationDetailTable: dbType {dbType} is not implemented.",
                         dbType
                     );
-                    return;
+                    return new CreateLocationDetailResult(
+                        dbType,
+                        CreateLocationDetailStatus.Failure,
+                        -1,
+                        $@"The DbType {dbType} is not implemented."
+                    );
             }
 
             var featureDetailTableCreateStatement =
@@ -888,12 +979,38 @@ public partial class SqliteService : ISqliteService
                 createReturnCode
             );
 
-            // TODO: Check return code before seting the loaded state.
-
-            // Set the previouslyLoaded setting to true.
-            await SetPreviouslyLoadedState(dbType, true);
-
-            // TODO: Send a message that the table is available and return code.
+            if (createReturnCode == 0)
+            {
+                // Log to trace that the detail table was created.
+                logger.LogTrace(
+                    SqliteLog,
+                    "Sqlite Service, CreateLocationDetailTable: Detail table created for {locationTableName}.",
+                    locationTableName
+                );
+                // Set the previouslyLoaded setting to true.
+                await SetPreviouslyLoadedState(dbType, true);
+                return new CreateLocationDetailResult(
+                    dbType,
+                    CreateLocationDetailStatus.SuccessNewCreated,
+                    createReturnCode,
+                    string.Empty
+                );
+            }
+            else
+            {
+                // Log to trace that the detail table was not created.
+                logger.LogError(
+                    SqliteLog,
+                    "Sqlite Service, CreateLocationDetailTable: Detail table not created for {locationTableName}.",
+                    locationTableName
+                );
+                return new CreateLocationDetailResult(
+                    dbType,
+                    CreateLocationDetailStatus.Failure,
+                    createReturnCode,
+                    $@"Detail table not created for {locationTableName}."
+                );
+            }
         }
         catch (SqliteException sqliteException)
         {
@@ -904,6 +1021,12 @@ public partial class SqliteService : ISqliteService
                 sqliteException.Message,
                 sqliteException.SqliteErrorCode
             );
+            return new CreateLocationDetailResult(
+                dbType,
+                CreateLocationDetailStatus.Failure,
+                sqliteException.SqliteErrorCode,
+                sqliteException.Message
+            );
         }
         catch (Exception exception)
         {
@@ -911,6 +1034,12 @@ public partial class SqliteService : ISqliteService
                 SqliteLog,
                 "Sqlite Service, CreateLocationDetailTable: Error creating location detail table: {exception}.",
                 exception.ToString()
+            );
+            return new CreateLocationDetailResult(
+                dbType,
+                CreateLocationDetailStatus.Failure,
+                -1,
+                exception.Message
             );
         }
     }

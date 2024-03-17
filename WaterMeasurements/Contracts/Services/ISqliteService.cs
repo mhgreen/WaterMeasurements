@@ -21,7 +21,7 @@ public interface ISqliteService
         int pageNumber
     );
 
-    public Task CreateLocationDetailTable(DbType dbType);
+    public Task<CreateLocationDetailResult> CreateLocationDetailTable(DbType dbType);
 
     public Task AddLocationDetailRecordToDetailTable(
         int locationId,

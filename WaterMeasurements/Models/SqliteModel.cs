@@ -120,6 +120,20 @@ public readonly record struct FeatureToTableResult(
     FeatureToTableStatus Status
 );
 
+public enum CreateLocationDetailStatus
+{
+    SuccessPreviouslyLoaded,
+    SuccessNewCreated,
+    Failure
+}
+
+public readonly record struct CreateLocationDetailResult(
+    DbType TableType,
+    CreateLocationDetailStatus Status,
+    int ReturnCode,
+    string ErrorMessage
+);
+
 public static class SqliteConversion
 {
     public static Dictionary<string, string> GeodatabaseSqliteTypeConversion { get; private set; } =
