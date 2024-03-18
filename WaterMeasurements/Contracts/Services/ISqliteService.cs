@@ -9,13 +9,13 @@ public interface ISqliteService
         int pageNumber
     );
 
-    public Task AddLocationRecordToTable(Location Location, DbType DbType);
+    public Task AddLocationRecordToTable(LocationRecord Location, DbType DbType);
 
     public Task DeleteLocationRecordFromTable(int LocationId, DbType DbType);
 
-    public Task UpdadateLocationRecordInTable(Location Location, DbType DbType);
+    public Task UpdadateLocationRecordInTable(LocationRecord Location, DbType DbType);
 
-    public Task<IEnumerable<Location>> GetRecordGroupFromSqlite(
+    public Task<IEnumerable<LocationRecord>> GetRecordGroupFromSqlite(
         DbType dbType,
         int pageSize,
         int pageNumber

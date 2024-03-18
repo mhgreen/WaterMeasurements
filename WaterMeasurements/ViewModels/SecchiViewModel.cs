@@ -1170,11 +1170,39 @@ public partial class SecchiViewModel : ObservableRecipient
             );
 
             Guard.Against.Null(
-                Guard.Against.Null(
-                    secchiAddLocation.LocationType,
-                    nameof(secchiAddLocation.LocationType),
-                    "SecchiViewModel, AddNewLocation(): secchiAddLocation.Location can not be null."
-                )
+                secchiAddLocation.Location,
+                nameof(secchiAddLocation.Location),
+                "SecchiViewModel, AddNewLocation(): secchiAddLocation.Location can not be null."
+            );
+
+            Guard.Against.Null(
+                secchiAddLocation.Latitude,
+                nameof(secchiAddLocation.Latitude),
+                "SecchiViewModel, AddNewLocation(): secchiAddLocation.Latitude can not be null."
+            );
+
+            Guard.Against.Null(
+                secchiAddLocation.Longitude,
+                nameof(secchiAddLocation.Longitude),
+                "SecchiViewModel, AddNewLocation(): secchiAddLocation.Longitude can not be null."
+            );
+
+            Guard.Against.Null(
+                secchiAddLocation.LocationName,
+                nameof(secchiAddLocation.LocationName),
+                "SecchiViewModel, AddNewLocation(): secchiAddLocation.LocationName can not be null."
+            );
+
+            Guard.Against.Null(
+                secchiAddLocation.LocationType,
+                nameof(secchiAddLocation.LocationType),
+                "SecchiViewModel, AddNewLocation(): secchiAddLocation.Location can not be null."
+            );
+
+            Guard.Against.Null(
+                secchiAddLocation.LocationNumber,
+                nameof(secchiAddLocation.LocationNumber),
+                "SecchiViewModel, AddNewLocation(): secchiAddLocation.LocationNumber can not be null."
             );
 
             Guard.Against.Null(
@@ -1197,12 +1225,29 @@ public partial class SecchiViewModel : ObservableRecipient
                 secchiLocationsChannel
             );
 
+            // Add the new location record to Sqlite.
+            WeakReferenceMessenger.Default.Send<AddLocationRecordToTableMessage>(
+                new AddLocationRecordToTableMessage(
+                    new AddLocationRecordToTable(
+                        new LocationRecord(
+                            (double)secchiAddLocation.Latitude,
+                            (double)secchiAddLocation.Longitude,
+                            (int)secchiAddLocation.LocationNumber,
+                            secchiAddLocation.LocationName,
+                            (LocationType)secchiAddLocation.LocationType
+                        ),
+                        DbType.SecchiLocations
+                    )
+                )
+            );
+
+            // Add the new location to the SecchiLocations collection.
             SecchiLocations.Add(
                 new SecchiLocationDisplay(
-                    latitude: (double)secchiAddLocation.Latitude!,
-                    longitude: (double)secchiAddLocation.Longitude!,
-                    locationId: (int)secchiAddLocation.LocationNumber!,
-                    locationName: secchiAddLocation.LocationName!,
+                    latitude: (double)secchiAddLocation.Latitude,
+                    longitude: (double)secchiAddLocation.Longitude,
+                    locationId: (int)secchiAddLocation.LocationNumber,
+                    locationName: secchiAddLocation.LocationName,
                     locationType: (LocationType)secchiAddLocation.LocationType
                 )
             );

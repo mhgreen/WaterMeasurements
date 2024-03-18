@@ -1,10 +1,12 @@
-﻿using System.Data;
+﻿using System.Collections.Generic;
+using System.Data;
 using Ardalis.GuardClauses;
 using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.Mvvm.Messaging.Messages;
 using Dapper;
 using Dapper.SimpleSqlBuilder;
 using Esri.ArcGISRuntime.Data;
+using Esri.ArcGISRuntime.Location;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
 using WaterMeasurements.Contracts.Services;
@@ -170,7 +172,10 @@ public partial class SqliteService : ISqliteService
                     );
 
                     // Call AddLocationRecordToTable with the extracted location and dbType.
-                    await AddLocationRecordToTable(message.Value.Location, message.Value.DbType);
+                    await AddLocationRecordToTable(
+                        message.Value.LocationRecord,
+                        message.Value.DbType
+                    );
                 }
             );
 
@@ -208,7 +213,7 @@ public partial class SqliteService : ISqliteService
 
                     // Call UpdateLocationRecordInTable with the extracted location and dbType.
                     await UpdadateLocationRecordInTable(
-                        message.Value.Location,
+                        message.Value.LocationRecord,
                         message.Value.DbType
                     );
                 }
@@ -653,37 +658,64 @@ public partial class SqliteService : ISqliteService
         }
     }
 
-    public async Task AddLocationRecordToTable(Location Location, DbType DbType)
+    public async Task AddLocationRecordToTable(LocationRecord LocationRecord, DbType DbType)
     {
         try
         {
             logger.LogTrace(SqliteLog, "AddLocationRecordToTable called.");
 
-            // Log the Location to trace.
-            logger.LogTrace(SqliteLog, "Location: {Location}", Location);
+            // Log the LocationRecord to trace.
+            logger.LogTrace(SqliteLog, "LocationRecord: {LocationRecord}", LocationRecord);
 
-            // Create the sqlite insert statement.
+            var insertSqlTablePortion =
+                $@"
+                INSERT INTO {DbType} (Latitude, Longitude, LocationId, Location, LocationType, Status, LocationCollected)
+                ";
+
+            // Log the insertSqlPortion to trace.
+            logger.LogTrace(
+                SqliteLog,
+                "Sqlite insert statement: {insertSqlPortion}",
+                insertSqlTablePortion
+            );
+
+            var builder1 = SimpleBuilder.Create();
+            builder1.AppendIntact(
+                $"VALUES ("
+                    + $"{LocationRecord.Latitude}, "
+                    + $"{LocationRecord.Longitude}, "
+                    + $"{LocationRecord.LocationId}, "
+                    + $"{LocationRecord.LocationName}, "
+                    + $"{(int)LocationRecord.LocationType}, "
+                    + $"{(int)RecordStatus.WorkingSet}, "
+                    + $"{(int)LocationCollected.NotCollected})"
+            );
+
             var builder = SimpleBuilder.Create(
                 $@"
-                    INSERT INTO {DbType} (Latitude, Longitude, LocationId, LocationName, LocationType, Status, LocationCollected)
-                    VALUES ({Location.Latitude},
-                    {Location.Longitude},
-                    {Location.LocationId},
-                    \""{Location.LocationName}\"",
-                    {(int)Location.LocationType},
-                    {(int)RecordStatus.WorkingSet},
+                VALUES ({LocationRecord.Latitude}, {LocationRecord.Longitude}, {LocationRecord.LocationId}, 
+                    {LocationRecord.LocationName}, {(int)LocationRecord.LocationType}, {(int)RecordStatus.WorkingSet},
                     {(int)LocationCollected.NotCollected})
                 "
             );
 
+            var sqlStatement = insertSqlTablePortion + builder.Sql;
+
             // Log builder.sql to trace.
             logger.LogTrace(SqliteLog, "Sqlite insert statement: {builder.Sql}", builder.Sql);
+
+            // Lof the builder.parameters to trace.
+            logger.LogTrace(
+                SqliteLog,
+                "Sqlite Service, AddLocationRecordToTable: Sqlite insert statement parameters: {builder.Parameters}",
+                builder.Parameters
+            );
 
             // Open the connection to the sqlite database.
             using var database = await GetOpenConnectionAsync();
 
             // Get the number of inserted records from the insert statement.
-            var insertedRecords = database.Execute(builder.Sql, builder.Parameters);
+            var insertedRecords = database.Execute(sqlStatement, builder.Parameters);
 
             // Log the number of inserted records to trace.
             logger.LogTrace(
@@ -692,21 +724,6 @@ public partial class SqliteService : ISqliteService
                 insertedRecords,
                 DbType
             );
-
-            /*
-            // Execute the insert statement.
-            using var insertCommand = database.CreateCommand();
-            insertCommand.CommandText = builder.Sql;
-            var insertedRecords = insertCommand.ExecuteNonQuery();
-
-            // Log the number of inserted records to trace.
-            logger.LogTrace(
-                SqliteLog,
-                "Sqlite Service, AddLocationRecordToTable: Inserted {insertedRecords} records into {DbType} table.",
-                insertedRecords,
-                DbType
-            );
-            */
 
             // Send a message that the location record has been added to the table.
             WeakReferenceMessenger.Default.Send(new LocationRecordAddedToTableMessage(DbType));
@@ -778,17 +795,17 @@ public partial class SqliteService : ISqliteService
         }
     }
 
-    public async Task UpdadateLocationRecordInTable(Location Location, DbType DbType)
+    public async Task UpdadateLocationRecordInTable(LocationRecord LocationRecord, DbType DbType)
     {
         try
         {
             logger.LogTrace(SqliteLog, "UpdateLocationRecordInTable called.");
-            // Log the Location to trace.
-            logger.LogTrace(SqliteLog, "Location: {Location}", Location);
+            // Log the LocationRecord to trace.
+            logger.LogTrace(SqliteLog, "LocationRecord: {LocationRecord}", LocationRecord);
 
             // Create the sqlite update statement.
             var builder = SimpleBuilder.Create(
-                $@"UPDATE {DbType} SET Latitude = {Location.Latitude}, Longitude = {Location.Longitude}, LocationId = {Location.LocationId}, LocationName = \""{Location.LocationName}\"", LocationType = {(int)Location.LocationType}, Status = {(int)RecordStatus.WorkingSet}, LocationCollected = {(int)LocationCollected.NotCollected} WHERE LocationId = {Location.LocationId}"
+                $@"UPDATE {DbType} SET Latitude = {LocationRecord.Latitude}, Longitude = {LocationRecord.Longitude}, LocationId = {LocationRecord.LocationId}, LocationName = \""{LocationRecord.LocationName}\"", LocationType = {(int)LocationRecord.LocationType}, Status = {(int)RecordStatus.WorkingSet}, LocationCollected = {(int)LocationCollected.NotCollected} WHERE LocationId = {LocationRecord.LocationId}"
             );
 
             // Log builder.sql to trace.
@@ -1573,7 +1590,7 @@ public partial class SqliteService : ISqliteService
         WeakReferenceMessenger.Default.Send(new TableAvailableMessage(dbType));
     }
 
-    public async Task<IEnumerable<Location>> GetRecordGroupFromSqlite(
+    public async Task<IEnumerable<LocationRecord>> GetRecordGroupFromSqlite(
         DbType dbType,
         int pageSize,
         int pageNumber
@@ -1619,7 +1636,7 @@ public partial class SqliteService : ISqliteService
                     );
 
                     // Execute the query and retrieve the results.
-                    var locations = await database.QueryAsync<Location>(
+                    var locations = await database.QueryAsync<LocationRecord>(
                         builder.Sql,
                         builder.Parameters
                     );
