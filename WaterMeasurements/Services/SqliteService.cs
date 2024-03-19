@@ -660,6 +660,8 @@ public partial class SqliteService : ISqliteService
 
     public async Task AddLocationRecordToTable(LocationRecord LocationRecord, DbType DbType)
     {
+        var insertedRecords = 0;
+
         try
         {
             logger.LogTrace(SqliteLog, "AddLocationRecordToTable called.");
@@ -677,18 +679,6 @@ public partial class SqliteService : ISqliteService
                 SqliteLog,
                 "Sqlite insert statement: {insertSqlPortion}",
                 insertSqlTablePortion
-            );
-
-            var builder1 = SimpleBuilder.Create();
-            builder1.AppendIntact(
-                $"VALUES ("
-                    + $"{LocationRecord.Latitude}, "
-                    + $"{LocationRecord.Longitude}, "
-                    + $"{LocationRecord.LocationId}, "
-                    + $"{LocationRecord.LocationName}, "
-                    + $"{(int)LocationRecord.LocationType}, "
-                    + $"{(int)RecordStatus.WorkingSet}, "
-                    + $"{(int)LocationCollected.NotCollected})"
             );
 
             var builder = SimpleBuilder.Create(
@@ -715,7 +705,7 @@ public partial class SqliteService : ISqliteService
             using var database = await GetOpenConnectionAsync();
 
             // Get the number of inserted records from the insert statement.
-            var insertedRecords = database.Execute(sqlStatement, builder.Parameters);
+            insertedRecords = database.Execute(sqlStatement, builder.Parameters);
 
             // Log the number of inserted records to trace.
             logger.LogTrace(
@@ -727,6 +717,28 @@ public partial class SqliteService : ISqliteService
 
             // Send a message that the location record has been added to the table.
             WeakReferenceMessenger.Default.Send(new LocationRecordAddedToTableMessage(DbType));
+        }
+        catch (SqliteException sqliteException)
+        {
+            logger.LogError(
+                SqliteLog,
+                "Sqlite Service, AddLocationRecordToTable: Error adding location record to table: {sqliteException.Message}, with an error code of {sqliteException.SqliteErrorCode}",
+                sqliteException.Message,
+                sqliteException.SqliteErrorCode
+            );
+
+            // Send a FeatureTableResultMessage with the number of records inserted and the return code.
+            WeakReferenceMessenger.Default.Send(
+                new FeatureToTableResultMessage(
+                    new FeatureToTableResult(
+                        DbType,
+                        insertedRecords,
+                        sqliteException.SqliteErrorCode,
+                        sqliteException.Message,
+                        FeatureToTableStatus.Failure
+                    )
+                )
+            );
         }
         catch (Exception exception)
         {
@@ -740,6 +752,8 @@ public partial class SqliteService : ISqliteService
 
     public async Task DeleteLocationRecordFromTable(int locationId, DbType DbType)
     {
+        var deletedRecords = 0;
+
         try
         {
             logger.LogTrace(SqliteLog, "DeleteLocationRecordFromTable called.");
@@ -747,31 +761,21 @@ public partial class SqliteService : ISqliteService
             logger.LogTrace(SqliteLog, "LocationId: {locationId}", locationId);
 
             // Create the sqlite delete statement.
-            var builder = SimpleBuilder.Create(
-                $@"DELETE FROM {DbType} WHERE LocationId = {locationId}"
-            );
+            var deleteLocationRecordSql = $"DELETE FROM {DbType} WHERE LocationId = {locationId}";
             // Log builder.sql to trace.
-            logger.LogTrace(SqliteLog, "Sqlite delete statement: {builder.Sql}", builder.Sql);
+            logger.LogTrace(
+                SqliteLog,
+                "Sqlite delete statement: {deleteLocationRecordSql}",
+                deleteLocationRecordSql
+            );
 
             // Open the connection to the sqlite database.
             using var database = await GetOpenConnectionAsync();
 
-            // Get the number of deleted records from the delete statement.
-            var deletedRecords = database.Execute(builder.Sql, builder.Parameters);
-
-            // Log the number of deleted records to trace.
-            logger.LogTrace(
-                SqliteLog,
-                "Sqlite Service, DeleteLocationRecordFromTable: Deleted {deletedRecords} records from {DbType} table.",
-                deletedRecords,
-                DbType
-            );
-
-            /*
             // Execute the delete statement.
             using var deleteCommand = database.CreateCommand();
-            deleteCommand.CommandText = builder.Sql;
-            var deletedRecords = deleteCommand.ExecuteNonQuery();
+            deleteCommand.CommandText = deleteLocationRecordSql;
+            deletedRecords = deleteCommand.ExecuteNonQuery();
 
             // Log the number of deleted records to trace.
             logger.LogTrace(
@@ -780,10 +784,31 @@ public partial class SqliteService : ISqliteService
                 deletedRecords,
                 DbType
             );
-            */
 
             // Send a message that the location record has been deleted from the table.
             WeakReferenceMessenger.Default.Send(new LocationRecordDeletedFromTableMessage(DbType));
+        }
+        catch (SqliteException sqliteException)
+        {
+            logger.LogError(
+                SqliteLog,
+                "Sqlite Service, DeleteLocationRecordFromTable: Error deleting location record from table: {sqliteException.Message}, with an error code of {sqliteException.SqliteErrorCode}",
+                sqliteException.Message,
+                sqliteException.SqliteErrorCode
+            );
+
+            // Send a FeatureTableResultMessage with the number of records inserted and the return code.
+            WeakReferenceMessenger.Default.Send(
+                new FeatureToTableResultMessage(
+                    new FeatureToTableResult(
+                        DbType,
+                        deletedRecords,
+                        sqliteException.SqliteErrorCode,
+                        sqliteException.Message,
+                        FeatureToTableStatus.Failure
+                    )
+                )
+            );
         }
         catch (Exception exception)
         {
@@ -803,23 +828,30 @@ public partial class SqliteService : ISqliteService
             // Log the LocationRecord to trace.
             logger.LogTrace(SqliteLog, "LocationRecord: {LocationRecord}", LocationRecord);
 
+            var updateSqlTablePortion =
+                $@"
+                UPDATE {DbType}
+                ";
+
             // Create the sqlite update statement.
             var builder = SimpleBuilder.Create(
-                $@"UPDATE {DbType} SET Latitude = {LocationRecord.Latitude}, Longitude = {LocationRecord.Longitude}, LocationId = {LocationRecord.LocationId}, LocationName = \""{LocationRecord.LocationName}\"", LocationType = {(int)LocationRecord.LocationType}, Status = {(int)RecordStatus.WorkingSet}, LocationCollected = {(int)LocationCollected.NotCollected} WHERE LocationId = {LocationRecord.LocationId}"
+                $@" SET Latitude = {LocationRecord.Latitude}, Longitude = {LocationRecord.Longitude}, LocationId = {LocationRecord.LocationId}, LocationName = \""{LocationRecord.LocationName}\"", LocationType = {(int)LocationRecord.LocationType}, Status = {(int)RecordStatus.WorkingSet}, LocationCollected = {(int)LocationCollected.NotCollected} WHERE LocationId = {LocationRecord.LocationId}"
             );
+
+            var sqlStatement = updateSqlTablePortion + builder.Sql;
 
             // Log builder.sql to trace.
             logger.LogTrace(
                 SqliteLog,
                 "Sqlite Service, UpdadateLocationRecordInTable: Sqlite update statement: {builder.Sql}",
-                builder.Sql
+                sqlStatement
             );
 
             // Open the connection to the sqlite database.
             using var database = await GetOpenConnectionAsync();
 
             // Get the number of updated records from the update statement.
-            var updatedRecords = database.Execute(builder.Sql, builder.Parameters);
+            var updatedRecords = database.Execute(sqlStatement, builder.Parameters);
 
             // Log the number of updated records to trace.
             logger.LogTrace(
@@ -828,21 +860,6 @@ public partial class SqliteService : ISqliteService
                 updatedRecords,
                 DbType
             );
-
-            /*
-            // Execute the update statement.
-            using var updateCommand = database.CreateCommand();
-            updateCommand.CommandText = builder.Sql;
-            var updatedRecords = updateCommand.ExecuteNonQuery();
-
-            // Log the number of updated records to trace.
-            logger.LogTrace(
-                SqliteLog,
-                "Sqlite Service, UpdadateLocationRecordInTable: Updated {updatedRecords} records in {DbType} table.",
-                updatedRecords,
-                DbType
-            );
-            */
 
             // Send a message that the location record has been updated in the table.
             WeakReferenceMessenger.Default.Send(new LocationRecordUpdatedInTableMessage(DbType));
@@ -1439,7 +1456,7 @@ public partial class SqliteService : ISqliteService
         {
             logger.LogError(
                 SqliteLog,
-                "Sqlite Service, DeleteLocationDetailRecordFromDetailTable: Error creating Sqlite table from DbType {dbType}, Sqlite exception: {sqliteMessage}, with an error code of {SqliteErrorCode}",
+                "Sqlite Service, DeleteLocationDetailRecordFromDetailTable: Error deleting location detail record from DbType {dbType}, Sqlite exception: {sqliteMessage}, with an error code of {SqliteErrorCode}",
                 dbType.ToString(),
                 sqliteException.Message,
                 sqliteException.SqliteErrorCode

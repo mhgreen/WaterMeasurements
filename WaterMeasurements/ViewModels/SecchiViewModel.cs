@@ -1324,7 +1324,7 @@ public partial class SecchiViewModel : ObservableRecipient
                 }
             }
 
-            // Send the feature via a DeleteFeatureMessage to the GeoDatabaseService.
+            // Send a DeleteFeatureMessage to the GeoDatabaseService.
             WeakReferenceMessenger.Default.Send<DeleteFeatureMessage, uint>(
                 new DeleteFeatureMessage(
                     new FeatureDeleteMessage("SecchiLocations", queryResult.First())
@@ -1348,6 +1348,13 @@ public partial class SecchiViewModel : ObservableRecipient
                     locationId
                 );
             }
+
+            // Send a message to the SqliteService to delete the location from the table.
+            WeakReferenceMessenger.Default.Send<DeleteLocationRecordFromTableMessage>(
+                new DeleteLocationRecordFromTableMessage(
+                    new DeleteLocationRecordFromTable(locationId, DbType.SecchiLocations)
+                )
+            );
         }
         catch (Exception exception)
         {
