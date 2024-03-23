@@ -39,6 +39,9 @@ public partial class SecchiViewModel : ObservableRecipient
     [ObservableProperty]
     private string secchiCollectionPointName = "Default Location";
 
+    [ObservableProperty]
+    private string locationDisplay = "CurrentLocations";
+
     // Observable property for the map border.
     [ObservableProperty]
     private Brush mapBorderColor = new SolidColorBrush(Colors.Transparent);

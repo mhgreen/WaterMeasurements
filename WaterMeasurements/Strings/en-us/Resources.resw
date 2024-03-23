@@ -264,4 +264,16 @@
   <data name="Error_TypeAndSourceNeeded" xml:space="preserve">
     <value>Type and source for location needed</value>
   </data>
+  <data name="Main_AddLocationButton.Content" xml:space="preserve">
+    <value>Add New Location</value>
+  </data>
+  <data name="Main_AddLocationCancelButton.Content" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="Main_LocationCancelToolTip.Content" xml:space="preserve">
+    <value>Don't add new location, return to list of locations.</value>
+  </data>
+  <data name="Main_LocationSaveToolTip.Content" xml:space="preserve">
+    <value>Name, feature type, and location source needed prior to saving.</value>
+  </data>
 </root>

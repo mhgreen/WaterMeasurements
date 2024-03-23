@@ -108,8 +108,6 @@ public partial class SecchiNewLocationViewModel : ObservableValidator
     private bool latitudeEntryValid;
     private bool longitudeEntryValid;
 
-    private bool collectOutAndBack = false;
-
     public SecchiNewLocationViewModel(
         ILogger<SecchiNewLocationViewModel> logger,
         ILocalSettingsService localSettingsService
@@ -164,10 +162,10 @@ public partial class SecchiNewLocationViewModel : ObservableValidator
         longitudeEntry = string.Empty;
 
         // Initialize the view model.
-        _ = Initialize();
+        Initialize();
     }
 
-    private async Task Initialize()
+    private void Initialize()
     {
         try
         {
@@ -177,11 +175,6 @@ public partial class SecchiNewLocationViewModel : ObservableValidator
                 LocalSettingsService,
                 nameof(LocalSettingsService),
                 "Configuration Service, Initialize(): LocalSettingsService is null."
-            );
-
-            // Get the collect out and back setting from the local settings service.
-            collectOutAndBack = await LocalSettingsService.ReadSettingAsync<bool>(
-                SecchiConfiguration.Item[SecchiConfiguration.Key.SecchiCollectOutAndBack]
             );
         }
         catch (Exception exception)

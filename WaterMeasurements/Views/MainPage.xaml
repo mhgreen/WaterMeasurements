@@ -7,9 +7,9 @@
     xmlns:esri="using:Esri.ArcGISRuntime.UI.Controls"
     xmlns:helpers="using:WaterMeasurements.Helpers"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:secchipagemodel="using:WaterMeasurements.Models"
     xmlns:ui="using:CommunityToolkit.WinUI"
     xmlns:viewmodels="using:WaterMeasurements.ViewModels"
+    xmlns:watermeasurementsmodel="using:WaterMeasurements.Models"
     xmlns:xaml="using:Microsoft.UI.Xaml"
     x:Name="MapPage"
     d:DataContext="{d:DesignInstance Type=viewmodels:MainViewModel}"
@@ -51,7 +51,7 @@
         </ControlTemplate>
 
         <!--  When using x:Bind, you need to set x:DataType  -->
-        <DataTemplate x:Key="SecchiLocationsTemplate" x:DataType="secchipagemodel:SecchiLocationDisplay">
+        <DataTemplate x:Key="SecchiLocationsTemplate" x:DataType="watermeasurementsmodel:SecchiLocationDisplay">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="*" />
@@ -721,212 +721,256 @@
                                             </StackPanel>
 
                                             <StackPanel
-                                                x:Name="SecchiAddLocationStackPanel"
+                                                x:Name="SecchiAddLocationPanel"
                                                 Width="400"
                                                 Margin="0,25,0,0"
                                                 Visibility="Visible">
 
-                                                <StackPanel>
-                                                    <TextBlock Style="{ThemeResource SettingsSectionHeaderTextBlockStyle}" Text="Location Name" />
-                                                    <ToolTipService.ToolTip>
-                                                        <ToolTip
-                                                            Content="Add a location to collect Secchi measurements. A location may be ongoing, and will result in a geolocation trigger each time it is encountered, or may be occassional and selected for a session."
-                                                            HorizontalOffset="200"
-                                                            VerticalOffset="-100" />
-                                                    </ToolTipService.ToolTip>
-                                                </StackPanel>
+                                                <controls:SwitchPresenter x:Name="LocationViews" Value="{x:Bind SecchiView.LocationDisplay, Mode=OneWay}">
 
-                                                <StackPanel Margin="0,0,0,0">
-                                                    <TextBox
-                                                        x:Name="SecchiLocationName"
-                                                        Margin="0,0,0,0"
-                                                        IsSpellCheckEnabled="False"
-                                                        Text="{x:Bind SecchiNewLocationView.LocationName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                        TextChanged="{x:Bind SecchiNewLocationView.LocationNameIsChanging, Mode=OneWay}" />
-                                                    <TextBlock
-                                                        x:Name="LocationNameError"
-                                                        Margin="0,0,0,0"
-                                                        Foreground="{ThemeResource SystemFillColorCriticalBrush}"
-                                                        Style="{StaticResource CaptionTextBlockStyle}"
-                                                        Text="{x:Bind SecchiNewLocationView.LocationNameError, Mode=OneWay}"
-                                                        Visibility="{x:Bind SecchiNewLocationView.LocationNameErrorVisibility, Mode=OneWay}" />
+                                                    <controls:Case Value="AddLocation">
 
-                                                    <ToolTipService.ToolTip>
-                                                        <ToolTip
-                                                            Content="Upper and lower case letters, numbers, spaces, as well as symbols []+-()_,.'{}=@|:^?"
-                                                            HorizontalOffset="200"
-                                                            VerticalOffset="-48" />
-                                                    </ToolTipService.ToolTip>
-                                                </StackPanel>
+                                                        <StackPanel Margin="0,0,0,0">
 
-                                                <StackPanel Margin="0,15,0,0" Orientation="Horizontal">
-                                                    <StackPanel>
-                                                        <DropDownButton
-                                                            x:Name="SecchiLocationTypeDropDown"
-                                                            Content="Type"
-                                                            FontWeight="SemiBold">
-                                                            <DropDownButton.Flyout>
-                                                                <MenuFlyout Placement="Bottom">
-                                                                    <MenuFlyoutItem
-                                                                        Click="{x:Bind LocationType_Click}"
-                                                                        Tag="Ongoing"
-                                                                        Text="Ongoing" />
-                                                                    <MenuFlyoutItem
-                                                                        Click="{x:Bind LocationType_Click}"
-                                                                        Tag="Occasional"
-                                                                        Text="Occasional" />
-                                                                </MenuFlyout>
-                                                            </DropDownButton.Flyout>
-                                                        </DropDownButton>
-                                                        <ToolTipService.ToolTip>
-                                                            <ToolTip
-                                                                Content="Add this location as ongoing to trigger ongoing data collection or occasional for limited collection."
-                                                                HorizontalOffset="200"
-                                                                VerticalOffset="-48" />
-                                                        </ToolTipService.ToolTip>
-                                                    </StackPanel>
+                                                            <StackPanel>
+                                                                <TextBlock Style="{ThemeResource SettingsSectionHeaderTextBlockStyle}" Text="Location Name" />
+                                                                <ToolTipService.ToolTip>
+                                                                    <ToolTip
+                                                                        Content="Add a location to collect Secchi measurements. A location may be ongoing, and will result in a geolocation trigger each time it is encountered, or may be occassional and selected for a session."
+                                                                        HorizontalOffset="200"
+                                                                        VerticalOffset="-100" />
+                                                                </ToolTipService.ToolTip>
+                                                            </StackPanel>
 
-                                                    <StackPanel>
-                                                        <DropDownButton
-                                                            x:Name="SecchiLocationSourceDropDown"
-                                                            Content="Source"
-                                                            FontWeight="SemiBold">
-                                                            <DropDownButton.Flyout>
-                                                                <MenuFlyout Placement="Bottom">
-                                                                    <MenuFlyoutItem
-                                                                        Click="{x:Bind LocationSource_Click}"
-                                                                        Tag="CurrentGPS"
-                                                                        Text="GPS" />
-                                                                    <MenuFlyoutItem
-                                                                        Click="{x:Bind LocationSource_Click}"
-                                                                        Tag="PointOnMap"
-                                                                        Text="Map Point" />
-                                                                    <MenuFlyoutItem
-                                                                        Click="{x:Bind LocationSource_Click}"
-                                                                        Tag="EnterLatLong"
-                                                                        Text="Entered" />
-                                                                </MenuFlyout>
-                                                            </DropDownButton.Flyout>
-                                                        </DropDownButton>
-                                                        <ToolTipService.ToolTip>
-                                                            <ToolTip
-                                                                Content="Use current GPS location, click a point on the map, or manually enter coordinates."
-                                                                HorizontalOffset="200"
-                                                                VerticalOffset="-48" />
-                                                        </ToolTipService.ToolTip>
-                                                    </StackPanel>
+                                                            <StackPanel Margin="0,0,0,0">
+                                                                <TextBox
+                                                                    x:Name="SecchiLocationName"
+                                                                    Margin="0,0,0,0"
+                                                                    IsSpellCheckEnabled="False"
+                                                                    Text="{x:Bind SecchiNewLocationView.LocationName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                    TextChanged="{x:Bind SecchiNewLocationView.LocationNameIsChanging, Mode=OneWay}" />
+                                                                <TextBlock
+                                                                    x:Name="LocationNameError"
+                                                                    Margin="0,0,0,0"
+                                                                    Foreground="{ThemeResource SystemFillColorCriticalBrush}"
+                                                                    Style="{StaticResource CaptionTextBlockStyle}"
+                                                                    Text="{x:Bind SecchiNewLocationView.LocationNameError, Mode=OneWay}"
+                                                                    Visibility="{x:Bind SecchiNewLocationView.LocationNameErrorVisibility, Mode=OneWay}" />
 
-                                                </StackPanel>
+                                                                <ToolTipService.ToolTip>
+                                                                    <ToolTip
+                                                                        Content="Upper and lower case letters, numbers, spaces, as well as symbols []+-()_,.'{}=@|:^?"
+                                                                        HorizontalOffset="200"
+                                                                        VerticalOffset="-48" />
+                                                                </ToolTipService.ToolTip>
+                                                            </StackPanel>
 
-                                                <StackPanel>
-                                                    <TextBlock
-                                                        x:Name="NeedTypeAndSourceError"
-                                                        Margin="0,0,0,0"
-                                                        Foreground="{ThemeResource SystemFillColorCriticalBrush}"
-                                                        Style="{StaticResource CaptionTextBlockStyle}"
-                                                        Text="{x:Bind SecchiNewLocationView.SourceAndTypeError, Mode=OneWay}"
-                                                        Visibility="{x:Bind SecchiNewLocationView.SourceAndTypeErrorVisibility, Mode=OneWay}" />
-                                                </StackPanel>
+                                                            <StackPanel Margin="0,15,0,0" Orientation="Horizontal">
+                                                                <StackPanel>
+                                                                    <DropDownButton
+                                                                        x:Name="SecchiLocationTypeDropDown"
+                                                                        Content="Type"
+                                                                        FontWeight="SemiBold">
+                                                                        <DropDownButton.Flyout>
+                                                                            <MenuFlyout Placement="Bottom">
+                                                                                <MenuFlyoutItem
+                                                                                    Click="{x:Bind LocationType_Click}"
+                                                                                    Tag="Ongoing"
+                                                                                    Text="Ongoing" />
+                                                                                <MenuFlyoutItem
+                                                                                    Click="{x:Bind LocationType_Click}"
+                                                                                    Tag="Occasional"
+                                                                                    Text="Occasional" />
+                                                                            </MenuFlyout>
+                                                                        </DropDownButton.Flyout>
+                                                                    </DropDownButton>
+                                                                    <ToolTipService.ToolTip>
+                                                                        <ToolTip
+                                                                            Content="Add this location as ongoing to trigger ongoing data collection or occasional for limited collection."
+                                                                            HorizontalOffset="200"
+                                                                            VerticalOffset="-48" />
+                                                                    </ToolTipService.ToolTip>
+                                                                </StackPanel>
 
-                                                <StackPanel
-                                                    x:Name="LatLongEntry"
-                                                    Margin="0,15,0,10"
-                                                    Visibility="Collapsed">
-                                                    <Grid ColumnSpacing="10">
-                                                        <Grid.ColumnDefinitions>
-                                                            <ColumnDefinition Width="*" />
-                                                            <ColumnDefinition Width="*" />
-                                                        </Grid.ColumnDefinitions>
-                                                        <Grid.RowDefinitions>
-                                                            <RowDefinition Height="*" />
-                                                            <RowDefinition Height="*" />
-                                                            <RowDefinition Height="*" />
-                                                        </Grid.RowDefinitions>
+                                                                <StackPanel>
+                                                                    <DropDownButton
+                                                                        x:Name="SecchiLocationSourceDropDown"
+                                                                        Content="Source"
+                                                                        FontWeight="SemiBold">
+                                                                        <DropDownButton.Flyout>
+                                                                            <MenuFlyout Placement="Bottom">
+                                                                                <MenuFlyoutItem
+                                                                                    Click="{x:Bind LocationSource_Click}"
+                                                                                    Tag="CurrentGPS"
+                                                                                    Text="GPS" />
+                                                                                <MenuFlyoutItem
+                                                                                    Click="{x:Bind LocationSource_Click}"
+                                                                                    Tag="PointOnMap"
+                                                                                    Text="Map Point" />
+                                                                                <MenuFlyoutItem
+                                                                                    Click="{x:Bind LocationSource_Click}"
+                                                                                    Tag="EnterLatLong"
+                                                                                    Text="Entered" />
+                                                                            </MenuFlyout>
+                                                                        </DropDownButton.Flyout>
+                                                                    </DropDownButton>
+                                                                    <ToolTipService.ToolTip>
+                                                                        <ToolTip
+                                                                            Content="Use current GPS location, click a point on the map, or manually enter coordinates."
+                                                                            HorizontalOffset="200"
+                                                                            VerticalOffset="-48" />
+                                                                    </ToolTipService.ToolTip>
+                                                                </StackPanel>
 
-                                                        <TextBlock
-                                                            Grid.Row="0"
-                                                            Grid.Column="0"
-                                                            Margin="0,0,0,5"
-                                                            Style="{ThemeResource SettingsSectionHeaderTextBlockStyle}"
-                                                            Text="Latitude" />
-                                                        <TextBlock
-                                                            Grid.Row="0"
-                                                            Grid.Column="1"
-                                                            Margin="0,0,0,5"
-                                                            Style="{ThemeResource SettingsSectionHeaderTextBlockStyle}"
-                                                            Text="Longitude" />
+                                                            </StackPanel>
 
-                                                        <TextBox
-                                                            x:Name="EnteredLatitude"
-                                                            Grid.Row="1"
-                                                            Grid.Column="0"
-                                                            Margin="0,0,0,0"
-                                                            IsSpellCheckEnabled="False"
-                                                            Text="{x:Bind SecchiNewLocationView.LatitudeEntry, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                            TextChanged="{x:Bind SecchiNewLocationView.LatitudeIsChanging, Mode=OneWay}" />
-                                                        <TextBlock
-                                                            x:Name="EnteredLatitudeError"
-                                                            Grid.Row="2"
-                                                            Grid.Column="0"
-                                                            Margin="0,0,0,0"
-                                                            Foreground="{ThemeResource SystemFillColorCriticalBrush}"
-                                                            Style="{StaticResource CaptionTextBlockStyle}"
-                                                            Text="{x:Bind SecchiNewLocationView.LatitudeEntryError, Mode=OneWay}"
-                                                            Visibility="{x:Bind SecchiNewLocationView.LatitudeEntryErrorVisibility, Mode=OneWay}" />
-                                                        <TextBox
-                                                            x:Name="EnteredLongitude"
-                                                            Grid.Row="1"
-                                                            Grid.Column="1"
-                                                            Margin="0,0,0,0"
-                                                            IsSpellCheckEnabled="False"
-                                                            Text="{x:Bind SecchiNewLocationView.LongitudeEntry, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                            TextChanged="{x:Bind SecchiNewLocationView.LongitudeIsChanging, Mode=OneWay}" />
-                                                        <TextBlock
-                                                            x:Name="EnteredLongitudeError"
-                                                            Grid.Row="2"
-                                                            Grid.Column="1"
-                                                            Margin="0,0,0,0"
-                                                            Foreground="{ThemeResource SystemFillColorCriticalBrush}"
-                                                            Style="{StaticResource CaptionTextBlockStyle}"
-                                                            Text="{x:Bind SecchiNewLocationView.LongitudeEntryError, Mode=OneWay}"
-                                                            Visibility="{x:Bind SecchiNewLocationView.LongitudeEntryErrorVisibility, Mode=OneWay}" />
-                                                    </Grid>
-                                                </StackPanel>
+                                                            <StackPanel>
+                                                                <TextBlock
+                                                                    x:Name="NeedTypeAndSourceError"
+                                                                    Margin="0,0,0,0"
+                                                                    Foreground="{ThemeResource SystemFillColorCriticalBrush}"
+                                                                    Style="{StaticResource CaptionTextBlockStyle}"
+                                                                    Text="{x:Bind SecchiNewLocationView.SourceAndTypeError, Mode=OneWay}"
+                                                                    Visibility="{x:Bind SecchiNewLocationView.SourceAndTypeErrorVisibility, Mode=OneWay}" />
+                                                            </StackPanel>
 
-                                                <StackPanel Margin="0,0,0,0">
-                                                    <StackPanel
-                                                        x:Name="LocationButtonStackPanel"
-                                                        HorizontalAlignment="Right"
-                                                        Orientation="Horizontal"
-                                                        Spacing="5">
-                                                        <Button
-                                                            x:Name="LocationSaveButton"
-                                                            x:Uid="Main_SecchiSaveButton"
-                                                            Command="{x:Bind SaveSecchiLocationCommand, Mode=OneWay}"
-                                                            IsEnabled="{x:Bind SecchiNewLocationView.LocationCanBeSaved, Mode=OneWay}" />
+                                                            <StackPanel
+                                                                x:Name="LatLongEntry"
+                                                                Margin="0,15,0,10"
+                                                                Visibility="Collapsed">
+                                                                <Grid ColumnSpacing="10">
+                                                                    <Grid.ColumnDefinitions>
+                                                                        <ColumnDefinition Width="*" />
+                                                                        <ColumnDefinition Width="*" />
+                                                                    </Grid.ColumnDefinitions>
+                                                                    <Grid.RowDefinitions>
+                                                                        <RowDefinition Height="*" />
+                                                                        <RowDefinition Height="*" />
+                                                                        <RowDefinition Height="*" />
+                                                                    </Grid.RowDefinitions>
 
-                                                        <ToolTipService.ToolTip>
-                                                            <ToolTip
-                                                                Content="Name, feature type, and location source needed prior to saving."
-                                                                HorizontalOffset="200"
-                                                                VerticalOffset="15" />
-                                                        </ToolTipService.ToolTip>
-                                                    </StackPanel>
-                                                </StackPanel>
+                                                                    <TextBlock
+                                                                        Grid.Row="0"
+                                                                        Grid.Column="0"
+                                                                        Margin="0,0,0,5"
+                                                                        Style="{ThemeResource SettingsSectionHeaderTextBlockStyle}"
+                                                                        Text="Latitude" />
+                                                                    <TextBlock
+                                                                        Grid.Row="0"
+                                                                        Grid.Column="1"
+                                                                        Margin="0,0,0,5"
+                                                                        Style="{ThemeResource SettingsSectionHeaderTextBlockStyle}"
+                                                                        Text="Longitude" />
 
-                                                <StackPanel>
-                                                    <ListView
-                                                        x:Name="SecchiLocationsListView"
-                                                        MaxHeight="200"
-                                                        Margin="0,10,0,0"
-                                                        IncrementalLoadingThreshold="2"
-                                                        IncrementalLoadingTrigger="Edge"
-                                                        IsItemClickEnabled="True"
-                                                        ItemClick="{x:Bind SecchiLocationsListView_ItemClick}"
-                                                        ItemTemplate="{StaticResource SecchiLocationsTemplate}"
-                                                        ItemsSource="{x:Bind SecchiView.SecchiLocations}"
-                                                        ScrollViewer.VerticalScrollBarVisibility="Visible" />
-                                                </StackPanel>
+                                                                    <TextBox
+                                                                        x:Name="EnteredLatitude"
+                                                                        Grid.Row="1"
+                                                                        Grid.Column="0"
+                                                                        Margin="0,0,0,0"
+                                                                        IsSpellCheckEnabled="False"
+                                                                        Text="{x:Bind SecchiNewLocationView.LatitudeEntry, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                        TextChanged="{x:Bind SecchiNewLocationView.LatitudeIsChanging, Mode=OneWay}" />
+                                                                    <TextBlock
+                                                                        x:Name="EnteredLatitudeError"
+                                                                        Grid.Row="2"
+                                                                        Grid.Column="0"
+                                                                        Margin="0,0,0,0"
+                                                                        Foreground="{ThemeResource SystemFillColorCriticalBrush}"
+                                                                        Style="{StaticResource CaptionTextBlockStyle}"
+                                                                        Text="{x:Bind SecchiNewLocationView.LatitudeEntryError, Mode=OneWay}"
+                                                                        Visibility="{x:Bind SecchiNewLocationView.LatitudeEntryErrorVisibility, Mode=OneWay}" />
+                                                                    <TextBox
+                                                                        x:Name="EnteredLongitude"
+                                                                        Grid.Row="1"
+                                                                        Grid.Column="1"
+                                                                        Margin="0,0,0,0"
+                                                                        IsSpellCheckEnabled="False"
+                                                                        Text="{x:Bind SecchiNewLocationView.LongitudeEntry, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                        TextChanged="{x:Bind SecchiNewLocationView.LongitudeIsChanging, Mode=OneWay}" />
+                                                                    <TextBlock
+                                                                        x:Name="EnteredLongitudeError"
+                                                                        Grid.Row="2"
+                                                                        Grid.Column="1"
+                                                                        Margin="0,0,0,0"
+                                                                        Foreground="{ThemeResource SystemFillColorCriticalBrush}"
+                                                                        Style="{StaticResource CaptionTextBlockStyle}"
+                                                                        Text="{x:Bind SecchiNewLocationView.LongitudeEntryError, Mode=OneWay}"
+                                                                        Visibility="{x:Bind SecchiNewLocationView.LongitudeEntryErrorVisibility, Mode=OneWay}" />
+                                                                </Grid>
+                                                            </StackPanel>
+
+                                                            <StackPanel Margin="0,20,0,0">
+                                                                <StackPanel
+                                                                    x:Name="LocationButtonStackPanel"
+                                                                    HorizontalAlignment="Right"
+                                                                    Orientation="Horizontal"
+                                                                    Spacing="5">
+
+                                                                    <StackPanel>
+                                                                        <Button
+                                                                            x:Name="LocationCancelButton"
+                                                                            x:Uid="Main_AddLocationCancelButton"
+                                                                            Click="{x:Bind CancelAddLocation_Click}" />
+                                                                        <ToolTipService.ToolTip>
+                                                                            <ToolTip
+                                                                                x:Uid="Main_LocationCancelToolTip"
+                                                                                HorizontalOffset="200"
+                                                                                VerticalOffset="15" />
+                                                                        </ToolTipService.ToolTip>
+                                                                    </StackPanel>
+
+                                                                    <StackPanel>
+                                                                        <Button
+                                                                            x:Name="LocationSaveButton"
+                                                                            x:Uid="Main_SecchiSaveButton"
+                                                                            Command="{x:Bind SaveSecchiLocationCommand, Mode=OneWay}"
+                                                                            IsEnabled="{x:Bind SecchiNewLocationView.LocationCanBeSaved, Mode=OneWay}" />
+                                                                        <ToolTipService.ToolTip>
+                                                                            <ToolTip
+                                                                                x:Uid="Main_LocationSaveToolTip"
+                                                                                HorizontalOffset="200"
+                                                                                VerticalOffset="15" />
+                                                                        </ToolTipService.ToolTip>
+                                                                    </StackPanel>
+
+                                                                </StackPanel>
+                                                            </StackPanel>
+
+                                                        </StackPanel>
+
+                                                    </controls:Case>
+
+                                                    <controls:Case Value="CurrentLocations">
+                                                        <Grid>
+                                                            <Grid.RowDefinitions>
+                                                                <RowDefinition Height="*" />
+                                                            </Grid.RowDefinitions>
+
+                                                            <StackPanel>
+                                                                <ListView
+                                                                    x:Name="SecchiLocationsListView"
+                                                                    MaxHeight="400"
+                                                                    Margin="0,30,0,0"
+                                                                    IncrementalLoadingThreshold="2"
+                                                                    IncrementalLoadingTrigger="Edge"
+                                                                    IsEnabled="True"
+                                                                    IsItemClickEnabled="True"
+                                                                    ItemClick="{x:Bind SecchiLocationsListView_ItemClick}"
+                                                                    ItemTemplate="{StaticResource SecchiLocationsTemplate}"
+                                                                    ItemsSource="{x:Bind SecchiView.SecchiLocations}"
+                                                                    ScrollViewer.VerticalScrollBarVisibility="Visible" />
+                                                                <Button
+                                                                    x:Name="AddNewLocationButton"
+                                                                    x:Uid="Main_AddLocationButton"
+                                                                    Margin="0,20,0,0"
+                                                                    HorizontalAlignment="Right"
+                                                                    Click="AddLocation_Click" />
+                                                            </StackPanel>
+
+                                                        </Grid>
+
+                                                    </controls:Case>
+                                                </controls:SwitchPresenter>
 
                                             </StackPanel>
 

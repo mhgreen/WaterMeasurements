@@ -1,47 +1,42 @@
 ﻿using System;
-using System.Resources;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
-
+using System.Diagnostics.CodeAnalysis;
+using System.Resources;
+using Ardalis.GuardClauses;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.Mvvm.Messaging.Messages;
-using CommunityToolkit.Mvvm.Input;
-
 using Esri.ArcGISRuntime.Data;
 using Esri.ArcGISRuntime.Mapping;
-
+using Esri.ArcGISRuntime.UI.Controls;
 using Microsoft.Extensions.Logging;
-using Microsoft.UI.Xaml.Media;
 using Microsoft.UI;
 using Microsoft.UI.Dispatching;
-
-using WaterMeasurements.Contracts.Services;
-using WaterMeasurements.Models;
-using WaterMeasurements.Views;
-using WaterMeasurements.Helpers;
-using WaterMeasurements.Services;
-using static WaterMeasurements.Models.PrePlannedMapConfiguration;
-
-using Ardalis.GuardClauses;
-using Newtonsoft.Json.Linq;
-using System.Diagnostics.CodeAnalysis;
-using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Navigation;
-using RabbitMQ.Client;
-using Esri.ArcGISRuntime.UI.Controls;
 using Microsoft.UI.Xaml;
-using static System.Runtime.InteropServices.JavaScript.JSType;
-using System.ComponentModel;
+using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Navigation;
+using Newtonsoft.Json.Linq;
 using NLog;
+using RabbitMQ.Client;
+using WaterMeasurements.Contracts.Services;
+using WaterMeasurements.Helpers;
+using WaterMeasurements.Models;
+using WaterMeasurements.Services;
+using WaterMeasurements.Views;
+using static System.Runtime.InteropServices.JavaScript.JSType;
+using static WaterMeasurements.Models.PrePlannedMapConfiguration;
 
 namespace WaterMeasurements.ViewModels;
 
 public partial class DataCollectionViewModel : ObservableValidator
 {
     private readonly ILogger<MapConfigurationViewModel> logger;
-    internal EventId DataCollectionViewModelLog => new(13, "DataCollectionViewModel");
+    internal static EventId DataCollectionViewModelLog => new(13, "DataCollectionViewModel");
     private readonly ILocalSettingsService? LocalSettingsService;
 
     [ObservableProperty]
@@ -91,7 +86,7 @@ public partial class DataCollectionViewModel : ObservableValidator
         NavigationViewItemInvokedEventArgs args
     )
     {
-        var navOptions = new FrameNavigationOptions
+        _ = new FrameNavigationOptions
         {
             TransitionInfoOverride = args.RecommendedNavigationTransitionInfo,
             IsNavigationStackEnabled = false,

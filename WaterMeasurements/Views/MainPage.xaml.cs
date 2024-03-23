@@ -931,9 +931,9 @@ public partial class MainPage : Page
     [RelayCommand]
     private async Task SaveSecchiLocationAsync()
     {
-        // Log to trace that the SaveSecchiLocation_Click method was called.
+        // Log to trace that the SaveSecchiLocationAsync method was called.
         Logger.Trace(
-            "MainPage.xaml.cs, SaveSecchiLocation_Click: SaveSecchiLocation_Click method called."
+            "MainPage.xaml.cs, SaveSecchiLocationAsync: SaveSecchiLocationAsync method called."
         );
 
         double latitude;
@@ -947,7 +947,7 @@ public partial class MainPage : Page
             {
                 // Log to trace that the LocationDisplay.Location is null.
                 Logger.Error(
-                    "MainPage.xaml.cs, SaveSecchiLocation_Click: LocationDisplay.Location is null."
+                    "MainPage.xaml.cs, SaveSecchiLocationAsync: LocationDisplay.Location is null."
                 );
                 return;
             }
@@ -956,7 +956,7 @@ public partial class MainPage : Page
             {
                 // Log to trace that the MapView.GeometryEditor is null.
                 Logger.Error(
-                    "MainPage.xaml.cs, SaveSecchiLocation_Click: MapView.GeometryEditor is null."
+                    "MainPage.xaml.cs, SaveSecchiLocationAsync: MapView.GeometryEditor is null."
                 );
                 return;
             }
@@ -964,9 +964,7 @@ public partial class MainPage : Page
             if (graphicsOverlay is null)
             {
                 // Log to trace that the graphicsOverlay is null.
-                Logger.Error(
-                    "MainPage.xaml.cs, SaveSecchiLocation_Click: graphicsOverlay is null."
-                );
+                Logger.Error("MainPage.xaml.cs, SaveSecchiLocationAsync: graphicsOverlay is null.");
                 return;
             }
 
@@ -974,7 +972,7 @@ public partial class MainPage : Page
             {
                 // Log to trace that the secchiLocationFeatures is null.
                 Logger.Error(
-                    "MainPage.xaml.cs, SaveSecchiLocation_Click: secchiLocationFeatures is null."
+                    "MainPage.xaml.cs, SaveSecchiLocationAsync: secchiLocationFeatures is null."
                 );
                 return;
             }
@@ -997,7 +995,7 @@ public partial class MainPage : Page
 
             // Log to trace the nextLocationNumber.
             Logger.Trace(
-                "MainPage.xaml.cs, SaveSecchiLocation_Click: nextLocationNumber: {nextLocationNumber}",
+                "MainPage.xaml.cs, SaveSecchiLocationAsync: nextLocationNumber: {nextLocationNumber}",
                 nextLocationNumber
             );
 
@@ -1007,7 +1005,7 @@ public partial class MainPage : Page
 
             // Log to trace SecchiNewLocationView.LocationName.
             Logger.Trace(
-                "MainPage.xaml.cs, SaveSecchiLocation_Click: SecchiNewLocationView.LocationName: {LocationName}",
+                "MainPage.xaml.cs, SaveSecchiLocationAsync: SecchiNewLocationView.LocationName: {LocationName}",
                 SecchiNewLocationView.LocationName
             );
 
@@ -1017,7 +1015,7 @@ public partial class MainPage : Page
 
                     // Log to trace the entered latitude and longitude.
                     Logger.Trace(
-                        "MainPage.xaml.cs, SaveSecchiLocation_Click: EnteredLatLong: Latitude: {latitude}, Longitude: {longitude}.",
+                        "MainPage.xaml.cs, SaveSecchiLocationAsync: EnteredLatLong: Latitude: {latitude}, Longitude: {longitude}.",
                         EnteredLatitude.Text,
                         EnteredLongitude.Text
                     );
@@ -1026,7 +1024,7 @@ public partial class MainPage : Page
                     {
                         // Log to trace that the graphicsOverlay is null.
                         Logger.Error(
-                            "MainPage.xaml.cs, SaveSecchiLocation_Click: graphicsOverlay is null."
+                            "MainPage.xaml.cs, SaveSecchiLocationAsync: graphicsOverlay is null."
                         );
                         return;
                     }
@@ -1047,7 +1045,7 @@ public partial class MainPage : Page
 
                     // Log to trace the latitude and lon values of the mapPoint.
                     Logger.Trace(
-                        "MainPage.xaml.cs, GeometryEditor_PropertyChanged: Added point to map at: Lat {latitude}, Lon {lon}.",
+                        "MainPage.xaml.cs, SaveSecchiLocationAsync:: Added point to map at: Lat {latitude}, Lon {lon}.",
                         latitude,
                         longitude
                     );
@@ -1071,6 +1069,9 @@ public partial class MainPage : Page
 
                     SecchiNewLocationView.LocationCanBeSaved = false;
 
+                    // Return to the location display view.
+                    SecchiView.LocationDisplay = "CurrentLocations";
+
                     break;
 
                 case LocationSource.CurrentGPS:
@@ -1078,7 +1079,7 @@ public partial class MainPage : Page
                     {
                         // Log to trace that the LocationDisplay.Location is null.
                         Logger.Error(
-                            "MainPage.xaml.cs, SaveSecchiLocation_Click: LocationDisplay.Location is null."
+                            "MainPage.xaml.cs, SaveSecchiLocationAsync: LocationDisplay.Location is null."
                         );
                         break;
                     }
@@ -1095,7 +1096,7 @@ public partial class MainPage : Page
                     secchiAddLocation.Longitude = longitude;
 
                     Logger.Trace(
-                        "MainPage.xaml.cs, SaveSecchiLocation_Click, CurrentGPS: presentLocation: Lat {latitude}, Lon {longitude}.",
+                        "MainPage.xaml.cs, SaveSecchiLocationAsync, CurrentGPS: presentLocation: Lat {latitude}, Lon {longitude}.",
                         latitude,
                         longitude
                     );
@@ -1104,7 +1105,7 @@ public partial class MainPage : Page
                     {
                         // Log to trace that the graphicsOverlay is null.
                         Logger.Error(
-                            "MainPage.xaml.cs, SaveSecchiLocation_Click: graphicsOverlay is null."
+                            "MainPage.xaml.cs, SaveSecchiLocationAsync: graphicsOverlay is null."
                         );
                     }
                     else
@@ -1127,6 +1128,9 @@ public partial class MainPage : Page
 
                     SecchiNewLocationView.LocationCanBeSaved = false;
 
+                    // Return to the location display view.
+                    SecchiView.LocationDisplay = "CurrentLocations";
+
                     break;
 
                 case LocationSource.PointOnMap:
@@ -1134,7 +1138,7 @@ public partial class MainPage : Page
                     {
                         // Log to trace that the MapView.GeometryEditor is null.
                         Logger.Error(
-                            "MainPage.xaml.cs, SaveSecchiLocation_Click: MapView.GeometryEditor is null."
+                            "MainPage.xaml.cs, SaveSecchiLocationAsync: MapView.GeometryEditor is null."
                         );
                         break;
                     }
@@ -1171,7 +1175,7 @@ public partial class MainPage : Page
                                 .X;
                             secchiAddLocation.Longitude = longitude;
                             Logger.Trace(
-                                "MainPage.xaml.cs, SaveSecchiLocation_Click: New Location is at: Lat {lat}, Lon {lon}.",
+                                "MainPage.xaml.cs, SaveSecchiLocationAsync: point on map is at: Lat {lat}, Lon {lon}.",
                                 latitude,
                                 longitude
                             );
@@ -1180,7 +1184,7 @@ public partial class MainPage : Page
                             {
                                 // Log to trace that the secchiLocationFeatures is null.
                                 Logger.Error(
-                                    "MainPage.xaml.cs, SaveSecchiLocation_Click: secchiLocationFeatures is null."
+                                    "MainPage.xaml.cs, SaveSecchiLocationAsync: secchiLocationFeatures is null."
                                 );
                                 return;
                             }
@@ -1195,22 +1199,25 @@ public partial class MainPage : Page
                         // Since the drop-down is set to "Point on Map", start the geometry editor.
                         // This provides for a consistent user experience if the page is navigated away from and then back.
                         MapView.GeometryEditor.Start(GeometryType.Point);
+
+                        // Return to the location display view.
+                        SecchiView.LocationDisplay = "CurrentLocations";
                     }
                     break;
 
                 default:
                     Logger.Error(
-                        "MainPage.xaml.cs, SaveSecchiLocation_Click: LocationSource not set."
+                        "MainPage.xaml.cs, SaveSecchiLocationAsync: LocationSource not set."
                     );
                     break;
             }
         }
         catch (Exception exception)
         {
-            // Log to trace that an error occurred in SaveSecchiLocation_Click.
+            // Log to trace that an error occurred in SaveSecchiLocationAsync.
             Logger.Error(
                 exception,
-                "MainPage.xaml.cs, SaveSecchiLocation_Click: An error occurred in SaveSecchiLocation_Click: {exception}.",
+                "MainPage.xaml.cs, SaveSecchiLocationAsync: An error occurred in SaveSecchiLocationAsync: {exception}.",
                 exception.Message.ToString()
             );
         }
@@ -1421,6 +1428,51 @@ public partial class MainPage : Page
             Logger.Error(
                 exception,
                 "MainPage.xaml.cs, LocationType_Click: An error occurred in LocationType_Click: {exception}",
+                exception.Message
+            );
+        }
+    }
+
+    private void AddLocation_Click(object sender, RoutedEventArgs eventArgs)
+    {
+        // Log to trace that the AddLocation_Click method was called.
+        Logger.Trace("MainPage.xaml.cs, AddLocation_Click: AddLocation_Click method called.");
+
+        try
+        {
+            // Go to the add location view.
+            SecchiView.LocationDisplay = "AddLocation";
+        }
+        catch (Exception exception)
+        {
+            // Log to trace the exception message.
+            Logger.Error(
+                exception,
+                "MainPage.xaml.cs, AddLocation_Click: An error occurred in AddLocation_Click: {exception}",
+                exception.Message
+            );
+        }
+    }
+
+    private void CancelAddLocation_Click(object sender, RoutedEventArgs eventArgs)
+    {
+        // Log to trace that the AddLocation_Click method was called.
+        Logger.Trace("MainPage.xaml.cs, AddLocation_Click: AddLocation_Click method called.");
+
+        try
+        {
+            _ = eventArgs as RoutedEventArgs;
+            _ = sender as Button;
+
+            // Return to the location display view.
+            SecchiView.LocationDisplay = "CurrentLocations";
+        }
+        catch (Exception exception)
+        {
+            // Log to trace the exception message.
+            Logger.Error(
+                exception,
+                "MainPage.xaml.cs, AddLocation_Click: An error occurred in AddLocation_Click: {exception}",
                 exception.Message
             );
         }
