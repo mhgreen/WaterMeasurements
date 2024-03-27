@@ -1198,7 +1198,7 @@ public partial class MainPage : Page
 
                         // Since the drop-down is set to "Point on Map", start the geometry editor.
                         // This provides for a consistent user experience if the page is navigated away from and then back.
-                        MapView.GeometryEditor.Start(GeometryType.Point);
+                        // MapView.GeometryEditor.Start(GeometryType.Point);
 
                         // Return to the location display view.
                         SecchiView.LocationDisplay = "CurrentLocations";
@@ -1438,6 +1438,15 @@ public partial class MainPage : Page
         // Log to trace that the AddLocation_Click method was called.
         Logger.Trace("MainPage.xaml.cs, AddLocation_Click: AddLocation_Click method called.");
 
+        var currentCollectionType = SecchiLocationSourceDropDown.Content.ToString();
+
+        if (currentCollectionType == "Map Point")
+        {
+            // if the drop-down for collection type is set to "Point on Map", start the geometry editor.
+            // This provides for a consistent user experience if the page is navigated away from and then back.
+            MapView.GeometryEditor?.Start(GeometryType.Point);
+        }
+
         try
         {
             // Go to the add location view.
@@ -1457,12 +1466,28 @@ public partial class MainPage : Page
     private void CancelAddLocation_Click(object sender, RoutedEventArgs eventArgs)
     {
         // Log to trace that the AddLocation_Click method was called.
-        Logger.Trace("MainPage.xaml.cs, AddLocation_Click: AddLocation_Click method called.");
+        Logger.Trace(
+            "MainPage.xaml.cs, CancelAddLocation_Click: CancelAddLocation_Click method called."
+        );
 
         try
         {
             _ = eventArgs as RoutedEventArgs;
             _ = sender as Button;
+
+            // Clear the location name, latitude, and longitude.
+            SecchiNewLocationView.LocationName = string.Empty;
+            SecchiNewLocationView.LatitudeEntry = string.Empty;
+            SecchiNewLocationView.LongitudeEntry = string.Empty;
+
+            var currentCollectionType = SecchiLocationSourceDropDown.Content.ToString();
+
+            if (currentCollectionType == "Map Point")
+            {
+                // If the drop-down is set to "Point on Map" and the action was canceled, stop the geometry editor.
+                // This keeps the map point square from appearing on the map when the user navigates away from the page.
+                MapView.GeometryEditor?.Stop();
+            }
 
             // Return to the location display view.
             SecchiView.LocationDisplay = "CurrentLocations";
