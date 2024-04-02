@@ -90,3 +90,32 @@ public struct SecchiAddLocation
     public string? LocationName { get; set; }
     public MapPoint? Location { get; set; }
 }
+
+// Secchi location collection class for the SecchiViewModel service.
+public class SecchiCollectionDisplay(
+    string locationName,
+    double latitude,
+    double longitude,
+    int locationId,
+    int obs1,
+    int obs2,
+    int obs3,
+    double secchiDepth,
+    DateTime collectionDate
+)
+{
+    public string LocationName { get; private set; } = locationName;
+    public double? Latitude { get; set; } = latitude;
+    public double? Longitude { get; set; } = longitude;
+    public int LocationId { get; private set; } = locationId;
+    public int Obs1 { get; private set; } = obs1;
+    public int Obs2 { get; private set; } = obs2;
+    public int Obs3 { get; private set; } = obs3;
+    public double SecchiDepth { get; private set; } = secchiDepth;
+    public DateTime CollectionDate { get; private set; } = collectionDate;
+    public string DateLatLon =>
+        $"{CollectionDate:MM/dd/yy H:mm} Lat: {Latitude:F4}, Lon: {Longitude:F4}";
+    public string Observations =>
+        $"Obs1: {Obs1}, Obs2: {Obs2}, Obs3: {Obs3}, Secchi: {SecchiDepth:F2}";
+    public string Secchi => $"Secchi: {SecchiDepth:F2}";
+}

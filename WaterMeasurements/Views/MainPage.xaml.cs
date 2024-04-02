@@ -1738,5 +1738,78 @@ public partial class MainPage : Page
         }
     }
 
+    private void Edit_Observation_Click(object sender, RoutedEventArgs eventArgs)
+    {
+        // Log to trace that the Edit_Observation_Click method was called.
+        Logger.Trace(
+            "MainPage.xaml.cs, Edit_Observation_Click: Edit_Observation_Click method called."
+        );
+
+        _ = eventArgs as RoutedEventArgs;
+        var button = sender as Button;
+
+        try
+        {
+            Guard.Against.Null(button, nameof(button), "Button in Edit_Observation_Click is null.");
+
+            var locationId = button.Tag;
+
+            // Log to trace the value of sender and eventArgs.
+            Logger.Trace(
+                "MainPage.xaml.cs, Edit_Observation_Click: LocationId: {locationId}",
+                locationId
+            );
+        }
+        catch (Exception exception)
+        {
+            // Log to trace the exception message.
+            Logger.Error(
+                exception,
+                "MainPage.xaml.cs, Edit_Observation_Click: An error occurred in Edit_Observation_Click: {exception}",
+                exception.Message
+            );
+        }
+    }
+
+    private void Delete_Observation_Click(object sender, RoutedEventArgs eventArgs)
+    {
+        // Log to trace that the Delete_Observation_Click method was called.
+        Logger.Trace(
+            "MainPage.xaml.cs, Delete_Observation_Click: Delete_Observation_Click method called."
+        );
+
+        _ = eventArgs as RoutedEventArgs;
+        var button = sender as Button;
+
+        try
+        {
+            Guard.Against.Null(
+                button,
+                nameof(button),
+                "Button in Delete_Observation_Click is null."
+            );
+
+            var locationId = button.Tag;
+
+            // Log to trace the value of sender and eventArgs.
+            Logger.Trace(
+                "MainPage.xaml.cs, Delete_Observation_Click: LocationId: {locationId}",
+                locationId
+            );
+
+            // TODO: Implement the logic to delete the observation based on the locationId.
+            // Your code here...
+        }
+        catch (Exception exception)
+        {
+            // Log to trace the exception message.
+            Logger.Error(
+                exception,
+                "MainPage.xaml.cs, Delete_Observation_Click: An error occurred in Delete_Observation_Click: {exception}",
+                exception.Message
+            );
+        }
+    }
+
     #endregion Event handlers
 }

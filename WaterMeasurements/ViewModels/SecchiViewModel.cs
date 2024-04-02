@@ -10,6 +10,7 @@ using Esri.ArcGISRuntime.Geotriggers;
 using Microsoft.Extensions.Logging;
 using Microsoft.UI;
 using Microsoft.UI.Dispatching;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Newtonsoft.Json.Linq;
@@ -936,7 +937,8 @@ public partial class SecchiViewModel : ObservableRecipient
                             );
                             uiDispatcherQueue.TryEnqueue(() =>
                             {
-                                MapBorderColor = new SolidColorBrush(Colors.SeaGreen);
+                                MapBorderColor = (SolidColorBrush)
+                                    Application.Current.Resources["AccentFillColorDefaultBrush"];
                             });
                             break;
                         case FenceNotificationType.Exited:
@@ -1058,6 +1060,12 @@ public partial class SecchiViewModel : ObservableRecipient
                 "SecchiViewModel, ProcessSecchiMeasurements: secchiMeasurements can not be null."
             );
 
+            Guard.Against.Null(
+                feature,
+                nameof(feature),
+                "SecchiViewModel, ProcessSecchiMeasurements: feature can not be null."
+            );
+
             // Once the location have been collected, move to the results panel.
             // Send a SetSecchiSelectViewMessage with the value of "SecchiCollectionTable".
             WeakReferenceMessenger.Default.Send<SetSecchiSelectViewMessage>(
@@ -1111,9 +1119,9 @@ public partial class SecchiViewModel : ObservableRecipient
             secchiObservation.SetAttributeValue("secchi", secchiValue);
 
             // TODO: Configure a state machine to make sure that everything is in the correct state before committing the transaction.
-            // secchiObservation.SetAttributeValue("locationId", feature.Attributes["location_id"]);
+            secchiObservation.SetAttributeValue("locationId", feature.Attributes["location_id"]);
             // For testing, set the locationId to 55.
-            secchiObservation.SetAttributeValue("locationId", 55);
+            // secchiObservation.SetAttributeValue("locationId", 55);
 
             // Get the current time and assign that to the secchiObservation.
             secchiObservation.SetAttributeValue("dateCollected", DateTime.UtcNow);

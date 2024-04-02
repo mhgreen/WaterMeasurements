@@ -114,7 +114,7 @@ public partial class SqliteService : ISqliteService
             // This is mostly for testing, but could also be used to reset the app to initial run state.
             await localSettingsService.SaveSettingAsync(
                 SqliteConfiguration.Item[Key.SqliteSetToInitialRun],
-                true
+                false
             );
             // ---------- Set to initial run manually ----------
 
@@ -747,6 +747,126 @@ public partial class SqliteService : ISqliteService
                 "Sqlite Service, AddLocationRecordToTable: Error adding location record to table: {exception}.",
                 exception.ToString()
             );
+        }
+    }
+
+    public async Task<LocationRecord> GetLocationRecordFromTable(int LocationId, DbType DbType)
+    {
+        Builder builder;
+
+        try
+        {
+            logger.LogTrace(SqliteLog, "GetLocationRecordFromTable called.");
+            // Log the LocationId to trace.
+            logger.LogTrace(SqliteLog, "LocationId: {LocationId}", LocationId);
+
+            // Create the sqlite select statement.
+            var selectLocationRecordSql = $"SELECT * FROM {DbType} WHERE LocationId = {LocationId}";
+            // Log selectLocationRecordSql to trace.
+            logger.LogTrace(
+                SqliteLog,
+                "Sqlite select statement: {selectLocationRecordSql}",
+                selectLocationRecordSql
+            );
+
+            switch (DbType)
+            {
+                case DbType.SecchiLocations:
+                    builder = SimpleBuilder.Create(
+                        $@"
+                            SELECT * FROM {DbType} WHERE LocationId = {LocationId}
+                        "
+                    );
+                    // Log builder.sql to trace.
+                    logger.LogTrace(
+                        SqliteLog,
+                        "Sqlite Service, GetLocationRecordFromTable: Sqlite select statement: {builder.Sql}",
+                        builder.Sql
+                    );
+                    break;
+                default:
+                    logger.LogError(
+                        SqliteLog,
+                        "Sqlite Service, GetLocationRecordFromTable: dbType {DbType} is not implemented.",
+                        DbType
+                    );
+                    return new LocationRecord();
+            }
+
+            // Open the connection to the sqlite database.
+            using var database = await GetOpenConnectionAsync();
+
+            // Execute the select statement.
+            using var selectCommand = database.CreateCommand();
+            selectCommand.CommandText = builder.Sql;
+            var selectedRecords = selectCommand.ExecuteReader();
+
+            // Log the number of location records to trace.
+            logger.LogTrace(
+                SqliteLog,
+                "Sqlite Service, GetLocationRecordFromTable: Retrieved {locationRecord} records from {DbType} table.",
+                selectedRecords,
+                DbType
+            );
+
+            // Read the data using the select command.
+            using var reader = selectCommand.ExecuteReader();
+
+            // Read the data from the reader.
+            if (reader.Read())
+            {
+                // Create a new LocationRecord from the reader.
+                var locationRecord = new LocationRecord
+                {
+                    Latitude = reader.GetDouble(0),
+                    Longitude = reader.GetDouble(1),
+                    LocationId = reader.GetInt32(2),
+                    LocationName = reader.GetString(3),
+                    LocationType = (LocationType)reader.GetInt32(4)
+                };
+
+                // Log the location record to trace.
+                logger.LogTrace(
+                    SqliteLog,
+                    "Sqlite Service, GetLocationRecordFromTable: LocationRecord: {locationRecord}",
+                    locationRecord
+                );
+
+                // Return the location record.
+                return locationRecord;
+            }
+            else
+            {
+                // Log a warning that the location record was not found.
+                logger.LogWarning(
+                    SqliteLog,
+                    "Sqlite Service, GetLocationRecordFromTable: Location record with LocationId {LocationId} not found in {DbType} table.",
+                    LocationId,
+                    DbType
+                );
+
+                // Return an empty location record.
+                return new LocationRecord();
+            }
+        }
+        catch (SqliteException sqliteException)
+        {
+            logger.LogError(
+                SqliteLog,
+                "Sqlite Service, GetLocationRecordFromTable: Error retrieving location record from table: {sqliteException.Message}, with an error code of {sqliteException.SqliteErrorCode}",
+                sqliteException.Message,
+                sqliteException.SqliteErrorCode
+            );
+            return new LocationRecord();
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(
+                SqliteLog,
+                "Sqlite Service, GetLocationRecordFromTable: Error retrieving location record from table: {exception}",
+                exception.ToString()
+            );
+            return new LocationRecord();
         }
     }
 

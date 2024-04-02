@@ -17,8 +17,8 @@ using WinRT;
 
 namespace WaterMeasurements.Services.IncrementalLoaders;
 
-public class SecchiLocationCollectionLoader
-    : ObservableCollection<SecchiLocationDisplay>,
+public class SecchiObservationCollectionLoader
+    : ObservableCollection<SecchiCollectionDisplay>,
         ISupportIncrementalLoading
 {
     private int pageIndex = 0;
@@ -30,14 +30,15 @@ public class SecchiLocationCollectionLoader
     public bool HasMoreItems => hasMoreItems;
 
     // Set the eventId for the logger.
-    private readonly EventId SecchiLocationLoaderLog = new(17, "SecchiLocationCollectionLoader");
+    private readonly EventId SecchiObservationLoaderLog =
+        new(19, "SecchiObservationCollectionLoader");
 
     // Set the SqliteService and Logger properties.
     // These properties are set by the dependency injection system.
     // The factory method didn't seem to work in SecchiViewModel.
     // This may be due to how the incremental loader is used in the SecchiViewModel.
 
-    private readonly ILogger<SecchiLocationCollectionLoader> logger;
+    private readonly ILogger<SecchiObservationCollectionLoader> logger;
     private readonly ISqliteService? sqliteService;
 
     private struct SecchiChannelNumbers
@@ -48,7 +49,7 @@ public class SecchiLocationCollectionLoader
     }
 
     // create secchiLocationsFeatures as a FeatureTable.
-    private FeatureTable? secchiLocationFeatures;
+    private FeatureTable? secchiObservationFeatures;
 
     private QueryParameters queryParameters = new() { WhereClause = "1=1" };
 
@@ -62,8 +63,9 @@ public class SecchiLocationCollectionLoader
     private readonly FeatureToType<long?, bool> featureLongConverter = new(null, false);
     private readonly FeatureToType<string?, bool> featureStringConverter = new(null, false);
     private readonly FeatureToType<Guid?, bool> featureGuidConverter = new(null, false);
+    private readonly FeatureToType<DateTime?, bool> featureDateTimeConverter = new(null, false);
 
-    public SecchiLocationCollectionLoader()
+    public SecchiObservationCollectionLoader()
     {
         var currentApp = Application.Current as App;
         Guard.Against.Null(currentApp, nameof(currentApp), "Application.Current can not be null");
@@ -73,29 +75,31 @@ public class SecchiLocationCollectionLoader
         Guard.Against.Null(
             sqliteService,
             nameof(sqliteService),
-            "SecchiLocationCollectionLoader: SecchiLocationCollectionLoader can't work without the Sqlite service."
+            "SecchiObservationCollectionLoader: SecchiObservationCollectionLoader can't work without the Sqlite service."
         );
-        var loggerProvider = serviceProvider.GetService<ILogger<SecchiLocationCollectionLoader>>();
+        var loggerProvider = serviceProvider.GetService<
+            ILogger<SecchiObservationCollectionLoader>
+        >();
         Guard.Against.Null(
             loggerProvider,
             nameof(loggerProvider),
-            "SecchiLocationCollectionLoader: SecchiLocationCollectionLoader loggerProvider is null."
+            "SecchiObservationCollectionLoader: SecchiObservationCollectionLoader loggerProvider is null."
         );
         logger = loggerProvider;
         Guard.Against.Null(
             logger,
             nameof(logger),
-            "SecchiLocationCollectionLoader: SecchiLocationCollectionLoader can't work without a logger."
+            "SecchiObservationCollectionLoader: SecchiObservationCollectionLoader can't work without a logger."
         );
 
-        logger.LogDebug(SecchiLocationLoaderLog, "SecchiLocationCollectionLoader created.");
+        logger.LogDebug(SecchiObservationLoaderLog, "SecchiObservationCollectionLoader created.");
 
         SecchiChannelNumbers secchiChannelNumbers = new();
 
         // Request the Secchi channel numbers from SecchiViewModel.
         var secchiChannelMessageResult =
             WeakReferenceMessenger.Default.Send<SecchiChannelRequestMessage>();
-        if (secchiChannelMessageResult.Response.LocationChannel is not 0)
+        if (secchiChannelMessageResult.Response.ObservationChannel is not 0)
         {
             secchiChannelNumbers.LocationChannel = secchiChannelMessageResult
                 .Response
@@ -109,41 +113,41 @@ public class SecchiLocationCollectionLoader
 
             // Log to trace the individual channel numbers.
             logger.LogTrace(
-                SecchiLocationLoaderLog,
-                "SecchiLocationCollectionLoader: SecchiChannelRequestMessage, ObservationChannel: {ObservationChannel}, LocationChannel: {LocationChannel}, GeoTriggerChannel: {GeoTriggerChannel}",
+                SecchiObservationLoaderLog,
+                "SecchiObservationCollectionLoader: SecchiChannelRequestMessage, ObservationChannel: {ObservationChannel}, LocationChannel: {LocationChannel}, GeoTriggerChannel: {GeoTriggerChannel}",
                 secchiChannelNumbers.ObservationChannel,
                 secchiChannelNumbers.LocationChannel,
                 secchiChannelNumbers.GeoTriggerChannel
             );
         }
 
-        // Register to get location featuretable messages on the secchiLocationsChannel.
+        // Register to get location featuretable messages on the secchiObservationChannel.
 
-        if (secchiChannelNumbers.LocationChannel is not 0)
+        if (secchiChannelNumbers.ObservationChannel is not 0)
         {
-            // Register to get location featuretable messages on the secchiLocationsChannel.
+            // Register to get location featuretable messages on the secchiObservationChannel.
             WeakReferenceMessenger.Default.Register<FeatureTableMessage, uint>(
                 this,
-                secchiChannelNumbers.LocationChannel,
+                secchiChannelNumbers.ObservationChannel,
                 (recipient, message) =>
                 {
                     logger.LogTrace(
-                        SecchiLocationLoaderLog,
-                        "SecchiLocationCollectionLoader: FeatureTableMessage, secchiLocationsChannel: {secchiLocationsChannel}, FeatureTable: {featureTable}.",
-                        secchiChannelNumbers.LocationChannel,
+                        SecchiObservationLoaderLog,
+                        "SecchiObservationCollectionLoader: FeatureTableMessage, secchiObservationChannel: {secchiObservationChannel}, FeatureTable: {featureTable}.",
+                        secchiChannelNumbers.ObservationChannel,
                         message.Value.TableName
                     );
 
-                    secchiLocationFeatures = message.Value;
+                    secchiObservationFeatures = message.Value;
                 }
             );
         }
         else
         {
-            // Log to trace that the secchiLocationsChannel is not set.
+            // Log to trace that the secchiObservationChannel is not set.
             logger.LogError(
-                SecchiLocationLoaderLog,
-                "SecchiLocationCollectionLoader: secchiLocationsChannel is not set."
+                SecchiObservationLoaderLog,
+                "SecchiObservationCollectionLoader: secchiObservationChannel is not set."
             );
         }
     }
@@ -165,12 +169,12 @@ public class SecchiLocationCollectionLoader
             Guard.Against.Null(
                 sqliteService,
                 nameof(SqliteService),
-                "SecchiLocationCollectionLoader can't work without the Sqlite service."
+                "SecchiObservationCollectionLoader can't work without the Sqlite service."
             );
 
             // Write to the log that LoadMoreItemsAsync is called along with the count.
             logger.LogDebug(
-                SecchiLocationLoaderLog,
+                SecchiObservationLoaderLog,
                 "LoadMoreItemsAsync called with count: {Count}",
                 count
             );
@@ -186,7 +190,7 @@ public class SecchiLocationCollectionLoader
             foreach (var item in queryResult)
             {
                 logger.LogTrace(
-                    SecchiLocationLoaderLog,
+                    SecchiObservationLoaderLog,
                     "GetPagedItemAsync, queryResult: {item.LocationName}, {item.Latitude}, {item.Longitude}, {item.LocationType}, {item.LocationId}",
                     item.Location,
                     item.Latitude,
@@ -210,7 +214,7 @@ public class SecchiLocationCollectionLoader
 
             // Log then number of records retrieved.
             logger.LogTrace(
-                SecchiLocationLoaderLog,
+                SecchiObservationLoaderLog,
                 "GetPagedItemAsync: Fetched {queryResult.Count()} items.",
                 queryResult.Count()
             );
@@ -225,16 +229,16 @@ public class SecchiLocationCollectionLoader
                 ReturnGeometry = true,
             };
 
-            if (secchiLocationFeatures is null)
+            if (secchiObservationFeatures is null)
             {
                 logger.LogError(
-                    SecchiLocationLoaderLog,
-                    "SecchiLocationCollectionLoader: secchiLocationFeatures is null."
+                    SecchiObservationLoaderLog,
+                    "SecchiObservationCollectionLoader: secchiObservationFeatures is null."
                 );
                 return new LoadMoreItemsResult { Count = 0 };
             }
-            // Query the secchiLocationFeatures for the next set of features.
-            var result = await secchiLocationFeatures.QueryFeaturesAsync(
+            // Query the secchiObservationFeatures for the next set of features.
+            var result = await secchiObservationFeatures.QueryFeaturesAsync(
                 queryParameters,
                 CancellationToken.None
             );
@@ -244,7 +248,7 @@ public class SecchiLocationCollectionLoader
 
             // Log the queriedFeatureCount and the totalFeaturePages.
             logger.LogTrace(
-                SecchiLocationLoaderLog,
+                SecchiObservationLoaderLog,
                 "GetPagedItemAsync: Queried Feature Count: {queriedFeatureCount}",
                 queriedFeatureCount
             );
@@ -252,20 +256,22 @@ public class SecchiLocationCollectionLoader
             foreach (var feature in result)
             {
                 logger.LogTrace(
-                    SecchiLocationLoaderLog,
-                    "GetPagedItemAsync: (not sorted) Feature: Id {LocationId} Location Name: {Location}, Latitude: {latitude}, Longitude: {longitude}, Location Type: {locationType}  Geometry: {Geometry}",
+                    SecchiObservationLoaderLog,
+                    "GetPagedItemAsync: Feature: DateTime {DateTime} Id {LocationId} Latitude: {latitude}, Longitude: {longitude}, Obs1: {meas1}  Obs2: {meas2} Obs3: {meas3} Secchi: {secchi}",
+                    feature.Attributes["DateCollected"],
                     feature.Attributes["LocationId"],
-                    feature.Attributes["Location"],
-                    feature.Attributes["Latitude"],
-                    feature.Attributes["Longitude"],
-                    feature.Attributes["LocationType"],
-                    feature.Geometry
+                    feature.Attributes["CollectedLatitude"],
+                    feature.Attributes["CollectedLongitude"],
+                    feature.Attributes["Measurement1"],
+                    feature.Attributes["Measurement2"],
+                    feature.Attributes["Measurement3"],
+                    feature.Attributes["Secchi"]
                 );
 
                 Guard.Against.Null(
                     feature.Geometry,
                     nameof(feature.Geometry),
-                    "SecchiLocationCollectionLoader: feature.Geometry is null."
+                    "SecchiObservationCollectionLoader: feature.Geometry is null."
                 );
                 // Convert feature.Geometry to Wgs84geometry to add latitude and longitude to the location.
                 var Wgs84geometry = feature
@@ -281,6 +287,16 @@ public class SecchiLocationCollectionLoader
                 var conversionSuccess = true;
                 List<string> notConverted = [];
 
+                var dateCollectedConverted = featureDateTimeConverter.ConvertDateTimeToDateTime(
+                    "DateCollected",
+                    feature
+                );
+                conversionSuccess |= dateCollectedConverted.Success;
+                if (!dateCollectedConverted.Success)
+                {
+                    notConverted.Add("DateCollected");
+                }
+
                 var locationIdConverted = featureIntConverter.ConvertInt32ToInt(
                     "LocationId",
                     feature
@@ -291,52 +307,82 @@ public class SecchiLocationCollectionLoader
                     notConverted.Add("LocationId");
                 }
 
-                var locationConverted = featureStringConverter.ConvertTextToString(
-                    "Location",
+                var measurement1Converted = featureIntConverter.ConvertInt32ToInt(
+                    "Measurement1",
                     feature
                 );
-                conversionSuccess |= locationConverted.Success;
-                if (!locationConverted.Success)
+                conversionSuccess |= measurement1Converted.Success;
+                if (!measurement1Converted.Success)
                 {
-                    notConverted.Add("Location");
+                    notConverted.Add("Measurement1");
                 }
 
-                var locationTypeConverted = featureShortConverter.ConvertInt32ToInt(
-                    "LocationType",
+                var measurement2Converted = featureIntConverter.ConvertInt32ToInt(
+                    "Measurement2",
                     feature
                 );
-                conversionSuccess |= locationTypeConverted.Success;
-                if (!locationTypeConverted.Success)
+                conversionSuccess |= measurement2Converted.Success;
+                if (!measurement2Converted.Success)
                 {
-                    notConverted.Add("LocationType");
+                    notConverted.Add("Measurement2");
+                }
+
+                var measurement3Converted = featureIntConverter.ConvertInt32ToInt(
+                    "Measurement3",
+                    feature
+                );
+                conversionSuccess |= measurement3Converted.Success;
+                if (!measurement3Converted.Success)
+                {
+                    notConverted.Add("Measurement3");
+                }
+
+                var secchiConverted = featureDoubleConverter.ConvertFloat64ToDouble(
+                    "Secchi",
+                    feature
+                );
+                conversionSuccess |= secchiConverted.Success;
+                if (!secchiConverted.Success)
+                {
+                    notConverted.Add("Secchi");
                 }
 
                 if (conversionSuccess)
                 {
                     // Log all of the converted values.
                     logger.LogTrace(
-                        SecchiLocationLoaderLog,
-                        "GetPagedItemAsync: Features after conversion: Id {LocationId} Location Name: {Location}, Latitude: {latitude}, Longitude: {longitude}, Location Type: {locationType}",
+                        SecchiObservationLoaderLog,
+                        "GetPagedItemAsync: Features after conversion: DateTime {DateTime} Id {LocationId} Latitude: {latitude}, Longitude: {longitude}, Obs1: {meas1}  Obs2: {meas2} Obs3: {meas3} Secchi: {secchi}",
+                        dateCollectedConverted.Value,
                         locationIdConverted.Value,
-                        locationConverted.Value,
                         Wgs84geometry.Y,
                         Wgs84geometry.X,
-                        locationTypeConverted.Value
+                        measurement1Converted.Value,
+                        measurement2Converted.Value,
+                        measurement3Converted.Value,
+                        secchiConverted.Value
                     );
 
                     if (
-                        locationIdConverted.Value is not null
-                        && locationConverted.Value is not null
-                        && locationTypeConverted.Value is not null
+                        dateCollectedConverted.Value is not null
+                        && locationIdConverted.Value is not null
+                        && measurement1Converted.Value is not null
+                        && measurement2Converted.Value is not null
+                        && measurement3Converted.Value is not null
+                        && secchiConverted.Value is not null
                     )
                     {
                         Add(
-                            new SecchiLocationDisplay(
+                            new SecchiCollectionDisplay(
+                                locationName: "Location",
+                                locationId: (int)locationIdConverted.Value,
                                 latitude: Wgs84geometry.Y,
                                 longitude: Wgs84geometry.X,
-                                locationId: (int)locationIdConverted.Value,
-                                locationName: (string)locationConverted.Value,
-                                locationType: (LocationType)locationTypeConverted.Value
+                                obs1: (int)measurement1Converted.Value,
+                                obs2: (int)measurement2Converted.Value,
+                                obs3: (int)measurement3Converted.Value,
+                                secchiDepth: (double)secchiConverted.Value,
+                                collectionDate: (DateTime)dateCollectedConverted.Value
                             )
                         );
                     }
@@ -344,7 +390,7 @@ public class SecchiLocationCollectionLoader
                     {
                         // Log to error the contents of notConverted.
                         logger.LogError(
-                            SecchiLocationLoaderLog,
+                            SecchiObservationLoaderLog,
                             "GetPagedItemAsync: Feature: The following values did not convert: {notConverted}",
                             notConverted
                         );
@@ -354,7 +400,7 @@ public class SecchiLocationCollectionLoader
                 {
                     // Log to error the contents of notConverted.
                     logger.LogError(
-                        SecchiLocationLoaderLog,
+                        SecchiObservationLoaderLog,
                         "GetPagedItemAsync: Feature: The following values did not convert: {notConverted}",
                         notConverted
                     );
@@ -378,7 +424,7 @@ public class SecchiLocationCollectionLoader
             foreach (var (key, value) in featureTableDictionary)
             {
                 logger.LogTrace(
-                    SecchiLocationLoaderLog,
+                    SecchiObservationLoaderLog,
                     "GetPagedItemAsync: FeatureTableDictionary: {key}, {value}",
                     key,
                     value
@@ -392,7 +438,7 @@ public class SecchiLocationCollectionLoader
             if (firstFeature is null)
             {
                 logger.LogError(
-                    SecchiLocationLoaderLog,
+                    SecchiObservationLoaderLog,
                     "GetPagedItemAsync: firstFeature is null."
                 );
                 return new LoadMoreItemsResult { Count = 0 };
@@ -408,7 +454,7 @@ public class SecchiLocationCollectionLoader
             foreach (var (name, type) in firstFeatureAttributeNames.Zip(firstFeatureAttributeTypes))
             {
                 logger.LogTrace(
-                    SecchiLocationLoaderLog,
+                    SecchiObservationLoaderLog,
                     "GetPagedItemAsync: firstFeatureAttributeNames: {name}, firstFeatureAttributeTypes: {type}",
                     name,
                     type
@@ -418,7 +464,7 @@ public class SecchiLocationCollectionLoader
             foreach (var feature in result)
             {
                 logger.LogTrace(
-                    SecchiLocationLoaderLog,
+                    SecchiObservationLoaderLog,
                     "GetPagedItemAsync: feature.Attributes: {featureAttributes}",
                     feature.Attributes
                 );
@@ -428,7 +474,7 @@ public class SecchiLocationCollectionLoader
                 if (attribute is null)
                 {
                     logger.LogError(
-                        SecchiLocationLoaderLog,
+                        SecchiObservationLoaderLog,
                         "GetPagedItemAsync: attribute is null."
                     );
                     continue;

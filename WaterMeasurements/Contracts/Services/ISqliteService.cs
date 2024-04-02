@@ -11,6 +11,8 @@ public interface ISqliteService
 
     public Task AddLocationRecordToTable(LocationRecord Location, DbType DbType);
 
+    public Task<LocationRecord> GetLocationRecordFromTable(int LocationId, DbType DbType);
+
     public Task DeleteLocationRecordFromTable(int LocationId, DbType DbType);
 
     public Task UpdadateLocationRecordInTable(LocationRecord Location, DbType DbType);
