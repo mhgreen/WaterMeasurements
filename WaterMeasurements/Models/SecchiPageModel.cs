@@ -116,6 +116,6 @@ public class SecchiCollectionDisplay(
     public string DateLatLon =>
         $"{CollectionDate:MM/dd/yy H:mm} Lat: {Latitude:F4}, Lon: {Longitude:F4}";
     public string Observations =>
-        $"Obs1: {Obs1}, Obs2: {Obs2}, Obs3: {Obs3}, Secchi: {SecchiDepth:F2}";
+        $"Obs1: {Obs1}, Obs2: {Obs2}, Obs3: {Obs3}, Secchi: {SecchiDepth:F1}";
     public string Secchi => $"Secchi: {SecchiDepth:F2}";
 }

@@ -818,11 +818,20 @@ public partial class SqliteService : ISqliteService
                 // Create a new LocationRecord from the reader.
                 var locationRecord = new LocationRecord
                 {
+                    /*
                     Latitude = reader.GetDouble(0),
                     Longitude = reader.GetDouble(1),
                     LocationId = reader.GetInt32(2),
                     LocationName = reader.GetString(3),
                     LocationType = (LocationType)reader.GetInt32(4)
+                    */
+                    Latitude = reader["Latitude"] as double? ?? 0,
+                    Longitude = reader["Longitude"] as double? ?? 0,
+                    LocationId = reader["LocationId"] as int? ?? 0,
+                    LocationName = reader["Location"] as string ?? "",
+                    LocationType = (LocationType)(reader["LocationType"] as int? ?? 0),
+                    Status = reader["Status"] as int? ?? 0,
+                    LocationCollected = reader["LocationCollected"] as int? ?? 0
                 };
 
                 // Log the location record to trace.

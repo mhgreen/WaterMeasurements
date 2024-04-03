@@ -235,6 +235,7 @@ public class SecchiObservationCollectionLoader
                     SecchiObservationLoaderLog,
                     "SecchiObservationCollectionLoader: secchiObservationFeatures is null."
                 );
+                hasMoreItems = false;
                 return new LoadMoreItemsResult { Count = 0 };
             }
             // Query the secchiObservationFeatures for the next set of features.
@@ -372,19 +373,37 @@ public class SecchiObservationCollectionLoader
                         && secchiConverted.Value is not null
                     )
                     {
-                        Add(
-                            new SecchiCollectionDisplay(
-                                locationName: "Location",
-                                locationId: (int)locationIdConverted.Value,
-                                latitude: Wgs84geometry.Y,
-                                longitude: Wgs84geometry.X,
-                                obs1: (int)measurement1Converted.Value,
-                                obs2: (int)measurement2Converted.Value,
-                                obs3: (int)measurement3Converted.Value,
-                                secchiDepth: (double)secchiConverted.Value,
-                                collectionDate: (DateTime)dateCollectedConverted.Value
-                            )
+                        var location = await sqliteService.GetLocationRecordFromTable(
+                            (int)locationIdConverted.Value,
+                            DbType.SecchiLocations
                         );
+
+                        if (location.LocationId <= 0)
+                        {
+                            logger.LogError(
+                                SecchiObservationLoaderLog,
+                                "GetPagedItemAsync: Feature: LocationId {LocationId} not found in the location table, location returned was {returnedId}.",
+                                locationIdConverted.Value,
+                                location.LocationId
+                            );
+                            continue;
+                        }
+                        else
+                        {
+                            Add(
+                                new SecchiCollectionDisplay(
+                                    locationName: location.LocationName,
+                                    locationId: (int)locationIdConverted.Value,
+                                    latitude: Wgs84geometry.Y,
+                                    longitude: Wgs84geometry.X,
+                                    obs1: (int)measurement1Converted.Value,
+                                    obs2: (int)measurement2Converted.Value,
+                                    obs3: (int)measurement3Converted.Value,
+                                    secchiDepth: (double)secchiConverted.Value,
+                                    collectionDate: (DateTime)dateCollectedConverted.Value
+                                )
+                            );
+                        }
                     }
                     else
                     {

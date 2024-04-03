@@ -231,6 +231,7 @@ public class SecchiLocationCollectionLoader
                     SecchiLocationLoaderLog,
                     "SecchiLocationCollectionLoader: secchiLocationFeatures is null."
                 );
+                hasMoreItems = false;
                 return new LoadMoreItemsResult { Count = 0 };
             }
             // Query the secchiLocationFeatures for the next set of features.

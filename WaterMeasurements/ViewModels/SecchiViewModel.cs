@@ -90,6 +90,14 @@ public partial class SecchiViewModel : ObservableRecipient
         set => SetProperty(ref secchiLocations, value);
     }
 
+    private SecchiObservationCollectionLoader? secchiObservations;
+
+    public SecchiObservationCollectionLoader SecchiObservations
+    {
+        get => secchiObservations!;
+        set => SetProperty(ref secchiObservations, value);
+    }
+
     private readonly StateMachine<SecchiServiceState, SecchiServiceTrigger> stateMachine;
 
     private readonly ISqliteService? sqliteService;
@@ -178,6 +186,7 @@ public partial class SecchiViewModel : ObservableRecipient
             );
 
             SecchiLocations = [];
+            SecchiObservations = [];
 
             Initialize();
             StartMonitoringSqlite();
@@ -1052,6 +1061,9 @@ public partial class SecchiViewModel : ObservableRecipient
 
     public void ProcessSecchiMeasurements(SecchiMeasurements secchiMeasurements)
     {
+        int locationId;
+        string? locationName;
+
         try
         {
             Guard.Against.Null(
@@ -1060,11 +1072,34 @@ public partial class SecchiViewModel : ObservableRecipient
                 "SecchiViewModel, ProcessSecchiMeasurements: secchiMeasurements can not be null."
             );
 
+            // Make sure that the feature from the geotrigger notification is not null.
             Guard.Against.Null(
                 feature,
                 nameof(feature),
                 "SecchiViewModel, ProcessSecchiMeasurements: feature can not be null."
             );
+
+            Guard.Against.Null(
+                feature.Attributes["LocationId"],
+                nameof(feature),
+                "SecchiViewModel, ProcessSecchiMeasurements: feature.Attributes[LocationId] can not be null."
+            );
+
+            locationId = (int)feature.Attributes["LocationId"]!;
+
+            Guard.Against.NegativeOrZero(
+                locationId,
+                nameof(locationId),
+                "SecchiViewModel, ProcessSecchiMeasurements: locationId can not be negative or zero."
+            );
+
+            Guard.Against.NullOrEmpty(
+                feature.Attributes["Location"]!.ToString(),
+                nameof(feature),
+                "SecchiViewModel, ProcessSecchiMeasurements: feature.Attributes[Location] can not be null or empty."
+            );
+
+            locationName = feature.Attributes["Location"]!.ToString();
 
             // Once the location have been collected, move to the results panel.
             // Send a SetSecchiSelectViewMessage with the value of "SecchiCollectionTable".
@@ -1118,8 +1153,7 @@ public partial class SecchiViewModel : ObservableRecipient
             );
             secchiObservation.SetAttributeValue("secchi", secchiValue);
 
-            // TODO: Configure a state machine to make sure that everything is in the correct state before committing the transaction.
-            secchiObservation.SetAttributeValue("locationId", feature.Attributes["location_id"]);
+            secchiObservation.SetAttributeValue("locationId", locationId);
             // For testing, set the locationId to 55.
             // secchiObservation.SetAttributeValue("locationId", 55);
 
@@ -1150,6 +1184,37 @@ public partial class SecchiViewModel : ObservableRecipient
                     new FeatureAddMessage("SecchiObservations", secchiObservation)
                 ),
                 secchiObservationsChannel
+            );
+
+            // Add the new observation record to Sqlite.
+            WeakReferenceMessenger.Default.Send<AddSecchiObservationMessage>(
+                new AddSecchiObservationMessage(
+                    new SecchiObservation(
+                        secchiMeasurements.Measurement1,
+                        secchiMeasurements.Measurement2,
+                        secchiMeasurements.Measurement3,
+                        secchiValue,
+                        locationId,
+                        DateTime.UtcNow,
+                        secchiMeasurements.Location.X,
+                        secchiMeasurements.Location.Y
+                    )
+                )
+            );
+
+            // Add the new observation to the SecchiObservations collection.
+            SecchiObservations.Add(
+                new SecchiCollectionDisplay(
+                    locationName!,
+                    secchiMeasurements.Location.X,
+                    secchiMeasurements.Location.Y,
+                    locationId,
+                    secchiMeasurements.Measurement1,
+                    secchiMeasurements.Measurement2,
+                    secchiMeasurements.Measurement3,
+                    secchiValue,
+                    DateTime.UtcNow
+                )
             );
         }
         catch (Exception exception)
@@ -1245,7 +1310,9 @@ public partial class SecchiViewModel : ObservableRecipient
                             (double)secchiAddLocation.Longitude,
                             (int)secchiAddLocation.LocationNumber,
                             secchiAddLocation.LocationName,
-                            (LocationType)secchiAddLocation.LocationType
+                            (LocationType)secchiAddLocation.LocationType,
+                            (int)RecordStatus.WorkingSet,
+                            (int)LocationCollected.NotCollected
                         ),
                         DbType.SecchiLocations
                     )

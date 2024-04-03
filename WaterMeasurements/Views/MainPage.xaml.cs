@@ -812,6 +812,58 @@ public partial class MainPage : Page
         }
     }
 
+    public void SecchiCollectionListView_ItemClick(object sender, ItemClickEventArgs eventArgs)
+    {
+        _ = sender;
+        var item = eventArgs.ClickedItem as SecchiCollectionDisplay;
+
+        if (item is not null)
+        {
+            Logger.Trace(
+                "MainPage.xaml.cs, SecchiCollectionListView_ItemClick: {locationName}, Lat {}, Lon {}",
+                item.LocationName,
+                item.Latitude,
+                item.Longitude
+            );
+
+            if (item.Latitude is null || item.Longitude is null)
+            {
+                // Log to error that the Latitude or Longitude is null.
+                Logger.Error(
+                    "MainPage.xaml.cs, SecchiCollectionListView_ItemClick: Latitude({latitude}) or Longitude({longitude}) is null, unable to display location.",
+                    item.Latitude,
+                    item.Longitude
+                );
+                return;
+            }
+
+            // Create a MapPoint from the latitude and longitude
+            var mapPoint = new MapPoint(
+                (double)item.Longitude,
+                (double)item.Latitude,
+                SpatialReferences.Wgs84
+            );
+
+            // Center the map on the selected location
+            MapView.SetViewpointCenterAsync(mapPoint);
+
+            var graphicWithSymbol = new Graphic(mapPoint, highlightLocationSymbol);
+            if (selectionOverlay != null)
+            {
+                // Log to trace that the selectionOverlay is being cleared.
+                Logger.Trace(
+                    "MainPage.xaml.cs, SecchiCollectionListView_ItemClick: Clearing selectionOverlay."
+                );
+                selectionOverlay.Graphics.Clear();
+                // Log to trace that the graphicWithSymbol is being added to the selectionOverlay.
+                Logger.Trace(
+                    "MainPage.xaml.cs, SecchiCollectionListView_ItemClick: Adding graphicWithSymbol to selectionOverlay."
+                );
+                selectionOverlay.Graphics.Add(graphicWithSymbol);
+            }
+        }
+    }
+
     public void SecchiNavView_ItemInvoked(
         NavigationView sender,
         NavigationViewItemInvokedEventArgs args

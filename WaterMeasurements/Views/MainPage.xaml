@@ -151,7 +151,7 @@
                     Fill="{ThemeResource AccentFillColorDefaultBrush}" />
                 <TextBlock
                     x:Name="CollectionLimit"
-                    Grid.RowSpan="2"
+                    Grid.RowSpan="1"
                     Margin="0,-3,0,0"
                     HorizontalAlignment="Center"
                     VerticalAlignment="Center"
@@ -161,14 +161,14 @@
                     Text="" />
                 <TextBlock
                     Grid.Column="1"
-                    Margin="12,6,0,0"
+                    Margin="12,6,0,1"
                     x:Phase="1"
                     Style="{ThemeResource BaseTextBlockStyle}"
                     Text="{x:Bind LocationName}" />
                 <TextBlock
                     Grid.Row="1"
                     Grid.Column="1"
-                    Margin="12,0,0,6"
+                    Margin="12,0,0,0"
                     x:Phase="2"
                     Style="{ThemeResource BodyTextBlockStyle}"
                     Text="{x:Bind DateLatLon}" />
@@ -182,7 +182,8 @@
                     Text="{x:Bind Observations}" />
                 <Button
                     x:Name="SecchiObservationEdit"
-                    Grid.RowSpan="2"
+                    Grid.RowSpan="3"
+                    Grid.Row="1"
                     Grid.Column="3"
                     Margin="0,7,0,0"
                     HorizontalAlignment="Right"
@@ -194,7 +195,8 @@
                 </Button>
                 <Button
                     x:Name="SecchiObservationDelete"
-                    Grid.RowSpan="2"
+                    Grid.RowSpan="3"
+                    Grid.Row="1"
                     Grid.Column="4"
                     Margin="0,7,0,0"
                     HorizontalAlignment="Right"
@@ -643,7 +645,10 @@
                                                     Style="{ThemeResource BodyStrongTextBlockStyle}" />
                                             </StackPanel>
 
-                                            <StackPanel x:Name="SecchiMeasurementsList" Margin="0,0,0,0">
+                                            <StackPanel x:Name="SecchiMeasurementsList"
+                                                        Width="475"
+                                                        Margin="0,30,0,5"
+                                                        HorizontalAlignment="Center">
 
                                                 <Grid>
                                                     <Grid.RowDefinitions>
@@ -659,8 +664,9 @@
                                                             IncrementalLoadingTrigger="Edge"
                                                             IsEnabled="True"
                                                             IsItemClickEnabled="True"
-                                                            ItemClick="{x:Bind SecchiLocationsListView_ItemClick}"
-                                                            ItemTemplate="{StaticResource SecchiLocationsTemplate}"
+                                                            ItemClick="{x:Bind SecchiCollectionListView_ItemClick}"
+                                                            ItemTemplate="{StaticResource SecchiCollectionTemplate}"
+                                                            ItemsSource="{x:Bind SecchiView.SecchiObservations}"
                                                             ScrollViewer.VerticalScrollBarVisibility="Visible" />
                                                     </StackPanel>
 
@@ -784,7 +790,7 @@
 
                                             <StackPanel
                                                 x:Name="SecchiAddLocationPanel"
-                                                Width="400"
+                                                Width="475"
                                                 Margin="0,25,0,0"
                                                 Visibility="Visible">
 

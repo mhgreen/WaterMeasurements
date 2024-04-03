@@ -95,7 +95,9 @@ public readonly record struct LocationRecord(
     double Longitude,
     int LocationId,
     string LocationName,
-    LocationType LocationType
+    LocationType LocationType,
+    int Status,
+    int LocationCollected
 );
 
 // Record for Secchi location.
