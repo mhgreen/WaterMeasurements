@@ -94,7 +94,11 @@ public partial class MainPage : Page
 
     // private FeatureLayer? secchiLocationLayer;
 
+    // New location to add to the SecchiLocations table.
     private SecchiAddLocation secchiAddLocation;
+
+    // New secchi measurement to add to the SecchiMeasurement table.
+    private SecchiMeasurement secchiMeasurement;
 
     // Extent of current map
     private Geometry? extent;
@@ -209,10 +213,7 @@ public partial class MainPage : Page
 
         // Set the initial Secchi Measurements page to the Collection Table.
         // This is used by the UI to determine which Secchi page to display.
-        secchiPageSelection = new SecchiPageSelection
-        {
-            SecchiSelectView = "SecchiCollectionTable"
-        };
+        secchiPageSelection = new SecchiPageSelection { SecchiSelectView = "SecchiLoading" };
 
         secchiChannelNumbers = new();
 
@@ -949,14 +950,16 @@ public partial class MainPage : Page
         // Collect the integers here
         if (MapView.LocationDisplay.Location is not null)
         {
-            SecchiMeasurements secchiMeasurements =
-                new(
-                    MapView.LocationDisplay.Location.Position,
-                    short.Parse(Measurement1.Text),
-                    short.Parse(Measurement2.Text),
-                    short.Parse(Measurement3.Text)
-                );
-            SecchiView.ProcessSecchiMeasurements(secchiMeasurements);
+            secchiMeasurement.Location = new MapPoint(
+                MapView.LocationDisplay.Location.Position.X,
+                MapView.LocationDisplay.Location.Position.Y,
+                SpatialReferences.Wgs84
+            );
+            secchiMeasurement.Measurement1 = short.Parse(Measurement1.Text);
+            secchiMeasurement.Measurement2 = short.Parse(Measurement2.Text);
+            secchiMeasurement.Measurement3 = short.Parse(Measurement3.Text);
+
+            SecchiView.ProcessSecchiMeasurements(secchiMeasurement);
         }
         else
         {

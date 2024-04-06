@@ -121,11 +121,11 @@ public class SecchiObservationCollectionLoader
             );
         }
 
-        // Register to get location featuretable messages on the secchiObservationChannel.
+        // Register to get observation featuretable messages on the secchiObservationChannel.
 
         if (secchiChannelNumbers.ObservationChannel is not 0)
         {
-            // Register to get location featuretable messages on the secchiObservationChannel.
+            // Register to get observation featuretable messages on the secchiObservationChannel.
             WeakReferenceMessenger.Default.Register<FeatureTableMessage, uint>(
                 this,
                 secchiChannelNumbers.ObservationChannel,
@@ -269,6 +269,14 @@ public class SecchiObservationCollectionLoader
                     feature.Attributes["Secchi"]
                 );
 
+                var dateType = feature.Attributes["DateCollected"].GetType();
+                // log the dateType.
+                logger.LogTrace(
+                    SecchiObservationLoaderLog,
+                    "GetPagedItemAsync: Feature: DateType {dateType}",
+                    dateType
+                );
+
                 Guard.Against.Null(
                     feature.Geometry,
                     nameof(feature.Geometry),
@@ -288,7 +296,7 @@ public class SecchiObservationCollectionLoader
                 var conversionSuccess = true;
                 List<string> notConverted = [];
 
-                var dateCollectedConverted = featureDateTimeConverter.ConvertDateTimeToDateTime(
+                var dateCollectedConverted = featureDateTimeConverter.ConvertDateToDateTime(
                     "DateCollected",
                     feature
                 );
@@ -400,7 +408,7 @@ public class SecchiObservationCollectionLoader
                                     obs2: (int)measurement2Converted.Value,
                                     obs3: (int)measurement3Converted.Value,
                                     secchiDepth: (double)secchiConverted.Value,
-                                    collectionDate: (DateTime)dateCollectedConverted.Value
+                                    collectionDate: (DateTimeOffset)dateCollectedConverted.Value
                                 )
                             );
                         }

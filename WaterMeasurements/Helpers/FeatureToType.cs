@@ -84,18 +84,18 @@ public class FeatureToType<T1, ConvertedSuccess>(T1 value, ConvertedSuccess conv
         return new FeatureToType<Guid?, bool>(null, false);
     }
 
-    public FeatureToType<DateTime?, bool> ConvertDateTimeToDateTime(
+    public FeatureToType<DateTimeOffset?, bool> ConvertDateToDateTime(
         string attribute,
         Feature feature
     )
     {
         if (feature.Attributes.TryGetValue(attribute, out var value))
         {
-            if (value is DateTime dateTime)
+            if (value is DateTimeOffset dateTime)
             {
-                return new FeatureToType<DateTime?, bool>(dateTime, true);
+                return new FeatureToType<DateTimeOffset?, bool>(dateTime, true);
             }
         }
-        return new FeatureToType<DateTime?, bool>(null, false);
+        return new FeatureToType<DateTimeOffset?, bool>(null, false);
     }
 }

@@ -14,12 +14,13 @@ public readonly record struct UIQueue(DispatcherQueue? UIDispatcherQueue);
 // Record to notify modules that the MapPage has been unloaded.
 public readonly record struct MapPageUnloadedMessage();
 
-public readonly record struct SecchiMeasurements(
-    MapPoint Location,
-    int Measurement1,
-    int Measurement2,
-    int Measurement3
-);
+public struct SecchiMeasurement
+{
+    public MapPoint Location { get; set; }
+    public int Measurement1 { get; set; }
+    public int Measurement2 { get; set; }
+    public int Measurement3 { get; set; }
+}
 
 // Observable to update the map on the UI.
 public partial class SecchiPageSelection : ObservableRecipient

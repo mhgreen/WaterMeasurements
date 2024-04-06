@@ -1,4 +1,5 @@
 ﻿using System.Collections.ObjectModel;
+using System.Drawing;
 using System.Numerics;
 using System.Xml.Linq;
 using Ardalis.GuardClauses;
@@ -313,7 +314,8 @@ public partial class SecchiViewModel : ObservableRecipient
                 .Permit(
                     SecchiServiceTrigger.ObservationAndLocationFeatureTablesReceived,
                     SecchiServiceState.HaveObservationsAndLocations
-                );
+                )
+                .PermitReentry(SecchiServiceTrigger.ObservationFeatureTableReceived);
 
             // Wait for a locations feature table message to be returned in response to the request for SecchiLocations.
             stateMachine
@@ -423,7 +425,8 @@ public partial class SecchiViewModel : ObservableRecipient
                 .Permit(
                     SecchiServiceTrigger.ObservationAndLocationFeatureTablesReceived,
                     SecchiServiceState.HaveObservationsAndLocations
-                );
+                )
+                .PermitReentry(SecchiServiceTrigger.LocationFeatureTableReceived);
 
             // Observations and Locations have been received.
             // Make sure that the UI thread is available before moving to the Running state.
@@ -487,6 +490,13 @@ public partial class SecchiViewModel : ObservableRecipient
                         SecchiViewModelLog,
                         "SecchiViewModel, stateMachine (SecchiServiceState.Running): Running state entered."
                     );
+
+                    // Observations and locations have been received, so set the SecchiSelectView to the SecchiCollectionTable.
+                    WeakReferenceMessenger.Default.Send<SetSecchiSelectViewMessage>(
+                        new SetSecchiSelectViewMessage("SecchiCollectionTable")
+                    );
+
+                    /*
                     // Send a GeodatabaseStateChangeMessage message to the GeoDatabaseService to change the state of the secchi observations geodatabase to BeginTransaction for secchiObservationsChannel.
                     WeakReferenceMessenger.Default.Send<GeodatabaseStateChangeMessage, uint>(
                         new GeodatabaseStateChangeMessage(
@@ -494,6 +504,8 @@ public partial class SecchiViewModel : ObservableRecipient
                         ),
                         secchiObservationsChannel
                     );
+                    */
+
                     StartMonitoringNetwork();
                 })
                 .InternalTransition(
@@ -1059,7 +1071,7 @@ public partial class SecchiViewModel : ObservableRecipient
         }
     }
 
-    public void ProcessSecchiMeasurements(SecchiMeasurements secchiMeasurements)
+    public void ProcessSecchiMeasurements(SecchiMeasurement secchiMeasurements)
     {
         int locationId;
         string? locationName;
@@ -1116,7 +1128,7 @@ public partial class SecchiViewModel : ObservableRecipient
             // Log to debug sender the contents of secchiMeasurements.
             logger.LogDebug(
                 SecchiViewModelLog,
-                "SecchiViewModel, ProcessSecchiMeasurements: SecchiMeasurements: {secchiMeasurements}.",
+                "SecchiViewModel, ProcessSecchiMeasurements: SecchiMeasurement: {secchiMeasurements}.",
                 secchiMeasurements.ToString()
             );
 
@@ -1134,6 +1146,9 @@ public partial class SecchiViewModel : ObservableRecipient
             );
 
             var secchiObservation = (ArcGISFeature)currentObservationsTable.CreateFeature();
+
+            secchiObservation.Geometry = secchiMeasurements.Location;
+
             secchiObservation.SetAttributeValue("measurement1", secchiMeasurements.Measurement1);
             secchiObservation.SetAttributeValue("measurement2", secchiMeasurements.Measurement2);
             secchiObservation.SetAttributeValue("measurement3", secchiMeasurements.Measurement3);

@@ -182,8 +182,8 @@
                     Text="{x:Bind Observations}" />
                 <Button
                     x:Name="SecchiObservationEdit"
-                    Grid.RowSpan="3"
                     Grid.Row="1"
+                    Grid.RowSpan="3"
                     Grid.Column="3"
                     Margin="0,7,0,0"
                     HorizontalAlignment="Right"
@@ -195,8 +195,8 @@
                 </Button>
                 <Button
                     x:Name="SecchiObservationDelete"
-                    Grid.RowSpan="3"
                     Grid.Row="1"
+                    Grid.RowSpan="3"
                     Grid.Column="4"
                     Margin="0,7,0,0"
                     HorizontalAlignment="Right"
@@ -633,6 +633,33 @@
 
                                 <controls:SwitchPresenter x:Name="SecchiViews" Value="{x:Bind secchiPageSelection.SecchiSelectView, Mode=OneWay}">
 
+                                    <controls:Case Value="Initializing">
+                                        <Grid>
+                                            <StackPanel>
+                                                <TextBlock
+                                                    x:Uid="Settings_Secchi_Initializing"
+                                                    Margin="0,12,0,5"
+                                                    HorizontalAlignment="Center"
+                                                    Opacity="0.6"
+                                                    Style="{ThemeResource BodyStrongTextBlockStyle}" />
+                                            </StackPanel>
+                                            <StackPanel
+                                                x:Name="SecchiLoading"
+                                                Width="475"
+                                                Margin="0,30,0,5"
+                                                HorizontalAlignment="Center"
+                                                Orientation="Horizontal"
+                                                Spacing="5">
+                                                <ProgressRing IsActive="True" />
+                                                <TextBlock
+                                                    x:Uid="Settings_Secchi_Loading"
+                                                    Margin="0,0,0,0"
+                                                    Style="{StaticResource BodyTextBlockStyle}" />
+                                            </StackPanel>
+                                        </Grid>
+
+                                    </controls:Case>
+
                                     <controls:Case Value="SecchiCollectionTable">
 
                                         <Grid>
@@ -645,10 +672,11 @@
                                                     Style="{ThemeResource BodyStrongTextBlockStyle}" />
                                             </StackPanel>
 
-                                            <StackPanel x:Name="SecchiMeasurementsList"
-                                                        Width="475"
-                                                        Margin="0,30,0,5"
-                                                        HorizontalAlignment="Center">
+                                            <StackPanel
+                                                x:Name="SecchiMeasurementsList"
+                                                Width="475"
+                                                Margin="0,30,0,5"
+                                                HorizontalAlignment="Center">
 
                                                 <Grid>
                                                     <Grid.RowDefinitions>

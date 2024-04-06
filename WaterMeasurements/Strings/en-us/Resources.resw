@@ -276,4 +276,10 @@
   <data name="Main_LocationSaveToolTip.Content" xml:space="preserve">
     <value>Name, feature type, and location source needed prior to saving.</value>
   </data>
+  <data name="Settings_Secchi_Initializing.Text" xml:space="preserve">
+    <value>Loading Secchi Observations and Locations</value>
+  </data>
+  <data name="Settings_Secchi_Loading.Text" xml:space="preserve">
+    <value>Initializing observations and locations</value>
+  </data>
 </root>

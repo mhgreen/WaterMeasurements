@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.Mvvm.Messaging.Messages;
 using Dapper;
 using Dapper.SimpleSqlBuilder;
+using Dapper.SimpleSqlBuilder.FluentBuilder;
 using Esri.ArcGISRuntime.Data;
 using Esri.ArcGISRuntime.Location;
 using Microsoft.Data.Sqlite;
@@ -694,7 +695,7 @@ public partial class SqliteService : ISqliteService
             // Log builder.sql to trace.
             logger.LogTrace(SqliteLog, "Sqlite insert statement: {builder.Sql}", builder.Sql);
 
-            // Lof the builder.parameters to trace.
+            // Log the builder.parameters to trace.
             logger.LogTrace(
                 SqliteLog,
                 "Sqlite Service, AddLocationRecordToTable: Sqlite insert statement parameters: {builder.Parameters}",
@@ -752,7 +753,7 @@ public partial class SqliteService : ISqliteService
 
     public async Task<LocationRecord> GetLocationRecordFromTable(int LocationId, DbType DbType)
     {
-        Builder builder;
+        IWhereBuilder fluentBuilder;
 
         try
         {
@@ -760,29 +761,32 @@ public partial class SqliteService : ISqliteService
             // Log the LocationId to trace.
             logger.LogTrace(SqliteLog, "LocationId: {LocationId}", LocationId);
 
-            // Create the sqlite select statement.
-            var selectLocationRecordSql = $"SELECT * FROM {DbType} WHERE LocationId = {LocationId}";
+            // Create the table portion of the sqlite select statement.
+            var selectSqlTablePortion = $@"SELECT * FROM {DbType}";
             // Log selectLocationRecordSql to trace.
             logger.LogTrace(
                 SqliteLog,
-                "Sqlite select statement: {selectLocationRecordSql}",
-                selectLocationRecordSql
+                "Sqlite select statement (table portion): {selectSqlTablePortion}",
+                selectSqlTablePortion
             );
 
             switch (DbType)
             {
                 case DbType.SecchiLocations:
-                    builder = SimpleBuilder.Create(
-                        $@"
-                            SELECT * FROM {DbType} WHERE LocationId = {LocationId}
-                        "
-                    );
+
+                    fluentBuilder = SimpleBuilder
+                        .CreateFluent()
+                        .Select($"*")
+                        .From($"SecchiLocations")
+                        .Where($"LocationId = {LocationId}");
+
                     // Log builder.sql to trace.
                     logger.LogTrace(
                         SqliteLog,
-                        "Sqlite Service, GetLocationRecordFromTable: Sqlite select statement: {builder.Sql}",
-                        builder.Sql
+                        "Sqlite Service, GetLocationRecordFromTable: Sqlite select statement (fluentBuilder): {builder.Sql}",
+                        fluentBuilder.Sql
                     );
+
                     break;
                 default:
                     logger.LogError(
@@ -796,60 +800,37 @@ public partial class SqliteService : ISqliteService
             // Open the connection to the sqlite database.
             using var database = await GetOpenConnectionAsync();
 
-            // Execute the select statement.
-            using var selectCommand = database.CreateCommand();
-            selectCommand.CommandText = builder.Sql;
-            var selectedRecords = selectCommand.ExecuteReader();
+            var locations = database.Query<LocationRecord>(
+                fluentBuilder.Sql,
+                fluentBuilder.Parameters
+            );
 
             // Log the number of location records to trace.
             logger.LogTrace(
                 SqliteLog,
                 "Sqlite Service, GetLocationRecordFromTable: Retrieved {locationRecord} records from {DbType} table.",
-                selectedRecords,
+                locations.Count(),
                 DbType
             );
 
-            // Read the data using the select command.
-            using var reader = selectCommand.ExecuteReader();
+            // log locations to trace.
+            logger.LogTrace(
+                SqliteLog,
+                "Sqlite Service, GetLocationRecordFromTable: LocationRecord: {locations}",
+                locations
+            );
 
-            // Read the data from the reader.
-            if (reader.Read())
+            if (locations.Count() == 1)
             {
-                // Create a new LocationRecord from the reader.
-                var locationRecord = new LocationRecord
-                {
-                    /*
-                    Latitude = reader.GetDouble(0),
-                    Longitude = reader.GetDouble(1),
-                    LocationId = reader.GetInt32(2),
-                    LocationName = reader.GetString(3),
-                    LocationType = (LocationType)reader.GetInt32(4)
-                    */
-                    Latitude = reader["Latitude"] as double? ?? 0,
-                    Longitude = reader["Longitude"] as double? ?? 0,
-                    LocationId = reader["LocationId"] as int? ?? 0,
-                    LocationName = reader["Location"] as string ?? "",
-                    LocationType = (LocationType)(reader["LocationType"] as int? ?? 0),
-                    Status = reader["Status"] as int? ?? 0,
-                    LocationCollected = reader["LocationCollected"] as int? ?? 0
-                };
-
-                // Log the location record to trace.
-                logger.LogTrace(
-                    SqliteLog,
-                    "Sqlite Service, GetLocationRecordFromTable: LocationRecord: {locationRecord}",
-                    locationRecord
-                );
-
-                // Return the location record.
-                return locationRecord;
+                return locations.First();
             }
             else
             {
-                // Log a warning that the location record was not found.
-                logger.LogWarning(
+                // Log an error indicating that multiple locations were found.
+                logger.LogError(
                     SqliteLog,
-                    "Sqlite Service, GetLocationRecordFromTable: Location record with LocationId {LocationId} not found in {DbType} table.",
+                    "Sqlite Service, GetLocationRecordFromTable: multiple records({numberLocations}) with LocationId {LocationId} were found in {DbType} table.",
+                    locations.Count(),
                     LocationId,
                     DbType
                 );
@@ -1420,11 +1401,9 @@ public partial class SqliteService : ISqliteService
                         SqliteLog,
                         "Sqlite Service, GetLocationDetailRecordFromDetailTable: dbType is SecchiLocationDetail."
                     );
-                    // Create the sqlite insert statement.
+                    // Create the sqlite select statement.
                     builder = SimpleBuilder.Create(
-                        $@"
-                            SELECT * FROM {dbType} WHERE LocationId = {locationId}
-                        "
+                        $@"SELECT FROM {dbType} WHERE LocationId = {locationId}"
                     );
 
                     // Log to trace the builder.sql.
@@ -1448,21 +1427,20 @@ public partial class SqliteService : ISqliteService
             // Open the connection to the sqlite database.
             using var database = await GetOpenConnectionAsync();
 
-            // Execute the insert statement.
+            // Execute the select statement.
             using var selectCommand = database.CreateCommand();
             selectCommand.CommandText = builder.Sql;
-            var selectedRecords = selectCommand.ExecuteNonQuery();
-
-            // Log the number of selected records to trace.
-            logger.LogTrace(
-                SqliteLog,
-                "Sqlite Service, GetLocationDetailRecordFromDetailTable: Selected {selectedRecords} records from {dbType} table.",
-                selectedRecords,
-                dbType
-            );
 
             // Read the data using the selectCommand
             using var reader = selectCommand.ExecuteReader();
+
+            // Log the number of location records to trace.
+            logger.LogTrace(
+                SqliteLog,
+                "Sqlite Service, GetLocationDetailRecordFromDetailTable: Retrieved {locationRecord} records from {dbType} table.",
+                reader.RecordsAffected,
+                dbType
+            );
 
             // If there are records, read the first one
             if (reader.Read())
@@ -1505,7 +1483,7 @@ public partial class SqliteService : ISqliteService
         {
             logger.LogError(
                 SqliteLog,
-                "Sqlite Service, GetLocationDetailRecordFromDetailTable: Error creating Sqlite table from DbType {dbType}, Sqlite exception: {sqliteMessage}, with an error code of {SqliteErrorCode}",
+                "Sqlite Service, GetLocationDetailRecordFromDetailTable: Error getting detail record from Sqlite table with DbType {dbType}, Sqlite exception: {sqliteMessage}, with an error code of {SqliteErrorCode}",
                 dbType.ToString(),
                 sqliteException.Message,
                 sqliteException.SqliteErrorCode
