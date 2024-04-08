@@ -48,10 +48,23 @@ public class SecchiObservationCollectionLoader
         public uint GeoTriggerChannel { get; set; }
     }
 
-    // create secchiLocationsFeatures as a FeatureTable.
+    // Create secchiObservationFeatures as a FeatureTable.
     private FeatureTable? secchiObservationFeatures;
 
-    private QueryParameters queryParameters = new() { WhereClause = "1=1" };
+    // Create observationQueryParameters as a QueryParameters.
+    private QueryParameters observationQueryParameters = new() { WhereClause = "1=1" };
+
+    // Create secchiLocationFeatures as a FeatureTable.
+    private FeatureTable? secchiLocationFeatures;
+
+    // Create locationQueryParameters as a QueryParameters.
+    private QueryParameters locationQueryParameters = new() { WhereClause = "1=1" };
+
+    // Keep track of the current location number to reduce the number of queries.
+    private int currentLocationId = 0;
+
+    // Keep track of the current location name to reduce the number of queries.
+    private string currentLocationName = string.Empty;
 
     private int queriedFeatureCount;
 
@@ -122,7 +135,6 @@ public class SecchiObservationCollectionLoader
         }
 
         // Register to get observation featuretable messages on the secchiObservationChannel.
-
         if (secchiChannelNumbers.ObservationChannel is not 0)
         {
             // Register to get observation featuretable messages on the secchiObservationChannel.
@@ -148,6 +160,35 @@ public class SecchiObservationCollectionLoader
             logger.LogError(
                 SecchiObservationLoaderLog,
                 "SecchiObservationCollectionLoader: secchiObservationChannel is not set."
+            );
+        }
+
+        // Register to get location featuretable messages on the secchiLocationChannel.
+        if (secchiChannelNumbers.LocationChannel is not 0)
+        {
+            // Register to get location featuretable messages on the secchiLocationChannel.
+            WeakReferenceMessenger.Default.Register<FeatureTableMessage, uint>(
+                this,
+                secchiChannelNumbers.LocationChannel,
+                (recipient, message) =>
+                {
+                    logger.LogTrace(
+                        SecchiObservationLoaderLog,
+                        "SecchiObservationCollectionLoader: FeatureTableMessage, secchiLocationChannel: {secchiLocationChannel}, FeatureTable: {featureTable}.",
+                        secchiChannelNumbers.LocationChannel,
+                        message.Value.TableName
+                    );
+
+                    secchiLocationFeatures = message.Value;
+                }
+            );
+        }
+        else
+        {
+            // Log to trace that the secchiLocationChannel is not set.
+            logger.LogError(
+                SecchiObservationLoaderLog,
+                "SecchiObservationCollectionLoader: secchiLocationChannel is not set."
             );
         }
     }
@@ -179,49 +220,7 @@ public class SecchiObservationCollectionLoader
                 count
             );
 
-            /*
-
-            // Call the GetsecchiLocationsFromSqlite method to retrieve the records.
-            var queryResult = await sqliteService.GetSecchiLocationsFromSqlite(pageSize, pageIndex);
-
-            // secchiLocations.AddRange(queryResult.Select(item => new SecchiLocationDisplay(latitude: item.Latitude, longitude: item.Longitude, locationId: item.LocationId, locationName: item.Location, locationType: item.LocationType)).ToList());
-
-            // Iterate through the queryResult and write the results to the log.
-            foreach (var item in queryResult)
-            {
-                logger.LogTrace(
-                    SecchiObservationLoaderLog,
-                    "GetPagedItemAsync, queryResult: {item.LocationName}, {item.Latitude}, {item.Longitude}, {item.LocationType}, {item.LocationId}",
-                    item.Location,
-                    item.Latitude,
-                    item.Longitude,
-                    item.LocationType,
-                    item.LocationId
-                );
-                // Add the retrieved item to the secchiLocations list.
-
-                Add(
-                    new SecchiLocationDisplay(
-                        latitude: item.Latitude,
-                        longitude: item.Longitude,
-                        locationId: item.LocationId,
-                        locationName: item.Location,
-                        locationType: item.LocationType
-                    )
-                );
-
-            }
-
-            // Log then number of records retrieved.
-            logger.LogTrace(
-                SecchiObservationLoaderLog,
-                "GetPagedItemAsync: Fetched {queryResult.Count()} items.",
-                queryResult.Count()
-            );
-
-            */
-
-            queryParameters = new QueryParameters
+            observationQueryParameters = new QueryParameters
             {
                 WhereClause = "1=1",
                 ResultOffset = (pageIndex * pageSize),
@@ -238,12 +237,23 @@ public class SecchiObservationCollectionLoader
                 hasMoreItems = false;
                 return new LoadMoreItemsResult { Count = 0 };
             }
+
+            if (secchiLocationFeatures is null)
+            {
+                logger.LogError(
+                    SecchiObservationLoaderLog,
+                    "SecchiObservationCollectionLoader: secchiLocationFeatures is null."
+                );
+                hasMoreItems = false;
+                return new LoadMoreItemsResult { Count = 0 };
+            }
+
             // Query the secchiObservationFeatures for the next set of features.
-            var result = await secchiObservationFeatures.QueryFeaturesAsync(
-                queryParameters,
+            var observationResult = await secchiObservationFeatures.QueryFeaturesAsync(
+                observationQueryParameters,
                 CancellationToken.None
             );
-            queriedFeatureCount = result.Count();
+            queriedFeatureCount = observationResult.Count();
             // If totalFeaturePages is needed, that will have to be a separate query.
             // totalFeaturePages = (int)Math.Ceiling((double)queriedFeatureCount / pageSize);
 
@@ -254,7 +264,7 @@ public class SecchiObservationCollectionLoader
                 queriedFeatureCount
             );
             // Log the results of the query.
-            foreach (var feature in result)
+            foreach (var feature in observationResult)
             {
                 logger.LogTrace(
                     SecchiObservationLoaderLog,
@@ -381,6 +391,92 @@ public class SecchiObservationCollectionLoader
                         && secchiConverted.Value is not null
                     )
                     {
+                        if (currentLocationId != locationIdConverted.Value)
+                        {
+                            currentLocationId = (int)locationIdConverted.Value;
+
+                            locationQueryParameters = new QueryParameters
+                            {
+                                WhereClause = $"LocationId = {locationIdConverted.Value}",
+                                ReturnGeometry = false,
+                            };
+
+                            // Query the secchiLocationFeatures for the location.
+                            var locationResult = await secchiLocationFeatures.QueryFeaturesAsync(
+                                locationQueryParameters,
+                                CancellationToken.None
+                            );
+
+                            // If the count of locationResult is not 1, log an error.
+                            if (locationResult.Count() != 1)
+                            {
+                                logger.LogError(
+                                    SecchiObservationLoaderLog,
+                                    "GetPagedItemAsync: LocationResult count is not 1, count is {LocationResultCount}.",
+                                    locationResult.Count()
+                                );
+                                continue;
+                            }
+
+                            // Log the results of the location query.
+                            // There should only be one result.
+                            foreach (var locationFeature in locationResult)
+                            {
+                                logger.LogTrace(
+                                    SecchiObservationLoaderLog,
+                                    "GetPagedItemAsync: LocationFeature: LocationId {LocationId} LocationName {LocationName}",
+                                    locationFeature.Attributes["LocationId"],
+                                    locationFeature.Attributes["LocationName"]
+                                );
+
+                                var locationNameConverted =
+                                    featureStringConverter.ConvertTextToString(
+                                        "LocationName",
+                                        locationFeature
+                                    );
+                                conversionSuccess |= locationNameConverted.Success;
+                                if (!locationNameConverted.Success)
+                                {
+                                    notConverted.Add("LocationName");
+                                }
+
+                                if (locationNameConverted.Value is not null)
+                                {
+                                    currentLocationName = locationNameConverted.Value;
+                                }
+                            }
+                        }
+
+                        if (currentLocationName is not "")
+                        {
+                            logger.LogTrace(
+                                SecchiObservationLoaderLog,
+                                "GetPagedItemAsync: CurrentLocationName: {CurrentLocationName}",
+                                currentLocationName
+                            );
+                            Add(
+                                new SecchiCollectionDisplay(
+                                    locationName: currentLocationName,
+                                    locationId: (int)locationIdConverted.Value,
+                                    latitude: Wgs84geometry.Y,
+                                    longitude: Wgs84geometry.X,
+                                    obs1: (int)measurement1Converted.Value,
+                                    obs2: (int)measurement2Converted.Value,
+                                    obs3: (int)measurement3Converted.Value,
+                                    secchiDepth: (double)secchiConverted.Value,
+                                    collectionDate: (DateTimeOffset)dateCollectedConverted.Value
+                                )
+                            );
+                        }
+                        else
+                        {
+                            logger.LogError(
+                                SecchiObservationLoaderLog,
+                                "GetPagedItemAsync: CurrentLocationName is empty."
+                            );
+                        }
+
+                        /* This code is not needed because the location name is now retrieved from the feature table.
                         var location = await sqliteService.GetLocationRecordFromTable(
                             (int)locationIdConverted.Value,
                             DbType.SecchiLocations
@@ -412,6 +508,7 @@ public class SecchiObservationCollectionLoader
                                 )
                             );
                         }
+                        */
                     }
                     else
                     {
@@ -442,7 +539,7 @@ public class SecchiObservationCollectionLoader
             /*
 
             // Add the field names and types to a dictionary.
-            var featureTableDictionary = result.Fields.ToDictionary(
+            var featureTableDictionary = observationResult.Fields.ToDictionary(
                 feature => feature.Name,
                 feature => feature.FieldType
             );
@@ -460,7 +557,7 @@ public class SecchiObservationCollectionLoader
 
             // Get the first feature, its attributes and types.
 
-            var firstFeature = result.FirstOrDefault();
+            var firstFeature = observationResult.FirstOrDefault();
 
             if (firstFeature is null)
             {
@@ -488,7 +585,7 @@ public class SecchiObservationCollectionLoader
                 );
             }
 
-            foreach (var feature in result)
+            foreach (var feature in observationResult)
             {
                 logger.LogTrace(
                     SecchiObservationLoaderLog,

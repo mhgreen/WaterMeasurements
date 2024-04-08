@@ -83,8 +83,6 @@ public partial class SecchiViewModel : ObservableRecipient
     private bool haveLocationsTable = false;
     private bool haveObservationsTable = false;
 
-    private bool sqliteSetToInitialRun = false;
-
     private SecchiLocationCollectionLoader? secchiLocations;
 
     public SecchiLocationCollectionLoader SecchiLocations
@@ -493,18 +491,10 @@ public partial class SecchiViewModel : ObservableRecipient
                         "SecchiViewModel, stateMachine (SecchiServiceState.Running): Running state entered."
                     );
 
-                    // The SecchiCollectionTable in the SecchiSelectView queries the SqliteService for the SecchiObservations table.
-                    // The SqliteService should finish the initial run so that the location entries are available.
-                    // If this is not checked prior to setting the SecchiSelectView to the SecchiCollectionTable, then the first observation will not have a location and will not display.
-                    // This condition is likely to only occur in testing where there are observations but the locations have not been loaded to Sqlite.
-                    // It may be necessary to navigate away from the SecchiPage and back to it to get the locations to display if this type of initialization to Sqlite is being done in testing.
-                    if (sqliteSetToInitialRun is false)
-                    {
-                        // Observations and locations have been received, so set the SecchiSelectView to the SecchiCollectionTable.
-                        WeakReferenceMessenger.Default.Send<SetSecchiSelectViewMessage>(
-                            new SetSecchiSelectViewMessage("SecchiCollectionTable")
-                        );
-                    }
+                    // Observations and locations have been received, so set the SecchiSelectView to the SecchiCollectionTable.
+                    WeakReferenceMessenger.Default.Send<SetSecchiSelectViewMessage>(
+                        new SetSecchiSelectViewMessage("SecchiCollectionTable")
+                    );
 
                     /*
                     // Send a GeodatabaseStateChangeMessage message to the GeoDatabaseService to change the state of the secchi observations geodatabase to BeginTransaction for secchiObservationsChannel.
@@ -1508,16 +1498,6 @@ public partial class SecchiViewModel : ObservableRecipient
                 geoTriggerDistance = await LocalSettingsService.ReadSettingAsync<double>(
                     SecchiConfiguration.Item[Key.GeoTriggerDistanceMeters]
                 );
-            })
-            .Wait();
-
-        // Retrieve the value of SqliteSetToInitialRun from localSettingsService.
-        Task.Run(async () =>
-            {
-                sqliteSetToInitialRun = (bool)
-                    await LocalSettingsService.ReadSettingAsync<bool?>(
-                        SqliteConfiguration.Item[SqliteConfiguration.Key.SqliteSetToInitialRun]
-                    );
             })
             .Wait();
 
