@@ -373,8 +373,7 @@ public partial class SqliteService : ISqliteService
             if (dbType == DbType.SecchiObservations)
             {
                 // Add a sequential primary key to the featureTableFieldsDictionary.
-                featureTableFieldsDictionary["SecchiObservationsId"] =
-                    "INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL";
+                // featureTableFieldsDictionary["ObservationFID"] = "INTEGER PRIMARY KEY NOT NULL";
                 // Add a field to track the status of the observation (values are in enum RecordStatus).
                 featureTableFieldsDictionary["Status"] = "INTEGER NOT NULL";
                 featureTableFieldsDictionary["CONSTRAINT"] =
@@ -505,8 +504,13 @@ public partial class SqliteService : ISqliteService
                 // Indicate that the feature is from the geodatabase and has been committed.
                 fieldValues["Status"] = (int)RecordStatus.Comitted;
 
-                // Initialize the feature to a state of NotCollected.
-                fieldValues["LocationCollected"] = (int)LocationCollected.NotCollected;
+                // All of the above fields are common to all feature tables.
+                // For SecchiLocaitons, add the LocationCollected field to the fieldValues dictionary.
+                if (dbType == DbType.SecchiLocations)
+                {
+                    // Initialize the feature to a state of NotCollected.
+                    fieldValues["LocationCollected"] = (int)LocationCollected.NotCollected;
+                }
 
                 // Create the sqlite insert statement.
                 var insertStatement =
@@ -616,6 +620,9 @@ public partial class SqliteService : ISqliteService
                         );
                     }
                     break;
+                // SecchiObservations does not have a location detail table.
+                case DbType.SecchiObservations:
+                    break;
                 default:
                     // Log to trace that the dbType is not implemented.
                     logger.LogError(
@@ -672,7 +679,7 @@ public partial class SqliteService : ISqliteService
 
             var insertSqlTablePortion =
                 $@"
-                INSERT INTO {DbType} (Latitude, Longitude, LocationId, Location, LocationType, Status, LocationCollected)
+                INSERT INTO {DbType} (Latitude, Longitude, LocationId, LocationName, LocationType, Status, LocationCollected)
                 ";
 
             // Log the insertSqlPortion to trace.

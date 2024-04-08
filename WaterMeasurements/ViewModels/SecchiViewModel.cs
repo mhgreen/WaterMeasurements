@@ -83,6 +83,8 @@ public partial class SecchiViewModel : ObservableRecipient
     private bool haveLocationsTable = false;
     private bool haveObservationsTable = false;
 
+    private bool sqliteSetToInitialRun = false;
+
     private SecchiLocationCollectionLoader? secchiLocations;
 
     public SecchiLocationCollectionLoader SecchiLocations
@@ -491,10 +493,18 @@ public partial class SecchiViewModel : ObservableRecipient
                         "SecchiViewModel, stateMachine (SecchiServiceState.Running): Running state entered."
                     );
 
-                    // Observations and locations have been received, so set the SecchiSelectView to the SecchiCollectionTable.
-                    WeakReferenceMessenger.Default.Send<SetSecchiSelectViewMessage>(
-                        new SetSecchiSelectViewMessage("SecchiCollectionTable")
-                    );
+                    // The SecchiCollectionTable in the SecchiSelectView queries the SqliteService for the SecchiObservations table.
+                    // The SqliteService should finish the initial run so that the location entries are available.
+                    // If this is not checked prior to setting the SecchiSelectView to the SecchiCollectionTable, then the first observation will not have a location and will not display.
+                    // This condition is likely to only occur in testing where there are observations but the locations have not been loaded to Sqlite.
+                    // It may be necessary to navigate away from the SecchiPage and back to it to get the locations to display if this type of initialization to Sqlite is being done in testing.
+                    if (sqliteSetToInitialRun is false)
+                    {
+                        // Observations and locations have been received, so set the SecchiSelectView to the SecchiCollectionTable.
+                        WeakReferenceMessenger.Default.Send<SetSecchiSelectViewMessage>(
+                            new SetSecchiSelectViewMessage("SecchiCollectionTable")
+                        );
+                    }
 
                     /*
                     // Send a GeodatabaseStateChangeMessage message to the GeoDatabaseService to change the state of the secchi observations geodatabase to BeginTransaction for secchiObservationsChannel.
@@ -1001,7 +1011,7 @@ public partial class SecchiViewModel : ObservableRecipient
                             );
 
                             var locationId = feature.Attributes["LocationId"];
-                            var locationName = feature.Attributes["Location"];
+                            var locationName = feature.Attributes["LocationName"];
                             if (locationId is not null && locationName is not null)
                             {
                                 logger.LogDebug(
@@ -1034,7 +1044,7 @@ public partial class SecchiViewModel : ObservableRecipient
                             );
 
                             var locationId = feature.Attributes["LocationId"];
-                            var locationName = feature.Attributes["Location"];
+                            var locationName = feature.Attributes["LocationName"];
                             if (locationId is not null && locationName is not null)
                             {
                                 logger.LogDebug(
@@ -1106,12 +1116,12 @@ public partial class SecchiViewModel : ObservableRecipient
             );
 
             Guard.Against.NullOrEmpty(
-                feature.Attributes["Location"]!.ToString(),
+                feature.Attributes["LocationName"]!.ToString(),
                 nameof(feature),
                 "SecchiViewModel, ProcessSecchiMeasurements: feature.Attributes[Location] can not be null or empty."
             );
 
-            locationName = feature.Attributes["Location"]!.ToString();
+            locationName = feature.Attributes["LocationName"]!.ToString();
 
             // Once the location have been collected, move to the results panel.
             // Send a SetSecchiSelectViewMessage with the value of "SecchiCollectionTable".
@@ -1211,8 +1221,8 @@ public partial class SecchiViewModel : ObservableRecipient
                         secchiValue,
                         locationId,
                         DateTime.UtcNow,
-                        secchiMeasurements.Location.X,
-                        secchiMeasurements.Location.Y
+                        secchiMeasurements.Location.Y,
+                        secchiMeasurements.Location.X
                     )
                 )
             );
@@ -1221,8 +1231,8 @@ public partial class SecchiViewModel : ObservableRecipient
             SecchiObservations.Add(
                 new SecchiCollectionDisplay(
                     locationName!,
-                    secchiMeasurements.Location.X,
                     secchiMeasurements.Location.Y,
+                    secchiMeasurements.Location.X,
                     locationId,
                     secchiMeasurements.Measurement1,
                     secchiMeasurements.Measurement2,
@@ -1306,7 +1316,7 @@ public partial class SecchiViewModel : ObservableRecipient
             newFeature.Geometry = secchiAddLocation.Location;
             newFeature.Attributes["Latitude"] = secchiAddLocation.Latitude;
             newFeature.Attributes["Longitude"] = secchiAddLocation.Longitude;
-            newFeature.Attributes["Location"] = secchiAddLocation.LocationName;
+            newFeature.Attributes["LocationName"] = secchiAddLocation.LocationName;
             newFeature.Attributes["LocationId"] = secchiAddLocation.LocationNumber;
             newFeature.Attributes["LocationType"] = (int)secchiAddLocation.LocationType;
 
@@ -1498,6 +1508,16 @@ public partial class SecchiViewModel : ObservableRecipient
                 geoTriggerDistance = await LocalSettingsService.ReadSettingAsync<double>(
                     SecchiConfiguration.Item[Key.GeoTriggerDistanceMeters]
                 );
+            })
+            .Wait();
+
+        // Retrieve the value of SqliteSetToInitialRun from localSettingsService.
+        Task.Run(async () =>
+            {
+                sqliteSetToInitialRun = (bool)
+                    await LocalSettingsService.ReadSettingAsync<bool?>(
+                        SqliteConfiguration.Item[SqliteConfiguration.Key.SqliteSetToInitialRun]
+                    );
             })
             .Wait();
 

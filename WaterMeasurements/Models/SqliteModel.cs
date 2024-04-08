@@ -105,7 +105,7 @@ public readonly record struct SecchiLocation(
     double Latitude,
     double Longitude,
     int LocationId,
-    string Location,
+    string LocationName,
     LocationType LocationType
 );
 
@@ -152,7 +152,7 @@ public static class SqliteConversion
             { "Int64", "INTEGER" },
             { "Float32", "REAL" },
             { "Float64", "REAL" },
-            { "Date", "NUMERIC" },
+            { "Date", "TEXT" },
             { "Text", "TEXT" },
             { "OID", "NUMERIC" },
             { "GlobalID", "TEXT" },

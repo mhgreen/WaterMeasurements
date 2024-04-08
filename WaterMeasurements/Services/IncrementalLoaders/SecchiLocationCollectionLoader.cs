@@ -254,9 +254,9 @@ public class SecchiLocationCollectionLoader
             {
                 logger.LogTrace(
                     SecchiLocationLoaderLog,
-                    "GetPagedItemAsync: (not sorted) Feature: Id {LocationId} Location Name: {Location}, Latitude: {latitude}, Longitude: {longitude}, Location Type: {locationType}  Geometry: {Geometry}",
+                    "GetPagedItemAsync: (not sorted) Feature: Id {LocationId} Location Name: {LocationName}, Latitude: {latitude}, Longitude: {longitude}, Location Type: {locationType}  Geometry: {Geometry}",
                     feature.Attributes["LocationId"],
-                    feature.Attributes["Location"],
+                    feature.Attributes["LocationName"],
                     feature.Attributes["Latitude"],
                     feature.Attributes["Longitude"],
                     feature.Attributes["LocationType"],
@@ -292,14 +292,14 @@ public class SecchiLocationCollectionLoader
                     notConverted.Add("LocationId");
                 }
 
-                var locationConverted = featureStringConverter.ConvertTextToString(
-                    "Location",
+                var locationNameConverted = featureStringConverter.ConvertTextToString(
+                    "LocationName",
                     feature
                 );
-                conversionSuccess |= locationConverted.Success;
-                if (!locationConverted.Success)
+                conversionSuccess |= locationNameConverted.Success;
+                if (!locationNameConverted.Success)
                 {
-                    notConverted.Add("Location");
+                    notConverted.Add("LocationName");
                 }
 
                 var locationTypeConverted = featureShortConverter.ConvertInt32ToInt(
@@ -319,7 +319,7 @@ public class SecchiLocationCollectionLoader
                         SecchiLocationLoaderLog,
                         "GetPagedItemAsync: Features after conversion: Id {LocationId} Location Name: {Location}, Latitude: {latitude}, Longitude: {longitude}, Location Type: {locationType}",
                         locationIdConverted.Value,
-                        locationConverted.Value,
+                        locationNameConverted.Value,
                         Wgs84geometry.Y,
                         Wgs84geometry.X,
                         locationTypeConverted.Value
@@ -327,7 +327,7 @@ public class SecchiLocationCollectionLoader
 
                     if (
                         locationIdConverted.Value is not null
-                        && locationConverted.Value is not null
+                        && locationNameConverted.Value is not null
                         && locationTypeConverted.Value is not null
                     )
                     {
@@ -336,7 +336,7 @@ public class SecchiLocationCollectionLoader
                                 latitude: Wgs84geometry.Y,
                                 longitude: Wgs84geometry.X,
                                 locationId: (int)locationIdConverted.Value,
-                                locationName: (string)locationConverted.Value,
+                                locationName: (string)locationNameConverted.Value,
                                 locationType: (LocationType)locationTypeConverted.Value
                             )
                         );

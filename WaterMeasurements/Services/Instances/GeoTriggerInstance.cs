@@ -360,7 +360,7 @@ public partial class GeoTriggerInstance : IGeoTriggerInstance
                         );
 
                         var locationId = feature.Attributes["LocationId"];
-                        var locationName = feature.Attributes["Location"];
+                        var locationName = feature.Attributes["LocationName"];
                         if (
                             info.GeotriggerMonitor == locationsMonitor
                             && locationId is not null
@@ -388,7 +388,7 @@ public partial class GeoTriggerInstance : IGeoTriggerInstance
                         );
 
                         var locationId = feature.Attributes["LocationId"];
-                        var locationName = feature.Attributes["Location"];
+                        var locationName = feature.Attributes["LocationName"];
                         if (
                             info.GeotriggerMonitor == locationsMonitor
                             && locationId is not null
