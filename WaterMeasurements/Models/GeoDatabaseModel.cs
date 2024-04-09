@@ -63,6 +63,21 @@ public readonly record struct FeatureDeleteMessage(string FeatureTable, Feature 
 // Record to update a feature in a feature table.
 public readonly record struct FeatureUpdateMessage(string FeatureTable, Feature FeatureToUpdate);
 
+// Record to notifying that a feature has changed.
+public readonly record struct FeatureChangedMessage(
+    string FeatureTable,
+    Feature FeatureChanged,
+    FeatureTableAction FeatureTableAction
+);
+
+// Feature table action type.
+public enum FeatureTableAction
+{
+    Added,
+    Deleted,
+    Updated
+}
+
 // Geodatabase type.
 public enum GeoDatabaseType
 {

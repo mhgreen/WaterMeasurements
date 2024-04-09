@@ -279,14 +279,6 @@ public class SecchiObservationCollectionLoader
                     feature.Attributes["Secchi"]
                 );
 
-                var dateType = feature.Attributes["DateCollected"].GetType();
-                // log the dateType.
-                logger.LogTrace(
-                    SecchiObservationLoaderLog,
-                    "GetPagedItemAsync: Feature: DateType {dateType}",
-                    dateType
-                );
-
                 Guard.Against.Null(
                     feature.Geometry,
                     nameof(feature.Geometry),

@@ -898,7 +898,66 @@ public partial class GeoDatabaseInstance : IGeoDatabaseInstance
                 "GeoDatabaseInstance, AddFeatureToGeodatabase: featureTable is null."
             );
 
+            // Add the feature to the feature table.
             await featureTable.AddFeatureAsync(featureMessage.FeatureToAdd);
+
+            // Get the max OBJECTID from the feature table.
+            var statMaxObjectId = new StatisticDefinition(
+                "OBJECTID",
+                StatisticType.Maximum,
+                "MaxObjectId"
+            );
+            // Create a list of statistic definitions.
+            var statisticDefinitions = new List<StatisticDefinition> { statMaxObjectId };
+            // Create a statistics query parameters object.
+            var statisticsQueryParameters = new StatisticsQueryParameters(statisticDefinitions);
+
+            // Query the statistics.
+            var statisticsQueryResult = await featureTable.QueryStatisticsAsync(
+                statisticsQueryParameters
+            );
+            // Get the max OBJECTID from the statistics query result.
+            var maxObjectId = statisticsQueryResult.First().Statistics["MaxObjectId"];
+
+            // Return the last inserted item in the feature table based on the maxObjectId.
+            var queryParameters = new QueryParameters()
+            {
+                WhereClause = $"OBJECTID = {maxObjectId}",
+                MaxFeatures = 1
+            };
+
+            // Execute the query.
+            var queryResult = await featureTable.QueryFeaturesAsync(queryParameters);
+
+            // Make sure that queryResult is not null.
+            Guard.Against.Null(
+                queryResult,
+                nameof(queryResult),
+                "GeoDatabaseInstance, AddFeatureToGeodatabase: queryResult is null."
+            );
+
+            // Get the first feature from the query result.
+            var featureResult = queryResult.First();
+
+            // Send a feature changed message.
+            WeakReferenceMessenger.Default.Send(
+                new ChangedFeatureMessage(
+                    new FeatureChangedMessage(Name, featureResult, FeatureTableAction.Added)
+                ),
+                Channel
+            );
+
+            // Log the attributes of the last inserted item.
+            foreach (var attribute in featureResult.Attributes)
+            {
+                logger.LogTrace(
+                    GeoDatabaseLog,
+                    "GeoDatabaseInstance {name}, AddFeatureToGeodatabase: feature.Attributes: attribute.Key: {attributeName}, attribute.Value: {attributeValue}.",
+                    Name,
+                    attribute.Key,
+                    attribute.Value
+                );
+            }
 
             ListGeodatabaseContents(currentGeodatabase);
         }

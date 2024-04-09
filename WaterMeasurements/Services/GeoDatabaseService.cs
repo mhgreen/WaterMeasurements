@@ -70,6 +70,10 @@ public class DeleteFeatureMessage(FeatureDeleteMessage featureDeleteMessage)
 public class UpdateFeatureMessage(FeatureUpdateMessage featureUpdateMessage)
     : ValueChangedMessage<FeatureUpdateMessage>(featureUpdateMessage) { }
 
+// Message to update modules of a feature change.
+public class ChangedFeatureMessage(FeatureChangedMessage featureChangedMessage)
+    : ValueChangedMessage<FeatureChangedMessage>(featureChangedMessage) { }
+
 public partial class GeoDatabaseService : IGeoDatabaseService
 {
     private readonly ILogger<GeoDatabaseService> logger;

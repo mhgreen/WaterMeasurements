@@ -668,7 +668,7 @@ public partial class SqliteService : ISqliteService
 
     public async Task AddLocationRecordToTable(LocationRecord LocationRecord, DbType DbType)
     {
-        var insertedRecords = 0;
+        IInsertValueBuilder fluentBuilder;
 
         try
         {
@@ -677,44 +677,44 @@ public partial class SqliteService : ISqliteService
             // Log the LocationRecord to trace.
             logger.LogTrace(SqliteLog, "LocationRecord: {LocationRecord}", LocationRecord);
 
-            var insertSqlTablePortion =
-                $@"
-                INSERT INTO {DbType} (Latitude, Longitude, LocationId, LocationName, LocationType, Status, LocationCollected)
-                ";
+            switch (DbType)
+            {
+                case DbType.SecchiLocations:
 
-            // Log the insertSqlPortion to trace.
-            logger.LogTrace(
-                SqliteLog,
-                "Sqlite insert statement: {insertSqlPortion}",
-                insertSqlTablePortion
-            );
+                    // Create a fluent builder to add a location record to the SecchiLocations table.
+                    fluentBuilder = SimpleBuilder
+                        .CreateFluent()
+                        .InsertInto($"SecchiLocations")
+                        .Columns(
+                            $"Latitude, Longitude, LocationId, LocationName, LocationType, Status, LocationCollected"
+                        )
+                        .Values(
+                            $@"{LocationRecord.Latitude}, {LocationRecord.Longitude}, {LocationRecord.LocationId},
+                            {LocationRecord.LocationName}, {(int)LocationRecord.LocationType}, {(int)RecordStatus.WorkingSet},
+                            {(int)LocationCollected.NotCollected}"
+                        );
 
-            var builder = SimpleBuilder.Create(
-                $@"
-                VALUES ({LocationRecord.Latitude}, {LocationRecord.Longitude}, {LocationRecord.LocationId}, 
-                    {LocationRecord.LocationName}, {(int)LocationRecord.LocationType}, {(int)RecordStatus.WorkingSet},
-                    {(int)LocationCollected.NotCollected})
-                "
-            );
+                    // Log builder.sql to trace.
+                    logger.LogTrace(
+                        SqliteLog,
+                        "Sqlite Service, AddLocationRecordToTable: Sqlite insert statement (fluentBuilder): {builder.Sql}",
+                        fluentBuilder.Sql
+                    );
+                    break;
 
-            var sqlStatement = insertSqlTablePortion + builder.Sql;
-
-            // Log builder.sql to trace.
-            logger.LogTrace(SqliteLog, "Sqlite insert statement: {builder.Sql}", builder.Sql);
-
-            // Log the builder.parameters to trace.
-            logger.LogTrace(
-                SqliteLog,
-                "Sqlite Service, AddLocationRecordToTable: Sqlite insert statement parameters: {builder.Parameters}",
-                builder.Parameters
-            );
+                default:
+                    logger.LogError(
+                        SqliteLog,
+                        "Sqlite Service, AddLocationRecordToTable: dbType {DbType} is not implemented.",
+                        DbType
+                    );
+                    return;
+            }
 
             // Open the connection to the sqlite database.
             using var database = await GetOpenConnectionAsync();
-
-            // Get the number of inserted records from the insert statement.
-            insertedRecords = database.Execute(sqlStatement, builder.Parameters);
-
+            // Execute the insert statement.
+            var insertedRecords = database.Execute(fluentBuilder.Sql, fluentBuilder.Parameters);
             // Log the number of inserted records to trace.
             logger.LogTrace(
                 SqliteLog,
@@ -733,19 +733,6 @@ public partial class SqliteService : ISqliteService
                 "Sqlite Service, AddLocationRecordToTable: Error adding location record to table: {sqliteException.Message}, with an error code of {sqliteException.SqliteErrorCode}",
                 sqliteException.Message,
                 sqliteException.SqliteErrorCode
-            );
-
-            // Send a FeatureTableResultMessage with the number of records inserted and the return code.
-            WeakReferenceMessenger.Default.Send(
-                new FeatureToTableResultMessage(
-                    new FeatureToTableResult(
-                        DbType,
-                        insertedRecords,
-                        sqliteException.SqliteErrorCode,
-                        sqliteException.Message,
-                        FeatureToTableStatus.Failure
-                    )
-                )
             );
         }
         catch (Exception exception)
@@ -869,7 +856,7 @@ public partial class SqliteService : ISqliteService
 
     public async Task DeleteLocationRecordFromTable(int locationId, DbType DbType)
     {
-        var deletedRecords = 0;
+        int deletedRecords;
 
         try
         {
@@ -912,19 +899,6 @@ public partial class SqliteService : ISqliteService
                 "Sqlite Service, DeleteLocationRecordFromTable: Error deleting location record from table: {sqliteException.Message}, with an error code of {sqliteException.SqliteErrorCode}",
                 sqliteException.Message,
                 sqliteException.SqliteErrorCode
-            );
-
-            // Send a FeatureTableResultMessage with the number of records inserted and the return code.
-            WeakReferenceMessenger.Default.Send(
-                new FeatureToTableResultMessage(
-                    new FeatureToTableResult(
-                        DbType,
-                        deletedRecords,
-                        sqliteException.SqliteErrorCode,
-                        sqliteException.Message,
-                        FeatureToTableStatus.Failure
-                    )
-                )
             );
         }
         catch (Exception exception)

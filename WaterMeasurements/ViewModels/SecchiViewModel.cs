@@ -1016,9 +1016,6 @@ public partial class SecchiViewModel : ObservableRecipient
                                     new SetSecchiSelectViewMessage("SecchiDataEntry")
                                 );
 
-                                // SecchiCollectionPointName = locationName.ToString()!;
-
-
                                 uiDispatcherQueue.TryEnqueue(() =>
                                 {
                                     SecchiCollectionPointName = locationName.ToString()!;
@@ -1201,6 +1198,7 @@ public partial class SecchiViewModel : ObservableRecipient
                 secchiObservationsChannel
             );
 
+            /*
             // Add the new observation record to Sqlite.
             WeakReferenceMessenger.Default.Send<AddSecchiObservationMessage>(
                 new AddSecchiObservationMessage(
@@ -1216,6 +1214,7 @@ public partial class SecchiViewModel : ObservableRecipient
                     )
                 )
             );
+            */
 
             // Add the new observation to the SecchiObservations collection.
             SecchiObservations.Add(
