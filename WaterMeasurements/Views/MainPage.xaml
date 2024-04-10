@@ -190,7 +190,7 @@
                     VerticalAlignment="Center"
                     Click="Edit_Observation_Click"
                     Scale="0.8, 0.8, 0.8"
-                    Tag="{x:Bind LocationId}">
+                    Tag="{x:Bind ObjectId}">
                     <SymbolIcon Symbol="Edit" />
                 </Button>
                 <Button
@@ -203,7 +203,7 @@
                     VerticalAlignment="Center"
                     Click="Delete_Observation_Click"
                     Scale="0.8, 0.8, 0.8"
-                    Tag="{x:Bind LocationId}">
+                    Tag="{x:Bind ObjectId}">
                     <SymbolIcon Symbol="Delete" />
                 </Button>
 

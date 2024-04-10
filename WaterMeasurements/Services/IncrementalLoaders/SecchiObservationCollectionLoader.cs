@@ -358,12 +358,22 @@ public class SecchiObservationCollectionLoader
                     notConverted.Add("Secchi");
                 }
 
+                var objectIdConverted = featureLongConverter.ConvertObjectIdToLong(
+                    "OBJECTID",
+                    feature
+                );
+                conversionSuccess |= objectIdConverted.Success;
+                if (!objectIdConverted.Success)
+                {
+                    notConverted.Add("OBJECTID");
+                }
+
                 if (conversionSuccess)
                 {
                     // Log all of the converted values.
                     logger.LogTrace(
                         SecchiObservationLoaderLog,
-                        "GetPagedItemAsync: Features after conversion: DateTime {DateTime} Id {LocationId} Latitude: {latitude}, Longitude: {longitude}, Obs1: {meas1}  Obs2: {meas2} Obs3: {meas3} Secchi: {secchi}",
+                        "GetPagedItemAsync: Features after conversion: DateTime {DateTime} Id {LocationId} Latitude: {latitude}, Longitude: {longitude}, Obs1: {meas1}  Obs2: {meas2} Obs3: {meas3} Secchi: {secchi} OBJECTID: {ObjectId}",
                         dateCollectedConverted.Value,
                         locationIdConverted.Value,
                         Wgs84geometry.Y,
@@ -371,7 +381,8 @@ public class SecchiObservationCollectionLoader
                         measurement1Converted.Value,
                         measurement2Converted.Value,
                         measurement3Converted.Value,
-                        secchiConverted.Value
+                        secchiConverted.Value,
+                        objectIdConverted.Value
                     );
 
                     if (
@@ -381,6 +392,7 @@ public class SecchiObservationCollectionLoader
                         && measurement2Converted.Value is not null
                         && measurement3Converted.Value is not null
                         && secchiConverted.Value is not null
+                        && objectIdConverted.Value is not null
                     )
                     {
                         if (currentLocationId != locationIdConverted.Value)
@@ -456,7 +468,8 @@ public class SecchiObservationCollectionLoader
                                     obs2: (int)measurement2Converted.Value,
                                     obs3: (int)measurement3Converted.Value,
                                     secchiDepth: (double)secchiConverted.Value,
-                                    collectionDate: (DateTimeOffset)dateCollectedConverted.Value
+                                    collectionDate: (DateTimeOffset)dateCollectedConverted.Value,
+                                    ObjectId: (long)objectIdConverted.Value
                                 )
                             );
                         }

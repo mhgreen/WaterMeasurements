@@ -8,6 +8,7 @@ using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.Mvvm.Messaging.Messages;
 using Esri.ArcGISRuntime.Data;
 using Esri.ArcGISRuntime.Geotriggers;
+using Esri.ArcGISRuntime.Location;
 using Microsoft.Extensions.Logging;
 using Microsoft.UI;
 using Microsoft.UI.Dispatching;
@@ -21,6 +22,7 @@ using WaterMeasurements.Models;
 using WaterMeasurements.Services;
 using WaterMeasurements.Services.IncrementalLoaders;
 using WaterMeasurements.Views;
+using WinUIEx.Messaging;
 using static WaterMeasurements.Models.SecchiConfiguration;
 using static WaterMeasurements.ViewModels.MainViewModel;
 
@@ -82,6 +84,11 @@ public partial class SecchiViewModel : ObservableRecipient
 
     private bool haveLocationsTable = false;
     private bool haveObservationsTable = false;
+
+    // The location name for the collection point is provided via geotrigger.
+    // Instead of being a global variable, it could be retrieved from the feature table
+    // but doing so would require a query to the feature table each time the location name is needed.
+    private string? geotriggerLocationName = string.Empty;
 
     private SecchiLocationCollectionLoader? secchiLocations;
 
@@ -619,6 +626,142 @@ public partial class SecchiViewModel : ObservableRecipient
                 }
             );
 
+            // Register to get changed feature messages on the secchiLocationsChannel.
+            WeakReferenceMessenger.Default.Register<ChangedFeatureMessage, uint>(
+                this,
+                secchiLocationsChannel,
+                (recipient, message) =>
+                {
+                    logger.LogDebug(
+                        SecchiViewModelLog,
+                        "SecchiViewModel, ChangedFeatureMessage, secchiLocationsChannel: {secchiLocationsChannel}, FeatureChangedMessage: {featureChangedMessage}.",
+                        secchiLocationsChannel,
+                        message.Value
+                    );
+
+                    if (message.Value.FeatureTableAction == FeatureTableAction.Added)
+                    {
+                        // Log that a feature has been added.
+                        logger.LogDebug(
+                            SecchiViewModelLog,
+                            "SecchiViewModel, ChangedFeatureMessage, Added, secchiLocationsChannel: {secchiLocationsChannel}, FeatureChangedMessage: {featureChangedMessage}.",
+                            secchiLocationsChannel,
+                            message.Value
+                        );
+
+                        // Log the fields in the feature table.
+                        foreach (var attribute in message.Value.FeatureChanged.Attributes)
+                        {
+                            logger.LogTrace(
+                                SecchiViewModelLog,
+                                "SecchiViewModel, ChangedFeatureMessage, {name}: attribute.Key: {attributeName}, attribute.Value: {attributeValue}.",
+                                message.Value.FeatureTable,
+                                attribute.Key,
+                                attribute.Value
+                            );
+                        }
+                    }
+                    else if (message.Value.FeatureTableAction == FeatureTableAction.Deleted)
+                    {
+                        // Log that a feature has been deleted.
+                        logger.LogDebug(
+                            SecchiViewModelLog,
+                            "SecchiViewModel, ChangedFeatureMessage, Deleted, secchiLocationsChannel: {secchiLocationsChannel}, FeatureChangedMessage: {featureChangedMessage}.",
+                            secchiLocationsChannel,
+                            message.Value
+                        );
+                    }
+                    else if (message.Value.FeatureTableAction == FeatureTableAction.Updated)
+                    {
+                        // Log that a feature has been updated.
+                        logger.LogDebug(
+                            SecchiViewModelLog,
+                            "SecchiViewModel, ChangedFeatureMessage, Updated, secchiLocationsChannel: {secchiLocationsChannel}, FeatureChangedMessage: {featureChangedMessage}.",
+                            secchiLocationsChannel,
+                            message.Value
+                        );
+                    }
+                }
+            );
+
+            // Register to get changed feature messages on the secchiObservationsChannel.
+            WeakReferenceMessenger.Default.Register<ChangedFeatureMessage, uint>(
+                this,
+                secchiObservationsChannel,
+                (recipient, message) =>
+                {
+                    logger.LogDebug(
+                        SecchiViewModelLog,
+                        "SecchiViewModel, ChangedFeatureMessage, secchiObservationsChannel: {secchiObservationsChannel}, FeatureChangedMessage: {featureChangedMessage}.",
+                        secchiObservationsChannel,
+                        message.Value
+                    );
+
+                    if (message.Value.FeatureTableAction == FeatureTableAction.Added)
+                    {
+                        // Log that a feature has been added.
+                        logger.LogDebug(
+                            SecchiViewModelLog,
+                            "SecchiViewModel, ChangedFeatureMessage, Added, secchiObservationsChannel: {secchiObservationsChannel}, FeatureChangedMessage: {featureChangedMessage}.",
+                            secchiObservationsChannel,
+                            message.Value
+                        );
+
+                        // Log the fields in the feature table.
+                        foreach (var attribute in message.Value.FeatureChanged.Attributes)
+                        {
+                            logger.LogTrace(
+                                SecchiViewModelLog,
+                                "SecchiViewModel, ChangedFeatureMessage, {name}: attribute.Key: {attributeName}, attribute.Value: {attributeValue}.",
+                                message.Value.FeatureTable,
+                                attribute.Key,
+                                attribute.Value
+                            );
+                        }
+
+                        // Add the new observation to the SecchiObservations collection.
+                        // This updates the list of observations in the UI.
+                        SecchiObservations.Add(
+                            new SecchiCollectionDisplay(
+                                geotriggerLocationName!,
+                                (double)
+                                    message.Value.FeatureChanged.Attributes["CollectedLatitude"]!,
+                                (double)
+                                    message.Value.FeatureChanged.Attributes["CollectedLongitude"]!,
+                                (int)message.Value.FeatureChanged.Attributes["LocationId"]!,
+                                (int)message.Value.FeatureChanged.Attributes["Measurement1"]!,
+                                (int)message.Value.FeatureChanged.Attributes["Measurement2"]!,
+                                (int)message.Value.FeatureChanged.Attributes["Measurement3"]!,
+                                (double)message.Value.FeatureChanged.Attributes["Secchi"]!,
+                                (DateTimeOffset)
+                                    message.Value.FeatureChanged.Attributes["DateCollected"]!,
+                                (long)message.Value.FeatureChanged.Attributes["OBJECTID"]!
+                            )
+                        );
+                    }
+                    else if (message.Value.FeatureTableAction == FeatureTableAction.Deleted)
+                    {
+                        // Log that a feature has been deleted.
+                        logger.LogDebug(
+                            SecchiViewModelLog,
+                            "SecchiViewModel, ChangedFeatureMessage, Deleted, secchiObservationsChannel: {secchiObservationsChannel}, FeatureChangedMessage: {featureChangedMessage}.",
+                            secchiObservationsChannel,
+                            message.Value
+                        );
+                    }
+                    else if (message.Value.FeatureTableAction == FeatureTableAction.Updated)
+                    {
+                        // Log that a feature has been updated.
+                        logger.LogDebug(
+                            SecchiViewModelLog,
+                            "SecchiViewModel, ChangedFeatureMessage, Updated, secchiObservationsChannel: {secchiObservationsChannel}, FeatureChangedMessage: {featureChangedMessage}.",
+                            secchiObservationsChannel,
+                            message.Value
+                        );
+                    }
+                }
+            );
+
             // Register to get MapPageUnloadedMessage messages.
             WeakReferenceMessenger.Default.Register<MapPageUnloaded>(
                 this,
@@ -1071,7 +1214,7 @@ public partial class SecchiViewModel : ObservableRecipient
     public void ProcessSecchiMeasurements(SecchiMeasurement secchiMeasurements)
     {
         int locationId;
-        string? locationName;
+        // string? locationName;
 
         try
         {
@@ -1108,7 +1251,7 @@ public partial class SecchiViewModel : ObservableRecipient
                 "SecchiViewModel, ProcessSecchiMeasurements: feature.Attributes[Location] can not be null or empty."
             );
 
-            locationName = feature.Attributes["LocationName"]!.ToString();
+            geotriggerLocationName = feature.Attributes["LocationName"]!.ToString();
 
             // Once the location have been collected, move to the results panel.
             // Send a SetSecchiSelectViewMessage with the value of "SecchiCollectionTable".
@@ -1146,9 +1289,9 @@ public partial class SecchiViewModel : ObservableRecipient
 
             secchiObservation.Geometry = secchiMeasurements.Location;
 
-            secchiObservation.SetAttributeValue("measurement1", secchiMeasurements.Measurement1);
-            secchiObservation.SetAttributeValue("measurement2", secchiMeasurements.Measurement2);
-            secchiObservation.SetAttributeValue("measurement3", secchiMeasurements.Measurement3);
+            secchiObservation.SetAttributeValue("Measurement1", secchiMeasurements.Measurement1);
+            secchiObservation.SetAttributeValue("Measurement2", secchiMeasurements.Measurement2);
+            secchiObservation.SetAttributeValue("Measurement3", secchiMeasurements.Measurement3);
 
             // Calculate the secchi value by averaging the three measurements.
             var secchiValue = Math.Round(
@@ -1163,14 +1306,14 @@ public partial class SecchiViewModel : ObservableRecipient
                 "SecchiViewModel, ProcessSecchiMeasurements: Secchi value rounded (double): {secchiValue}.",
                 secchiValue
             );
-            secchiObservation.SetAttributeValue("secchi", secchiValue);
+            secchiObservation.SetAttributeValue("Secchi", secchiValue);
 
-            secchiObservation.SetAttributeValue("locationId", locationId);
+            secchiObservation.SetAttributeValue("LocationId", locationId);
             // For testing, set the locationId to 55.
             // secchiObservation.SetAttributeValue("locationId", 55);
 
             // Get the current time and assign that to the secchiObservation.
-            secchiObservation.SetAttributeValue("dateCollected", DateTime.UtcNow);
+            secchiObservation.SetAttributeValue("DateCollected", DateTime.UtcNow);
 
             // Get the current latitude and longitude and assign that to the secchiObservation.
             secchiObservation.SetAttributeValue(
@@ -1216,10 +1359,11 @@ public partial class SecchiViewModel : ObservableRecipient
             );
             */
 
+            /*
             // Add the new observation to the SecchiObservations collection.
             SecchiObservations.Add(
                 new SecchiCollectionDisplay(
-                    locationName!,
+                    geotriggerLocationName!,
                     secchiMeasurements.Location.Y,
                     secchiMeasurements.Location.X,
                     locationId,
@@ -1230,6 +1374,7 @@ public partial class SecchiViewModel : ObservableRecipient
                     DateTime.UtcNow
                 )
             );
+            */
         }
         catch (Exception exception)
         {

@@ -48,6 +48,18 @@ public class FeatureToType<T1, ConvertedSuccess>(T1 value, ConvertedSuccess conv
         return new FeatureToType<long?, bool>(null, false);
     }
 
+    public FeatureToType<long?, bool> ConvertObjectIdToLong(string attribute, Feature feature)
+    {
+        if (feature.Attributes.TryGetValue(attribute, out var value))
+        {
+            if (value is long v)
+            {
+                return new FeatureToType<long?, bool>(v, true);
+            }
+        }
+        return new FeatureToType<long?, bool>(null, false);
+    }
+
     public FeatureToType<double?, bool> ConvertFloat64ToDouble(string attribute, Feature feature)
     {
         if (feature.Attributes.TryGetValue(attribute, out var value))

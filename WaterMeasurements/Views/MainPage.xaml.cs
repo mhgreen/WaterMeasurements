@@ -821,10 +821,11 @@ public partial class MainPage : Page
         if (item is not null)
         {
             Logger.Trace(
-                "MainPage.xaml.cs, SecchiCollectionListView_ItemClick: {locationName}, Lat {}, Lon {}",
+                "MainPage.xaml.cs, SecchiCollectionListView_ItemClick: {locationName}, Lat {latitude}, Lon {longitude}, OBJECTID {ObjectId}",
                 item.LocationName,
                 item.Latitude,
-                item.Longitude
+                item.Longitude,
+                item.ObjectId
             );
 
             if (item.Latitude is null || item.Longitude is null)
@@ -1807,12 +1808,12 @@ public partial class MainPage : Page
         {
             Guard.Against.Null(button, nameof(button), "Button in Edit_Observation_Click is null.");
 
-            var locationId = button.Tag;
+            var objectId = button.Tag;
 
             // Log to trace the value of sender and eventArgs.
             Logger.Trace(
-                "MainPage.xaml.cs, Edit_Observation_Click: LocationId: {locationId}",
-                locationId
+                "MainPage.xaml.cs, Edit_Observation_Click: OBJECTID: {objectId}",
+                objectId
             );
         }
         catch (Exception exception)
@@ -1844,12 +1845,12 @@ public partial class MainPage : Page
                 "Button in Delete_Observation_Click is null."
             );
 
-            var locationId = button.Tag;
+            var objectId = button.Tag;
 
             // Log to trace the value of sender and eventArgs.
             Logger.Trace(
-                "MainPage.xaml.cs, Delete_Observation_Click: LocationId: {locationId}",
-                locationId
+                "MainPage.xaml.cs, Delete_Observation_Click: OBJECTID: {ObjectId}",
+                objectId
             );
 
             // TODO: Implement the logic to delete the observation based on the locationId.

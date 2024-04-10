@@ -101,7 +101,8 @@ public class SecchiCollectionDisplay(
     int obs2,
     int obs3,
     double secchiDepth,
-    DateTimeOffset collectionDate
+    DateTimeOffset collectionDate,
+    long ObjectId
 )
 {
     public string LocationName { get; private set; } = locationName;
@@ -113,9 +114,9 @@ public class SecchiCollectionDisplay(
     public int Obs3 { get; private set; } = obs3;
     public double SecchiDepth { get; private set; } = secchiDepth;
     public DateTimeOffset CollectionDate { get; private set; } = collectionDate;
+    public long ObjectId { get; private set; } = ObjectId;
     public string DateLatLon =>
         $"{CollectionDate:MM/dd/yy H:mm} Lat: {Latitude:F4}, Lon: {Longitude:F4}";
     public string Observations =>
-        $"Obs1: {Obs1}, Obs2: {Obs2}, Obs3: {Obs3}, Secchi: {SecchiDepth:F1}";
-    public string Secchi => $"Secchi: {SecchiDepth:F2}";
+        $"Obs1: {Obs1}, Obs2: {Obs2}, Obs3: {Obs3}, Secchi: {SecchiDepth:F0}";
 }
