@@ -1719,6 +1719,13 @@ public partial class MainPage : Page
 
             Guard.Against.Null(button, nameof(button), "Button in Delete_Location_Click is null.");
 
+            // Log to trace the name of the button.
+            Logger.Trace(
+                "MainPage.xaml.cs, Delete_Location_Click: Button Name: {button.Name}",
+                button.Name
+            );
+
+            // Get the locationId from the button's tag.
             var locationId = (int)button.Tag;
 
             // Log to trace the value of sender and eventArgs.

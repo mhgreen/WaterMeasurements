@@ -258,12 +258,14 @@ public partial class SecchiViewModel : ObservableRecipient
                             );
                         }
 
+                        /*
                         // Send the FeatureToTableMessage to the SqliteService to convert the feature table to a table.
                         WeakReferenceMessenger.Default.Send<FeatureToTableMessage>(
                             new FeatureToTableMessage(
                                 new FeatureToTable(featureTable, DbType.SecchiObservations)
                             )
                         );
+                        */
 
                         // create a where clause to get all the features
                         var queryParameters = new QueryParameters() { WhereClause = "1=1" };
@@ -353,6 +355,7 @@ public partial class SecchiViewModel : ObservableRecipient
                             );
                         }
 
+                        /*
                         // create a where clause to get all the features
                         var queryParameters = new QueryParameters() { WhereClause = "1=1" };
 
@@ -374,6 +377,7 @@ public partial class SecchiViewModel : ObservableRecipient
                                 );
                             }
                         }
+                        */
 
                         // Send the FeatureToTableMessage to the SqliteService to convert the feature table to a table.
                         WeakReferenceMessenger.Default.Send<FeatureToTableMessage>(
@@ -503,16 +507,6 @@ public partial class SecchiViewModel : ObservableRecipient
                         new SetSecchiSelectViewMessage("SecchiCollectionTable")
                     );
 
-                    /*
-                    // Send a GeodatabaseStateChangeMessage message to the GeoDatabaseService to change the state of the secchi observations geodatabase to BeginTransaction for secchiObservationsChannel.
-                    WeakReferenceMessenger.Default.Send<GeodatabaseStateChangeMessage, uint>(
-                        new GeodatabaseStateChangeMessage(
-                            new GeodatabaseStateChange(GeoDbOperation.BeginTransaction)
-                        ),
-                        secchiObservationsChannel
-                    );
-                    */
-
                     StartMonitoringNetwork();
                 })
                 .InternalTransition(
@@ -547,16 +541,6 @@ public partial class SecchiViewModel : ObservableRecipient
                             SecchiViewModelLog,
                             "SecchiViewModel, stateMachine (SecchiServiceState.Running): InternetAvailableRecieved trigger received."
                         );
-
-                        /*
-
-                        // Send a feature table request message to get the current feature table.
-                        WeakReferenceMessenger.Default.Send<FeatureTableRequestMessage, uint>(
-                            new FeatureTableRequestMessage("SecchiObservations"),
-                            secchiObservationsChannel
-                        );
-
-                        */
                     }
                 )
                 // Permit the AppClosing trigger.
@@ -1309,8 +1293,6 @@ public partial class SecchiViewModel : ObservableRecipient
             secchiObservation.SetAttributeValue("Secchi", secchiValue);
 
             secchiObservation.SetAttributeValue("LocationId", locationId);
-            // For testing, set the locationId to 55.
-            // secchiObservation.SetAttributeValue("locationId", 55);
 
             // Get the current time and assign that to the secchiObservation.
             secchiObservation.SetAttributeValue("DateCollected", DateTime.UtcNow);
@@ -1336,7 +1318,7 @@ public partial class SecchiViewModel : ObservableRecipient
             // Send the feature via an AddFeatureMessage to the GeoDatabaseService.
             WeakReferenceMessenger.Default.Send<AddFeatureMessage, uint>(
                 new AddFeatureMessage(
-                    new FeatureAddMessage("SecchiObservations", secchiObservation)
+                    new FeatureAddMessage("SecchiObservations", "OBJECTID", secchiObservation)
                 ),
                 secchiObservationsChannel
             );
@@ -1355,23 +1337,6 @@ public partial class SecchiViewModel : ObservableRecipient
                         secchiMeasurements.Location.Y,
                         secchiMeasurements.Location.X
                     )
-                )
-            );
-            */
-
-            /*
-            // Add the new observation to the SecchiObservations collection.
-            SecchiObservations.Add(
-                new SecchiCollectionDisplay(
-                    geotriggerLocationName!,
-                    secchiMeasurements.Location.Y,
-                    secchiMeasurements.Location.X,
-                    locationId,
-                    secchiMeasurements.Measurement1,
-                    secchiMeasurements.Measurement2,
-                    secchiMeasurements.Measurement3,
-                    secchiValue,
-                    DateTime.UtcNow
                 )
             );
             */
@@ -1456,7 +1421,9 @@ public partial class SecchiViewModel : ObservableRecipient
 
             // Send the feature via an AddFeatureMessage to the GeoDatabaseService.
             WeakReferenceMessenger.Default.Send<AddFeatureMessage, uint>(
-                new AddFeatureMessage(new FeatureAddMessage("SecchiLocations", newFeature)),
+                new AddFeatureMessage(
+                    new FeatureAddMessage("SecchiLocations", "LocationId", newFeature)
+                ),
                 secchiLocationsChannel
             );
 
@@ -1551,7 +1518,7 @@ public partial class SecchiViewModel : ObservableRecipient
             {
                 foreach (var attribute in feature.Attributes)
                 {
-                    logger.LogDebug(
+                    logger.LogTrace(
                         SecchiViewModelLog,
                         "SecchiViewModel, DeleteLocation(): FeatureTable: {currentLocationsTable.TableName}, attribute.Key: {attributeName}, attribute.Value: {attributeValue}.",
                         currentLocationsTable.TableName,

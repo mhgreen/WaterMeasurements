@@ -901,43 +901,18 @@ public partial class GeoDatabaseInstance : IGeoDatabaseInstance
             // Add the feature to the feature table.
             await featureTable.AddFeatureAsync(featureMessage.FeatureToAdd);
 
-            // Get the max OBJECTID from the feature table.
-            var statMaxObjectId = new StatisticDefinition(
-                "OBJECTID",
-                StatisticType.Maximum,
-                "MaxObjectId"
+            // Get the last inserted item in the feature table based on the max object identifier.
+            var featureResult = await GetMaxFeatureFromFeatureTable(
+                featureTable,
+                featureMessage.IdentifyingField
             );
-            // Create a list of statistic definitions.
-            var statisticDefinitions = new List<StatisticDefinition> { statMaxObjectId };
-            // Create a statistics query parameters object.
-            var statisticsQueryParameters = new StatisticsQueryParameters(statisticDefinitions);
 
-            // Query the statistics.
-            var statisticsQueryResult = await featureTable.QueryStatisticsAsync(
-                statisticsQueryParameters
-            );
-            // Get the max OBJECTID from the statistics query result.
-            var maxObjectId = statisticsQueryResult.First().Statistics["MaxObjectId"];
-
-            // Return the last inserted item in the feature table based on the maxObjectId.
-            var queryParameters = new QueryParameters()
-            {
-                WhereClause = $"OBJECTID = {maxObjectId}",
-                MaxFeatures = 1
-            };
-
-            // Execute the query.
-            var queryResult = await featureTable.QueryFeaturesAsync(queryParameters);
-
-            // Make sure that queryResult is not null.
+            // Make sure that featureResult is not null.
             Guard.Against.Null(
-                queryResult,
-                nameof(queryResult),
-                "GeoDatabaseInstance, AddFeatureToGeodatabase: queryResult is null."
+                featureResult,
+                nameof(featureResult),
+                "GeoDatabaseInstance, AddFeatureToGeodatabase: featureResult is null."
             );
-
-            // Get the first feature from the query result.
-            var featureResult = queryResult.First();
 
             // Send a feature changed message.
             WeakReferenceMessenger.Default.Send(
@@ -970,6 +945,67 @@ public partial class GeoDatabaseInstance : IGeoDatabaseInstance
                 Name,
                 exception.Message
             );
+        }
+    }
+
+    // Get a feature from the feature table where objectIdentifier is the largest in the feature table.
+    private async Task<Feature?> GetMaxFeatureFromFeatureTable(
+        GeodatabaseFeatureTable featureTable,
+        string objectIdentifier
+    )
+    {
+        try
+        {
+            var statisticName = objectIdentifier + "_MAX";
+
+            // Get the max OBJECTID from the feature table.
+            var statMaxObjectId = new StatisticDefinition(
+                objectIdentifier,
+                StatisticType.Maximum,
+                statisticName
+            );
+            // Create a list of statistic definitions.
+            var statisticDefinitions = new List<StatisticDefinition> { statMaxObjectId };
+            // Create a statistics query parameters object.
+            var statisticsQueryParameters = new StatisticsQueryParameters(statisticDefinitions);
+
+            // Query the statistics.
+            var statisticsQueryResult = await featureTable.QueryStatisticsAsync(
+                statisticsQueryParameters
+            );
+            // Get the max object identifier from the statistics query result.
+            var maxObjectId = statisticsQueryResult.First().Statistics[statisticName];
+
+            // Return the last inserted item in the feature table based on the maxObjectId.
+            var queryParameters = new QueryParameters()
+            {
+                WhereClause = $"{objectIdentifier} = {maxObjectId}",
+                MaxFeatures = 1
+            };
+
+            // Execute the query.
+            var queryResult = await featureTable.QueryFeaturesAsync(queryParameters);
+
+            // Make sure that queryResult is not null.
+            Guard.Against.Null(
+                queryResult,
+                nameof(queryResult),
+                "GeoDatabaseInstance, AddFeatureToGeodatabase: queryResult is null."
+            );
+
+            // Get the first feature from the query result.
+            return queryResult.First();
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(
+                GeoDatabaseLog,
+                exception,
+                "GeoDatabaseInstance {name}, GetFeatureFromFeatureTable: Exception: {exception}.",
+                Name,
+                exception.Message
+            );
+            return null;
         }
     }
 

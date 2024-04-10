@@ -55,7 +55,12 @@ public readonly record struct GeoDatabaseDownloadInstanceProgress(double Percent
 public readonly record struct GeodatabaseStateChange(GeoDbOperation StateRequest);
 
 // Record to add a feature to a feature table.
-public readonly record struct FeatureAddMessage(string FeatureTable, Feature FeatureToAdd);
+// The identifying field is the field that uniquely identifies the feature (e.g. OBJECTID, FID or LocationId).
+public readonly record struct FeatureAddMessage(
+    string FeatureTable,
+    string IdentifyingField,
+    Feature FeatureToAdd
+);
 
 // Record to delete a feature from a feature table.
 public readonly record struct FeatureDeleteMessage(string FeatureTable, Feature FeatureToDelete);
