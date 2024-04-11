@@ -732,6 +732,14 @@ public partial class SecchiViewModel : ObservableRecipient
                             secchiObservationsChannel,
                             message.Value
                         );
+
+                        var objectId = (long)message.Value.FeatureChanged.Attributes["OBJECTID"]!;
+
+                        // Remove the observation from the SecchiObservations collection.
+                        // This updates the list of observations in the UI.
+                        SecchiObservations.Remove(
+                            SecchiObservations.FirstOrDefault(x => x.ObjectId == objectId)!
+                        );
                     }
                     else if (message.Value.FeatureTableAction == FeatureTableAction.Updated)
                     {
@@ -1352,6 +1360,77 @@ public partial class SecchiViewModel : ObservableRecipient
         }
     }
 
+    public void DeleteObservation(long objectId)
+    {
+        try
+        {
+            Guard.Against.Null(
+                SecchiObservations,
+                nameof(SecchiObservations),
+                "SecchiViewModel, DeleteObservation(): SecchiObservations can not be null."
+            );
+
+            Guard.Against.Null(
+                currentObservationsTable,
+                nameof(currentObservationsTable),
+                "SecchiViewModel, DeleteObservation(): currentObservationsTable can not be null."
+            );
+
+            // Log to debug the objectId.
+            logger.LogDebug(
+                SecchiViewModelLog,
+                "SecchiViewModel, DeleteObservation(): ObjectId: {objectId}.",
+                objectId
+            );
+
+            // Create a query to get the feature to delete.
+            var queryParameters = new QueryParameters { WhereClause = $"OBJECTID = {objectId}" };
+
+            // Query the feature table.
+            var queryResult = currentObservationsTable.QueryFeaturesAsync(queryParameters).Result;
+
+            // Log to debug the queryResult.
+            logger.LogDebug(
+                SecchiViewModelLog,
+                "SecchiViewModel, DeleteObservation(): QueryResult: {queryResult}.",
+                queryResult.Count()
+            );
+
+            // Get the first feature in the queryResult.
+            var featureToDelete = queryResult.FirstOrDefault();
+
+            // Log to debug the featureToDelete.
+            logger.LogDebug(
+                SecchiViewModelLog,
+                "SecchiViewModel, DeleteObservation(): FeatureToDelete: {featureToDelete}.",
+                featureToDelete
+            );
+
+            Guard.Against.Null(
+                featureToDelete,
+                nameof(featureToDelete),
+                "SecchiViewModel, DeleteObservation(): featureToDelete can not be null."
+            );
+
+            // Send the feature via a DeleteFeatureMessage to the GeoDatabaseService.
+            WeakReferenceMessenger.Default.Send<DeleteFeatureMessage, uint>(
+                new DeleteFeatureMessage(
+                    new FeatureDeleteMessage("SecchiObservations", "OBJECTID", featureToDelete)
+                ),
+                secchiObservationsChannel
+            );
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(
+                SecchiViewModelLog,
+                exception,
+                "Exception generated in SecchiViewModel, DeleteObservation: {message}.",
+                exception.Message.ToString()
+            );
+        }
+    }
+
     // Send a message to the GeoDatabaseService adding a feature to the SecchiLocations feature table.
     public void AddNewLocation(SecchiAddLocation secchiAddLocation)
     {
@@ -1531,7 +1610,7 @@ public partial class SecchiViewModel : ObservableRecipient
             // Send a DeleteFeatureMessage to the GeoDatabaseService.
             WeakReferenceMessenger.Default.Send<DeleteFeatureMessage, uint>(
                 new DeleteFeatureMessage(
-                    new FeatureDeleteMessage("SecchiLocations", queryResult.First())
+                    new FeatureDeleteMessage("SecchiLocations", "LocationId", queryResult.First())
                 ),
                 secchiLocationsChannel
             );

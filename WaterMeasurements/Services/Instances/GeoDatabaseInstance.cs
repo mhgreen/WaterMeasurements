@@ -855,6 +855,67 @@ public partial class GeoDatabaseInstance : IGeoDatabaseInstance
         }
     }
 
+    // Get a feature from the feature table where objectIdentifier is the largest in the feature table.
+    private async Task<Feature?> GetMaxFeatureFromFeatureTable(
+        GeodatabaseFeatureTable featureTable,
+        string objectIdentifier
+    )
+    {
+        try
+        {
+            var statisticName = objectIdentifier + "_MAX";
+
+            // Get the max OBJECTID from the feature table.
+            var statMaxObjectId = new StatisticDefinition(
+                objectIdentifier,
+                StatisticType.Maximum,
+                statisticName
+            );
+            // Create a list of statistic definitions.
+            var statisticDefinitions = new List<StatisticDefinition> { statMaxObjectId };
+            // Create a statistics query parameters object.
+            var statisticsQueryParameters = new StatisticsQueryParameters(statisticDefinitions);
+
+            // Query the statistics.
+            var statisticsQueryResult = await featureTable.QueryStatisticsAsync(
+                statisticsQueryParameters
+            );
+            // Get the max object identifier from the statistics query result.
+            var maxObjectId = statisticsQueryResult.First().Statistics[statisticName];
+
+            // Return the last inserted item in the feature table based on the maxObjectId.
+            var queryParameters = new QueryParameters()
+            {
+                WhereClause = $"{objectIdentifier} = {maxObjectId}",
+                MaxFeatures = 1
+            };
+
+            // Execute the query.
+            var queryResult = await featureTable.QueryFeaturesAsync(queryParameters);
+
+            // Make sure that queryResult is not null.
+            Guard.Against.Null(
+                queryResult,
+                nameof(queryResult),
+                "GeoDatabaseInstance, AddFeatureToGeodatabase: queryResult is null."
+            );
+
+            // Get the first feature from the query result.
+            return queryResult.First();
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(
+                GeoDatabaseLog,
+                exception,
+                "GeoDatabaseInstance {name}, GetFeatureFromFeatureTable: Exception: {exception}.",
+                Name,
+                exception.Message
+            );
+            return null;
+        }
+    }
+
     // Handle the GeoDatabaseAddFeature trigger, add the feature to the geodatabase.
     private async void AddFeatureToGeodatabase(FeatureAddMessage featureMessage)
     {
@@ -948,67 +1009,6 @@ public partial class GeoDatabaseInstance : IGeoDatabaseInstance
         }
     }
 
-    // Get a feature from the feature table where objectIdentifier is the largest in the feature table.
-    private async Task<Feature?> GetMaxFeatureFromFeatureTable(
-        GeodatabaseFeatureTable featureTable,
-        string objectIdentifier
-    )
-    {
-        try
-        {
-            var statisticName = objectIdentifier + "_MAX";
-
-            // Get the max OBJECTID from the feature table.
-            var statMaxObjectId = new StatisticDefinition(
-                objectIdentifier,
-                StatisticType.Maximum,
-                statisticName
-            );
-            // Create a list of statistic definitions.
-            var statisticDefinitions = new List<StatisticDefinition> { statMaxObjectId };
-            // Create a statistics query parameters object.
-            var statisticsQueryParameters = new StatisticsQueryParameters(statisticDefinitions);
-
-            // Query the statistics.
-            var statisticsQueryResult = await featureTable.QueryStatisticsAsync(
-                statisticsQueryParameters
-            );
-            // Get the max object identifier from the statistics query result.
-            var maxObjectId = statisticsQueryResult.First().Statistics[statisticName];
-
-            // Return the last inserted item in the feature table based on the maxObjectId.
-            var queryParameters = new QueryParameters()
-            {
-                WhereClause = $"{objectIdentifier} = {maxObjectId}",
-                MaxFeatures = 1
-            };
-
-            // Execute the query.
-            var queryResult = await featureTable.QueryFeaturesAsync(queryParameters);
-
-            // Make sure that queryResult is not null.
-            Guard.Against.Null(
-                queryResult,
-                nameof(queryResult),
-                "GeoDatabaseInstance, AddFeatureToGeodatabase: queryResult is null."
-            );
-
-            // Get the first feature from the query result.
-            return queryResult.First();
-        }
-        catch (Exception exception)
-        {
-            logger.LogError(
-                GeoDatabaseLog,
-                exception,
-                "GeoDatabaseInstance {name}, GetFeatureFromFeatureTable: Exception: {exception}.",
-                Name,
-                exception.Message
-            );
-            return null;
-        }
-    }
-
     // Handle the GeoDatabaseDeleteFeature trigger, delete the feature from the geodatabase.
     private async void DeleteFeatureFromGeodatabase(FeatureDeleteMessage featureMessage)
     {
@@ -1053,6 +1053,18 @@ public partial class GeoDatabaseInstance : IGeoDatabaseInstance
             );
 
             await featureTable.DeleteFeatureAsync(featureMessage.FeatureToDelete);
+
+            // Send a feature deleted message.
+            WeakReferenceMessenger.Default.Send(
+                new ChangedFeatureMessage(
+                    new FeatureChangedMessage(
+                        Name,
+                        featureMessage.FeatureToDelete,
+                        FeatureTableAction.Deleted
+                    )
+                ),
+                Channel
+            );
 
             ListGeodatabaseContents(currentGeodatabase);
         }

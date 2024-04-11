@@ -1860,8 +1860,8 @@ public partial class MainPage : Page
                 objectId
             );
 
-            // TODO: Implement the logic to delete the observation based on the locationId.
-            // Your code here...
+            // Delete the observation based on the objectId.
+            SecchiView.DeleteObservation((long)objectId);
         }
         catch (Exception exception)
         {

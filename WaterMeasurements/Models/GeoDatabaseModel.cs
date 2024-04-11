@@ -63,10 +63,18 @@ public readonly record struct FeatureAddMessage(
 );
 
 // Record to delete a feature from a feature table.
-public readonly record struct FeatureDeleteMessage(string FeatureTable, Feature FeatureToDelete);
+public readonly record struct FeatureDeleteMessage(
+    string FeatureTable,
+    string IdentifyingField,
+    Feature FeatureToDelete
+);
 
 // Record to update a feature in a feature table.
-public readonly record struct FeatureUpdateMessage(string FeatureTable, Feature FeatureToUpdate);
+public readonly record struct FeatureUpdateMessage(
+    string FeatureTable,
+    string IdentifyingField,
+    Feature FeatureToUpdate
+);
 
 // Record to notifying that a feature has changed.
 public readonly record struct FeatureChangedMessage(
