@@ -38,17 +38,18 @@
     <PackageReference Include="Dapper" Version="2.1.35" />
     <PackageReference Include="Dapper.Contrib" Version="2.0.78" />
     <PackageReference Include="Dapper.SimpleSqlBuilder" Version="3.6.2" />
-    <PackageReference Include="Esri.ArcGISRuntime.Toolkit.WinUI" Version="200.3.0" />
-    <PackageReference Include="Esri.ArcGISRuntime.WinUI" Version="200.3.0" />
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.3" />
+    <PackageReference Include="Esri.ArcGISRuntime.Toolkit.WinUI" Version="200.4.0" />
+    <PackageReference Include="Esri.ArcGISRuntime.WinUI" Version="200.4.0" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.4" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
-    <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.5.240311000" />
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.5.240404000" />
     <PackageReference Include="Microsoft.Xaml.Behaviors.WinUI.Managed" Version="2.0.9" />
-    <PackageReference Include="Rebus" Version="8.2.4" />
+    <PackageReference Include="Rebus" Version="8.4.2" />
     <PackageReference Include="Rebus.NLog" Version="6.0.0" />
-    <PackageReference Include="Rebus.RabbitMq" Version="9.1.0" />
+    <PackageReference Include="Rebus.RabbitMq" Version="9.3.0" />
     <PackageReference Include="Rebus.ServiceProvider" Version="10.1.2" />
     <PackageReference Include="Stateless" Version="5.15.0" />
+    <PackageReference Include="UnitsNet" Version="5.50.0" />
     <PackageReference Include="WinUIEx" Version="2.3.4" />
   </ItemGroup>
 
