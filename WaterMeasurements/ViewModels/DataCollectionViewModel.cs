@@ -130,6 +130,22 @@ public partial class DataCollectionViewModel : ObservableValidator
                     "DataCollectionViewModel, CollectionNavView_ItemInvoked(): Turbidity item selected."
                 );
                 break;
+            case "CollectionNavQuality":
+                SelectView = "Quality";
+                // Log that the Quality item was selected.
+                logger.LogDebug(
+                    DataCollectionViewModelLog,
+                    "DataCollectionViewModel, CollectionNavView_ItemInvoked(): Quality item selected."
+                );
+                break;
+            case "CollectionNavTemperature":
+                SelectView = "Temperature";
+                // Log that the Temperature item was selected.
+                logger.LogDebug(
+                    DataCollectionViewModelLog,
+                    "DataCollectionViewModel, CollectionNavView_ItemInvoked(): Temperature item selected."
+                );
+                break;
             default:
                 break;
         }

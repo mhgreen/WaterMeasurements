@@ -555,9 +555,19 @@
                             <FontIcon FontFamily="{StaticResource AppIconFont}" Glyph="&#xe901;" />
                         </NavigationViewItem.Icon>
                     </NavigationViewItem>
-                    <NavigationViewItem x:Name="CollectionNavTurbidity" Content="Turbidity">
+                    <NavigationViewItem x:Name="CollectionNavTurbidity" Content="Turbidity" Visibility="Visible">
                         <NavigationViewItem.Icon>
                             <FontIcon FontFamily="{StaticResource AppIconFont}" Glyph="&#xe900;" />
+                        </NavigationViewItem.Icon>
+                    </NavigationViewItem>
+                    <NavigationViewItem x:Name="CollectionNavQuality" Content="Quality" Visibility="Visible">
+                        <NavigationViewItem.Icon>
+                            <FontIcon FontFamily="{StaticResource AppIconFont}" Glyph="&#xe904;" />
+                        </NavigationViewItem.Icon>
+                    </NavigationViewItem>
+                    <NavigationViewItem x:Name="CollectionNavTemperature" Content="Temperature" Visibility="Visible">
+                        <NavigationViewItem.Icon>
+                            <FontIcon FontFamily="{StaticResource AppIconFont}" Glyph="&#xe902;" />
                         </NavigationViewItem.Icon>
                     </NavigationViewItem>
                 </NavigationView.MenuItems>
@@ -1044,47 +1054,34 @@
                                                                 Background="Transparent"
                                                                 DefaultLabelPosition="Right"
                                                                 IsOpen="False">
-                                                                <CommandBar.PrimaryCommands>
-                                                                    <AppBarButton
-                                                                        Click="AddLocation_Click"
-                                                                        Icon="Add"
-                                                                        Label="Add">
-                                                                        <ToolTipService.ToolTip>
-                                                                            <ToolTip
-                                                                                Content="Add a new location using current position, map or entered location."
-                                                                                HorizontalOffset="200"
-                                                                                VerticalOffset="-48" />
-                                                                        </ToolTipService.ToolTip>
-                                                                    </AppBarButton>
-                                                                    <AppBarButton Label="Load">
-                                                                        <AppBarButton.Icon>
-                                                                            <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xF168;" />
-                                                                        </AppBarButton.Icon>
-                                                                        <ToolTipService.ToolTip>
-                                                                            <ToolTip
-                                                                                Content="Load a named set of locations."
-                                                                                HorizontalOffset="200"
-                                                                                VerticalOffset="-48" />
-                                                                        </ToolTipService.ToolTip>
-                                                                    </AppBarButton>
-                                                                    <AppBarButton Label="Name">
-                                                                        <AppBarButton.Icon>
-                                                                            <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE792;" />
-                                                                        </AppBarButton.Icon>
-                                                                        <ToolTipService.ToolTip>
-                                                                            <ToolTip
-                                                                                Content="Assign a name to the current locations for later retrieval."
-                                                                                HorizontalOffset="200"
-                                                                                VerticalOffset="-48" />
-                                                                        </ToolTipService.ToolTip>
-                                                                    </AppBarButton>
 
-                                                                </CommandBar.PrimaryCommands>
+                                                                <AppBarButton
+                                                                    x:Uid="Main_AddLocationAppButton"
+                                                                    Click="AddLocation_Click"
+                                                                    Icon="Add">
+                                                                    <ToolTipService.ToolTip>
+                                                                        <ToolTip
+                                                                            x:Uid="Main_AddLocationToolTip"
+                                                                            HorizontalOffset="200"
+                                                                            VerticalOffset="-48" />
+                                                                    </ToolTipService.ToolTip>
+                                                                </AppBarButton>
+                                                                <AppBarButton x:Uid="Main_TransferLocationAppButton">
+                                                                    <AppBarButton.Icon>
+                                                                        <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xF168;" />
+                                                                    </AppBarButton.Icon>
+                                                                    <ToolTipService.ToolTip>
+                                                                        <ToolTip
+                                                                            x:Uid="Main_TransferLocationToolTip"
+                                                                            HorizontalOffset="200"
+                                                                            VerticalOffset="-48" />
+                                                                    </ToolTipService.ToolTip>
+                                                                </AppBarButton>
                                                             </CommandBar>
 
                                                             <ListView
                                                                 x:Name="SecchiLocationsListView"
-                                                                MaxHeight="400"
+                                                                MaxHeight="380"
                                                                 Margin="0,0,0,0"
                                                                 IncrementalLoadingThreshold="2"
                                                                 IncrementalLoadingTrigger="Edge"
@@ -1094,13 +1091,6 @@
                                                                 ItemTemplate="{StaticResource SecchiLocationsTemplate}"
                                                                 ItemsSource="{x:Bind SecchiView.SecchiLocations}"
                                                                 ScrollViewer.VerticalScrollBarVisibility="Visible" />
-                                                            <Button
-                                                                x:Name="AddNewLocationButton"
-                                                                x:Uid="Main_AddLocationButton"
-                                                                Margin="0,20,0,0"
-                                                                HorizontalAlignment="Right"
-                                                                Click="AddLocation_Click"
-                                                                Visibility="Collapsed" />
                                                         </StackPanel>
 
                                                     </controls:Case>
@@ -1271,7 +1261,10 @@
                     </StackPanel>
 
                 </controls:Case>
+                
                 <controls:Case Value="Turbidity" />
+                <controls:Case Value="Quality" />
+                <controls:Case Value="Temperature" />
 
             </controls:SwitchPresenter>
 
