@@ -91,6 +91,8 @@ public partial class MainViewModel : ObservableRecipient
 
     private readonly IGeoTriggerService? geoTriggerService;
 
+    private readonly IWaterQualityService? waterQualityService;
+
     // instanceChannel is used to provide a unique identifier for messages associated with geodatabase and geotrigger instances.
     private uint instanceChannel = 0;
 
@@ -102,7 +104,8 @@ public partial class MainViewModel : ObservableRecipient
         ILocalSettingsService? localSettingsService,
         ILogger<MainViewModel> logger,
         IThemeSelectorService themeSelectorService,
-        IGeoTriggerService geoTriggerService
+        IGeoTriggerService geoTriggerService,
+        IWaterQualityService waterQualityService
     )
     {
         this.logger = logger;
@@ -130,6 +133,7 @@ public partial class MainViewModel : ObservableRecipient
         this.localSettingsService = localSettingsService;
         this.themeSelectorService = themeSelectorService;
         this.geoTriggerService = geoTriggerService;
+        this.waterQualityService = waterQualityService;
 
         SwitchThemeCommand = new RelayCommand<ElementTheme>(
             async (param) =>

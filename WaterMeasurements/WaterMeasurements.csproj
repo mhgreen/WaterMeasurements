@@ -83,5 +83,11 @@
   <ItemGroup>
     <PRIResource Remove="bin\**" />
   </ItemGroup>
+  
+  <ItemGroup>
+    <Reference Include="FTD2XX_NET">
+      <HintPath>FTD2XX_NET_v1.2.0\FTD2XX_NET.dll</HintPath>
+    </Reference>
+  </ItemGroup>
 	
 </Project>
