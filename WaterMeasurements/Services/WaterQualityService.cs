@@ -3,10 +3,12 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing.Text;
+using System.IO.Ports;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography.Pkcs;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.DependencyInjection;
@@ -21,6 +23,7 @@ using Esri.ArcGISRuntime.Symbology;
 using Esri.ArcGISRuntime.Tasks;
 using Esri.ArcGISRuntime.Tasks.Offline;
 using Esri.ArcGISRuntime.UI.Controls;
+using FTD2XX_NET;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Stateless;
@@ -30,6 +33,11 @@ using WaterMeasurements.Models;
 using WaterMeasurements.Services;
 using WaterMeasurements.Services.Instances;
 using WaterMeasurements.Views;
+using Windows.ApplicationModel.Background;
+using Windows.Devices.Enumeration;
+using Windows.Devices.SerialCommunication;
+using Windows.Storage;
+using Windows.UI.Core;
 using static System.Net.Mime.MediaTypeNames;
 
 namespace WaterMeasurements.Services;
@@ -41,7 +49,14 @@ public partial class WaterQualityService : IWaterQualityService
     // Set the EventId for logging messages.
     internal EventId WaterQualityServiceLog = new(20, "WaterQualityService");
 
-    public WaterQualityService(ILogger<WaterQualityService> logger)
+#pragma warning disable IDE0052
+    private readonly ISerialPortService serialPortService;
+#pragma warning restore IDE0052
+
+    public WaterQualityService(
+        ILogger<WaterQualityService> logger,
+        ISerialPortService serialPortService
+    )
     {
         this.logger = logger;
 
@@ -51,6 +66,10 @@ public partial class WaterQualityService : IWaterQualityService
             "WaterQualityService: WaterQualityService created."
         );
 
+        // Set the SerialPortService.
+        this.serialPortService = serialPortService;
+
+        // Initialize the WaterQualityService.
         Initialize();
     }
 
