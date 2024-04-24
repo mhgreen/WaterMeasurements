@@ -7,6 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 using Ardalis.GuardClauses;
 using CommunityToolkit.Mvvm.Messaging;
 using FTD2XX_NET;
@@ -17,6 +18,7 @@ using WaterMeasurements.Models;
 using WaterMeasurements.Services;
 using WaterMeasurements.Services.Instances;
 using WaterMeasurements.Views;
+using Windows.ApplicationModel.VoiceCommands;
 using Windows.Devices.Enumeration;
 using Windows.Devices.SerialCommunication;
 
@@ -53,8 +55,8 @@ public partial class SerialPortService : ISerialPortService
 
     private DeviceWatcher? deviceWatcher;
 
-    // Dictionary to store opened FTDI devices
-    private Dictionary<string, FtdiInstance> openedDevices = [];
+    // Dictionary to store opened ports
+    private Dictionary<string, SerialPort> openedDevices = [];
 
     // Regular expression to remove spaces.
     private static readonly Regex regExRemoveSpace = MyRegex();
@@ -96,8 +98,6 @@ public partial class SerialPortService : ISerialPortService
             WriteTimeout = 40,
             ReceivedBytesThreshold = 2
         };
-
-        V3000SerialPort.DataReceived += new SerialDataReceivedEventHandler(DataReceivedHandler);
 
         StartWatcher();
     }
@@ -181,6 +181,7 @@ public partial class SerialPortService : ISerialPortService
                         getNumberDevicesStatus
                     );
                 }
+
                 Guard.Against.FTDINotOk(getNumberDevicesStatus);
                 var list = new FTDI.FT_DEVICE_INFO_NODE[ftdiCount];
                 var getDeviceListStatus = ftdi.GetDeviceList(list);
@@ -193,6 +194,14 @@ public partial class SerialPortService : ISerialPortService
                     );
                 }
                 Guard.Against.FTDINotOk(getDeviceListStatus);
+
+                // Log the number of devices found.
+                logger.LogInformation(
+                    SerialPortServiceLog,
+                    "SerialPortService, SerialPort_Added: Number of FTDI devices found: {ftdiCount}",
+                    ftdiCount
+                );
+
                 foreach (var node in list)
                 {
                     logger.LogInformation(
@@ -201,38 +210,50 @@ public partial class SerialPortService : ISerialPortService
                         node.Description,
                         node.SerialNumber
                     );
-                    if (openedDevices.TryGetValue(node.SerialNumber, out var ftdiInstance))
+
+                    // Log all detail to debug.
+                    logger.LogDebug(
+                        SerialPortServiceLog,
+                        "SerialPortService, SerialPort_Added: V3000 found: {Description}, {SerialNumber}, {LocId}, {Flags}, {Type}, {ID}",
+                        node.Description,
+                        node.SerialNumber,
+                        node.LocId,
+                        node.Flags,
+                        node.Type,
+                        node.ID
+                    );
+
+                    CloseAndRemoveSerialPortBySysId(args.Id);
+
+                    var numberOfAttempts = 3;
+                    var delayBetweenRetry = 4000; // in milliseconds
+                    FTDI.FT_STATUS openByIndexStatus;
+                    var attempt = 0;
+
+                    do
                     {
-                        logger.LogInformation(
-                            SerialPortServiceLog,
-                            "SerialPortService, SerialPort_Added: {Description} already opened, closing and removing from dictionary of open devices.",
-                            node.Description
-                        );
-
-                        var resetPortStatus = ftdiInstance.FtdiPort.ResetDevice();
-                        if (resetPortStatus != FTDI.FT_STATUS.FT_OK)
+                        openByIndexStatus = ftdi.OpenByIndex(0);
+                        if (openByIndexStatus != FTDI.FT_STATUS.FT_OK)
                         {
                             logger.LogError(
                                 SerialPortServiceLog,
-                                "SerialPortService, SerialPort_Added: Error resetting port, error: {resetPortStatus}.",
-                                resetPortStatus
+                                "SerialPortService, SerialPort_Added: Error opening device by index, attempt {AttemptNumber}, error: {openByIndexStatus}.",
+                                attempt + 1,
+                                openByIndexStatus
                             );
+                            // Delay before retrying.
+                            Task.Delay(delayBetweenRetry).Wait();
                         }
-                        Guard.Against.FTDINotOk(resetPortStatus);
+                        attempt++;
+                    } while (
+                        openByIndexStatus != FTDI.FT_STATUS.FT_OK
+                        && attempt < numberOfAttempts
+                        && numberOfAttempts > 0
+                    );
 
-                        var closePortStatus = ftdiInstance.FtdiPort.Close();
-                        if (closePortStatus != FTDI.FT_STATUS.FT_OK)
-                        {
-                            logger.LogError(
-                                SerialPortServiceLog,
-                                "SerialPortService, SerialPort_Added: Error closing port, error: {closePortStatus}.",
-                                closePortStatus
-                            );
-                        }
-                        Guard.Against.FTDINotOk(closePortStatus);
+                    Guard.Against.FTDINotOk(openByIndexStatus);
 
-                        openedDevices.Remove(node.SerialNumber);
-                    }
+                    /*
                     var openBySerialNumberStatus = ftdi.OpenBySerialNumber(node.SerialNumber);
                     if (openBySerialNumberStatus != FTDI.FT_STATUS.FT_OK)
                     {
@@ -243,6 +264,7 @@ public partial class SerialPortService : ISerialPortService
                         );
                     }
                     Guard.Against.FTDINotOk(openBySerialNumberStatus);
+                    */
                     var getComPortStatus = ftdi.GetCOMPort(out var comport);
                     if (getComPortStatus != FTDI.FT_STATUS.FT_OK)
                     {
@@ -261,13 +283,13 @@ public partial class SerialPortService : ISerialPortService
 
                     ftdi.Close();
 
+                    V3000SerialPort.DataReceived += new SerialDataReceivedEventHandler(
+                        DataReceivedHandler
+                    );
                     V3000SerialPort.PortName = comport;
                     V3000SerialPort.Open();
 
-                    openedDevices.Add(
-                        node.SerialNumber,
-                        new FtdiInstance(ftdi, comport, node.Description, node.SerialNumber)
-                    );
+                    openedDevices.Add(args.Id, V3000SerialPort);
                 }
             }
             else
@@ -296,6 +318,7 @@ public partial class SerialPortService : ISerialPortService
                 args.Id,
                 args.Kind
             );
+            CloseAndRemoveSerialPortBySysId(args.Id);
         }
         catch (Exception exception)
         {
@@ -307,10 +330,27 @@ public partial class SerialPortService : ISerialPortService
         }
     }
 
+    private void CloseAndRemoveSerialPortBySysId(string id)
+    {
+        if (openedDevices.TryGetValue(id, value: out var port))
+        {
+            logger.LogInformation(
+                SerialPortServiceLog,
+                "SerialPortService, CloseAndRemoveSerialPort: {PortName} already opened, closing and removing from dictionary of open devices.",
+                port.PortName
+            );
+            // Remove the DataReceived event handler.
+            port.DataReceived -= new SerialDataReceivedEventHandler(DataReceivedHandler);
+            // Close the port and remove it from the dictionary.
+            port.Close();
+            openedDevices.Remove(id);
+        }
+    }
+
     private void DataReceivedHandler(object sender, SerialDataReceivedEventArgs args)
     {
         var V3000Observation = string.Empty;
-        var charBuffer = new char[1024];
+        var charBuffer = new char[4096];
         var charBufferPosition = 0;
         var iterationNumber = 0;
         int bytesToRead;
@@ -323,6 +363,8 @@ public partial class SerialPortService : ISerialPortService
 
         do
         {
+            // Sleep for 25 milliseconds to allow the buffer to fill.
+            Task.Delay(25).Wait();
             iterationNumber++;
             bytesToRead = V3000SerialPort.BytesToRead;
             // Console.WriteLine($"<DataReceivedHandler> Bytes available, iteration {iterationNumber}: {bytesToRead}");
