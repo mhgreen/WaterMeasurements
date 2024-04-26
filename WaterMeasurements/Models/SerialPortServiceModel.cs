@@ -12,9 +12,12 @@ using Windows.Devices.Sms;
 namespace WaterMeasurements.Models;
 
 public readonly record struct SerialMonitorMessage(
-    string SerialNumber,
-    SerialPort SerailPort,
-    Action<string> SerialMonitorAction
+    string FtdiCableSerialNumber,
+    string FtdiCableName,
+    SerialPort SerialPort,
+    Action<string> SerialMonitorAction,
+    int NumberoAttempts,
+    int RetryDelay
 );
 
 public readonly record struct FtdiInstance(

@@ -51,12 +51,17 @@ public partial class SerialPortService : ISerialPortService
     // Set the EventId for logging messages.
     internal EventId SerialPortServiceLog = new(21, "SerialPortService");
 
-    private static SerialPort V3000SerialPort;
+    private static SerialPort? currentSerialPort;
 
     private DeviceWatcher? deviceWatcher;
 
+    // public Action<object, SerialDataReceivedEventArgs> ActionDataReceivedHandler { get; set; }
+
     // Dictionary to store opened ports
-    private Dictionary<string, SerialPort> openedDevices = [];
+    private readonly Dictionary<string, SerialPort> openedDevices = [];
+
+    private static readonly int numberOfAttempts = 3; // Number of attempts to open the port.
+    private static readonly int delayBetweenRetry = 4000; // in milliseconds
 
     // Regular expression to remove spaces.
     private static readonly Regex regExRemoveSpace = MyRegex();
@@ -86,7 +91,7 @@ public partial class SerialPortService : ISerialPortService
             }
         );
 
-        V3000SerialPort = new()
+        currentSerialPort = new()
         {
             BaudRate = 9600,
             DataBits = 8,
@@ -98,6 +103,8 @@ public partial class SerialPortService : ISerialPortService
             WriteTimeout = 40,
             ReceivedBytesThreshold = 2
         };
+
+        // ActionDataReceivedHandler = DataReceivedHandler;
 
         StartWatcher();
     }
@@ -128,6 +135,18 @@ public partial class SerialPortService : ISerialPortService
     {
         try
         {
+            // Log to debug that the device watcher is stopping.
+            logger.LogDebug(
+                SerialPortServiceLog,
+                "SerialPortService, StopWatcher: Stopping the device watcher."
+            );
+
+            // Using the dictionary key in openDevices, call CloseAndRemoveSerialPortBySysId to close and remove the port.
+            foreach (var key in openedDevices.Keys)
+            {
+                CloseAndRemoveSerialPortBySysId(key);
+            }
+
             deviceWatcher?.Stop();
         }
         catch (Exception exception)
@@ -135,7 +154,7 @@ public partial class SerialPortService : ISerialPortService
             logger.LogError(
                 SerialPortServiceLog,
                 exception,
-                "SerialPortService: Error stopping the device watcher."
+                "SerialPortService, StopWatcher: Error stopping the device watcher."
             );
         }
     }
@@ -147,6 +166,11 @@ public partial class SerialPortService : ISerialPortService
         try
         {
             logger.LogInformation(SerialPortServiceLog, "SerialPortService: SerialPort_Added.");
+            Guard.Against.Null(
+                currentSerialPort,
+                nameof(currentSerialPort),
+                "In SerialPort_Added, currentSerialPort is null"
+            );
             logger.LogInformation(
                 SerialPortServiceLog,
                 "SerialPortService: Id: {Id} Name: {Name}, Kind: {Kind}, IsEnabled: {IsEnabled}",
@@ -225,8 +249,6 @@ public partial class SerialPortService : ISerialPortService
 
                     CloseAndRemoveSerialPortBySysId(args.Id);
 
-                    var numberOfAttempts = 3;
-                    var delayBetweenRetry = 4000; // in milliseconds
                     FTDI.FT_STATUS openByIndexStatus;
                     var attempt = 0;
 
@@ -253,18 +275,6 @@ public partial class SerialPortService : ISerialPortService
 
                     Guard.Against.FTDINotOk(openByIndexStatus);
 
-                    /*
-                    var openBySerialNumberStatus = ftdi.OpenBySerialNumber(node.SerialNumber);
-                    if (openBySerialNumberStatus != FTDI.FT_STATUS.FT_OK)
-                    {
-                        logger.LogError(
-                            SerialPortServiceLog,
-                            "SerialPortService, SerialPort_Added: Error opening device by serial number, error: {openBySerialNumberStatus}.",
-                            openBySerialNumberStatus
-                        );
-                    }
-                    Guard.Against.FTDINotOk(openBySerialNumberStatus);
-                    */
                     var getComPortStatus = ftdi.GetCOMPort(out var comport);
                     if (getComPortStatus != FTDI.FT_STATUS.FT_OK)
                     {
@@ -283,13 +293,21 @@ public partial class SerialPortService : ISerialPortService
 
                     ftdi.Close();
 
-                    V3000SerialPort.DataReceived += new SerialDataReceivedEventHandler(
+                    /*
+                    // Use this for the instance version.
+                    var receivedHandler = new SerialDataReceivedEventHandler(DataReceivedHandler);
+                    currentSerialPort.DataReceived += (sender, args) =>
+                        ActionDataReceivedHandler(currentSerialPort, args);
+                    */
+
+                    currentSerialPort.DataReceived += new SerialDataReceivedEventHandler(
                         DataReceivedHandler
                     );
-                    V3000SerialPort.PortName = comport;
-                    V3000SerialPort.Open();
 
-                    openedDevices.Add(args.Id, V3000SerialPort);
+                    currentSerialPort.PortName = comport;
+                    currentSerialPort.Open();
+
+                    openedDevices.Add(args.Id, currentSerialPort);
                 }
             }
             else
@@ -332,18 +350,29 @@ public partial class SerialPortService : ISerialPortService
 
     private void CloseAndRemoveSerialPortBySysId(string id)
     {
-        if (openedDevices.TryGetValue(id, value: out var port))
+        try
         {
-            logger.LogInformation(
+            if (openedDevices.TryGetValue(id, value: out var port))
+            {
+                logger.LogInformation(
+                    SerialPortServiceLog,
+                    "SerialPortService, CloseAndRemoveSerialPort: {PortName} already opened, closing and removing from dictionary of open devices.",
+                    port.PortName
+                );
+                // Remove the DataReceived event handler.
+                port.DataReceived -= new SerialDataReceivedEventHandler(DataReceivedHandler);
+                // Close the port and remove it from the dictionary.
+                port.Close();
+                openedDevices.Remove(id);
+            }
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(
                 SerialPortServiceLog,
-                "SerialPortService, CloseAndRemoveSerialPort: {PortName} already opened, closing and removing from dictionary of open devices.",
-                port.PortName
+                exception,
+                "SerialPortService, CloseAndRemoveSerialPortBySysId: Error closing and removing the serial port."
             );
-            // Remove the DataReceived event handler.
-            port.DataReceived -= new SerialDataReceivedEventHandler(DataReceivedHandler);
-            // Close the port and remove it from the dictionary.
-            port.Close();
-            openedDevices.Remove(id);
         }
     }
 
@@ -361,16 +390,22 @@ public partial class SerialPortService : ISerialPortService
             "SerialPortService, DataReceivedHandler: DataReceivedHandler called."
         );
 
+        Guard.Against.Null(
+            currentSerialPort,
+            nameof(currentSerialPort),
+            "In DataReceivedHandler, currentSerialPort is null"
+        );
+
         do
         {
             // Sleep for 25 milliseconds to allow the buffer to fill.
             Task.Delay(25).Wait();
             iterationNumber++;
-            bytesToRead = V3000SerialPort.BytesToRead;
+            bytesToRead = currentSerialPort.BytesToRead;
             // Console.WriteLine($"<DataReceivedHandler> Bytes available, iteration {iterationNumber}: {bytesToRead}");
             try
             {
-                V3000SerialPort.Read(charBuffer, charBufferPosition, bytesToRead);
+                currentSerialPort.Read(charBuffer, charBufferPosition, bytesToRead);
             }
             catch (TimeoutException exception)
             {
@@ -411,11 +446,11 @@ public partial class SerialPortService : ISerialPortService
             );
             logger.LogTrace(
                 SerialPortServiceLog,
-                "SerialPortService, DataReceivedHandler, Bytes available after Read(), iteration {iterationNumber}: {V3000SerialPort.BytesToRead}",
+                "SerialPortService, DataReceivedHandler, Bytes available after Read(), iteration {iterationNumber}: {currentSerialPort.BytesToRead}",
                 iterationNumber,
-                V3000SerialPort.BytesToRead
+                currentSerialPort.BytesToRead
             );
-        } while (V3000SerialPort.BytesToRead > 0);
+        } while (currentSerialPort.BytesToRead > 0);
         logger.LogDebug(
             SerialPortServiceLog,
             "SerialPortService, DataReceivedHandler, Final V3000Observation: {V3000Observation}",
