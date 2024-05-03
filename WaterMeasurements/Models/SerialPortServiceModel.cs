@@ -14,8 +14,9 @@ namespace WaterMeasurements.Models;
 public readonly record struct SerialMonitorMessage(
     string FtdiCableSerialNumber,
     string FtdiCableName,
-    SerialPort SerialPort,
+    SerialPort Port,
     Action<string> SerialMonitorAction,
+    Action<object, SerialPinChangedEventArgs>? HardwareChangeAction,
     int NumberoAttempts,
     int RetryDelay
 );
