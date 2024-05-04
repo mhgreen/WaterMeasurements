@@ -14,6 +14,7 @@ using Microsoft.Extensions.Logging;
 using WaterMeasurements.Contracts.Services;
 using WaterMeasurements.Contracts.Services.Instances;
 using WaterMeasurements.Models;
+using WaterMeasurements.Services;
 using WaterMeasurements.Views;
 using Windows.Devices.Enumeration;
 using Windows.Devices.SerialCommunication;
@@ -54,11 +55,8 @@ public partial class SerialPortInstance : ISerialPortInstance
     public int RetryAttempts { get; private set; }
     public int RetryDelay { get; private set; }
 
-    // Regular expression to remove spaces.
-    private static readonly Regex regExRemoveSpace = RemoveSpacesRegex();
-
-    [GeneratedRegex(@"\s+", RegexOptions.Compiled)]
-    private static partial Regex RemoveSpacesRegex();
+    private SerialDataReceivedEventHandler? dataReceivedHandler;
+    private SerialPinChangedEventHandler? pinChangedHandler;
 
     private DeviceWatcher? deviceWatcher;
 
@@ -230,7 +228,7 @@ public partial class SerialPortInstance : ISerialPortInstance
                 );
 
                 // Use the Regular Expression to remove spaces from args.Name and write it to the log.
-                var name = regExRemoveSpace.Replace(args.Name, "");
+                var name = CommunicationService.RegExRemoveSpace.Replace(args.Name, "");
                 logger.LogInformation(SerialPortLog, "SerialPortInstance: args.Name: {Name}", name);
 
                 if (args.Name.Contains(ftdiCableName, StringComparison.CurrentCultureIgnoreCase))
@@ -349,13 +347,17 @@ public partial class SerialPortInstance : ISerialPortInstance
                         );
 
                         currentSerialPort.PortName = comport;
-
-                        currentSerialPort.DataReceived += (sender, args) =>
+                        dataReceivedHandler = (sender, args) =>
                             dataReceivedAction(currentSerialPort, args);
+
+                        currentSerialPort.DataReceived += dataReceivedHandler;
+
                         if (hardwareChangeAction != null)
                         {
-                            currentSerialPort.PinChanged += (sender, args) =>
+                            pinChangedHandler = (sender, args) =>
                                 hardwareChangeAction(currentSerialPort, args);
+
+                            currentSerialPort.PinChanged += pinChangedHandler;
                         }
 
                         currentSerialPort.Open();
@@ -409,7 +411,7 @@ public partial class SerialPortInstance : ISerialPortInstance
                 {
                     logger.LogInformation(
                         SerialPortLog,
-                        "{PortName} already opened, closing and removing from dictionary of open devices.",
+                        "{PortName} previously opened, closing and removing from dictionary of open devices.",
                         port.PortName
                     );
                     // Remove the DataReceived event handler.
@@ -423,9 +425,24 @@ public partial class SerialPortInstance : ISerialPortInstance
                         nameof(currentSerialPort),
                         "SerialPortInstance, CloseAndRemoveSerialPort: Serial instance must have a port in order to interact with an instrument."
                     );
-                    port.DataReceived -= (sender, args) =>
-                        dataReceivedAction(currentSerialPort, args);
-                    // Close the port and remove it from the dictionary.
+                    // Unregister the event handlers from the port object.
+                    if (DataReceivedAction != null)
+                    {
+                        logger.LogTrace(
+                            SerialPortLog,
+                            "SerialPortInstance, CloseAndRemoveSerialPort: Unregistering DataReceived event handler."
+                        );
+                        port.DataReceived -= dataReceivedHandler;
+                    }
+                    if (HardwareChangeAction != null)
+                    {
+                        logger.LogTrace(
+                            SerialPortLog,
+                            "SerialPortInstance, CloseAndRemoveSerialPort: Unregistering PinChanged event handler."
+                        );
+                        port.PinChanged -= pinChangedHandler;
+                    }
+
                     port.Close();
                     openedDevices.Remove(id);
                 }

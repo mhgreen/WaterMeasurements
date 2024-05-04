@@ -110,7 +110,7 @@ public partial class App : Application
                     services.AddSingleton<ISqliteService, SqliteService>();
                     services.AddSingleton<IGeoTriggerService, GeoTriggerService>();
                     services.AddSingleton<IWaterQualityService, WaterQualityService>();
-                    services.AddSingleton<ISerialPortService, SerialPortService>();
+                    services.AddSingleton<ICommunicationService, CommunicationService>();
 
                     // Configuration
                     services.Configure<LocalSettingsOptions>(

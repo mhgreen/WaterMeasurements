@@ -50,12 +50,12 @@ public partial class WaterQualityService : IWaterQualityService
     internal EventId WaterQualityServiceLog = new(20, "WaterQualityService");
 
 #pragma warning disable IDE0052
-    private readonly ISerialPortService serialPortService;
+    private readonly ICommunicationService CommunicationService;
 #pragma warning restore IDE0052
 
     public WaterQualityService(
         ILogger<WaterQualityService> logger,
-        ISerialPortService serialPortService
+        ICommunicationService CommunicationService
     )
     {
         this.logger = logger;
@@ -66,8 +66,8 @@ public partial class WaterQualityService : IWaterQualityService
             "WaterQualityService: WaterQualityService created."
         );
 
-        // Set the SerialPortService.
-        this.serialPortService = serialPortService;
+        // Set the CommunicationService.
+        this.CommunicationService = CommunicationService;
 
         // Initialize the WaterQualityService.
         Initialize();

@@ -6,4 +6,4 @@ using System.Threading.Tasks;
 
 namespace WaterMeasurements.Contracts.Services;
 
-public interface ISerialPortService { }
+public interface ICommunicationService { }
