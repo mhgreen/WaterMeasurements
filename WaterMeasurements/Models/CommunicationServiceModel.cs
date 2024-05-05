@@ -12,7 +12,7 @@ using Windows.Devices.Sms;
 
 namespace WaterMeasurements.Models;
 
-public readonly record struct SerialPortAddMessage(
+public readonly record struct SerialPortAdd(
     string FtdiCableSerialNumber,
     string FtdiCableName,
     SerialPort Port,
@@ -21,3 +21,13 @@ public readonly record struct SerialPortAddMessage(
     int NumberoAttempts,
     int RetryDelay
 );
+
+public readonly record struct SerialPortHardwareState(SerialPortHardwarePinState PinState);
+
+public enum SerialPortHardwarePinState
+{
+    CtsOn,
+    CtsOff,
+    DsrOn,
+    DsrOff
+}

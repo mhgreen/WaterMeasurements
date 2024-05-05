@@ -26,8 +26,12 @@ using Windows.Devices.SerialCommunication;
 namespace WaterMeasurements.Services;
 
 // Serial port request message.
-public class SerialPortRequestMessage(SerialPortAddMessage serialPortAddMessage)
-    : ValueChangedMessage<SerialPortAddMessage>(serialPortAddMessage) { }
+public class SerialPortRequestMessage(SerialPortAdd serialPortAddMessage)
+    : ValueChangedMessage<SerialPortAdd>(serialPortAddMessage) { }
+
+// Serial port hardware state message.
+public class SerialPortHardwareStateMessage(SerialPortHardwareState serialPortHardwareState)
+    : ValueChangedMessage<SerialPortHardwareState>(serialPortHardwareState) { }
 
 public static class FTDINotOkFTDIException
 {
@@ -126,7 +130,7 @@ public partial class CommunicationService : ICommunicationService
                 {
                     logger.LogTrace(
                         CommunicationServiceLog,
-                        "CommunicationService, SerialPortRequestMessage: Serial port instance: {serialPortInstance.Key}, {serialNumber} {name}.",
+                        "CommunicationService, SerialPortRequestMessage: Serial port instance: serialPortInstances Key {serialPortInstance.Key}, Serial {serialNumber}, Name {name}.",
                         serialPortInstance.Key,
                         serialPortInstance.Value.FtdiCableSerialNumber,
                         serialPortInstance.Value.FtdiCableName
@@ -152,7 +156,7 @@ public partial class CommunicationService : ICommunicationService
         // Send a message to request the serial port instance.
         WeakReferenceMessenger.Default.Send(
             new SerialPortRequestMessage(
-                new SerialPortAddMessage(
+                new SerialPortAdd(
                     "20491327",
                     "V3000",
                     V3000SerialPort,
@@ -195,7 +199,6 @@ public partial class CommunicationService : ICommunicationService
                         );
                         return;
                     }
-
                     // Attempt to access CtsHolding property
                     if (currentSerialPort.CtsHolding)
                     {
@@ -212,13 +215,8 @@ public partial class CommunicationService : ICommunicationService
                         );
                     }
                 }
-
-                logger.LogDebug(
-                    CommunicationServiceLog,
-                    "CommunicationService, V3000PinChangedHandler: {args.EventType}",
-                    args.EventType
-                );
-                break; // Break the loop if the operation was successful
+                // Break the loop if the operation was successful
+                break;
             }
             catch (UnauthorizedAccessException exception)
             {
@@ -226,13 +224,14 @@ public partial class CommunicationService : ICommunicationService
                     "Access to the serial port was denied. Exception: {message}",
                     exception.Message
                 );
-                retryCount++; // Increment the retry count
+                retryCount++;
 
                 if (retryCount > maxRetry)
                 {
                     // Log or handle the final failure
                     logger.LogError("Retry limit reached. Unable to access CtsHolding property.");
-                    break; // Exit the loop if the retry limit is reached
+                    // Exit the loop if the retry limit is reached
+                    break;
                 }
 
                 // Wait for one second before retrying
@@ -245,7 +244,8 @@ public partial class CommunicationService : ICommunicationService
                     exception,
                     "CommunicationService, V3000PinChangedHandler: Exception occurred in V3000PinChangedHandler."
                 );
-                break; // Exit the loop on any other exception
+                // Exit the loop on any other exception
+                break;
             }
         }
     }

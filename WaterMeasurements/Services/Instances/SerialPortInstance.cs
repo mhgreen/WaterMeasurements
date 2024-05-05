@@ -203,8 +203,6 @@ public partial class SerialPortInstance : ISerialPortInstance
 
         void SerialPort_Added(DeviceWatcher sender, DeviceInformation args)
         {
-            uint ftdiCount = 0;
-
             try
             {
                 logger.LogInformation(SerialPortLog, "SerialPortInstance: SerialPort_Added.");
@@ -218,156 +216,132 @@ public partial class SerialPortInstance : ISerialPortInstance
                     nameof(ftdiCableName),
                     "SerialPortInstance, SerialPort_Added: FtdiCableName is null"
                 );
-                logger.LogInformation(
-                    SerialPortLog,
-                    "SerialPortInstance: Id: {Id} Name: {Name}, Kind: {Kind}, IsEnabled: {IsEnabled}",
-                    args.Id,
-                    args.Name,
-                    args.Kind,
-                    args.IsEnabled
-                );
+
+                var ftdi = new FTDI();
+                FTDI.FT_STATUS status;
+                var attempt = 0;
 
                 // Use the Regular Expression to remove spaces from args.Name and write it to the log.
                 var name = CommunicationService.RegExRemoveSpace.Replace(args.Name, "");
-                logger.LogInformation(SerialPortLog, "SerialPortInstance: args.Name: {Name}", name);
 
                 if (args.Name.Contains(ftdiCableName, StringComparison.CurrentCultureIgnoreCase))
                 {
                     logger.LogInformation(
                         SerialPortLog,
-                        "SerialPortInstance, SerialPort_Added: {CableName} found.",
+                        "SerialPortInstance, SerialPort_Added: Cable with name {CableName} found.",
                         ftdiCableName
                     );
-
-                    FTDI ftdi = new();
-                    var getNumberDevicesStatus = ftdi.GetNumberOfDevices(ref ftdiCount);
-                    if (getNumberDevicesStatus != FTDI.FT_STATUS.FT_OK)
-                    {
-                        logger.LogError(
-                            SerialPortLog,
-                            "SerialPortInstance, SerialPort_Added: Error getting number of devices, error: {getNumberDevicesStatus}.",
-                            getNumberDevicesStatus
-                        );
-                    }
-
-                    Guard.Against.FTDINotOk(getNumberDevicesStatus);
-                    var list = new FTDI.FT_DEVICE_INFO_NODE[ftdiCount];
-                    var getDeviceListStatus = ftdi.GetDeviceList(list);
-                    if (getDeviceListStatus != FTDI.FT_STATUS.FT_OK)
-                    {
-                        logger.LogError(
-                            SerialPortLog,
-                            "SerialPortInstance, SerialPort_Added: Error getting device list, error: {getDeviceListStatus}.",
-                            getDeviceListStatus
-                        );
-                    }
-                    Guard.Against.FTDINotOk(getDeviceListStatus);
-
-                    // Log the number of devices found.
-                    logger.LogInformation(
-                        SerialPortLog,
-                        "SerialPortInstance, SerialPort_Added: Number of FTDI devices found: {ftdiCount}",
-                        ftdiCount
-                    );
-
-                    foreach (var node in list)
+                    if (openedDevices.ContainsKey(args.Id))
                     {
                         logger.LogInformation(
                             SerialPortLog,
-                            "SerialPortInstance, SerialPort_Added: {CableName} found: {Description}, {SerialNumber}",
-                            ftdiCableName,
-                            node.Description,
-                            node.SerialNumber
+                            "SerialPortInstance, SerialPort_Added: Device with id {Id} already opened, closing device and removing from openedDevices.",
+                            args.Id
                         );
-
-                        // Log all detail to debug.
-                        logger.LogDebug(
-                            SerialPortLog,
-                            "SerialPortInstance, SerialPort_Added: {CableName} found: {Description}, {SerialNumber}, {LocId}, {Flags}, {Type}, {ID}",
-                            ftdiCableName,
-                            node.Description,
-                            node.SerialNumber,
-                            node.LocId,
-                            node.Flags,
-                            node.Type,
-                            node.ID
-                        );
-
                         CloseAndRemoveSerialPortBySysId(args.Id);
-
-                        FTDI.FT_STATUS openByIndexStatus;
-                        var attempt = 0;
-
-                        do
-                        {
-                            openByIndexStatus = ftdi.OpenByIndex(0);
-                            if (openByIndexStatus != FTDI.FT_STATUS.FT_OK)
-                            {
-                                logger.LogError(
-                                    SerialPortLog,
-                                    "SerialPortInstance, SerialPort_Added: Error opening device by index, attempt {AttemptNumber}, error: {openByIndexStatus}.",
-                                    attempt + 1,
-                                    openByIndexStatus
-                                );
-                                // Delay before retrying.
-                                Task.Delay(retryDelay).Wait();
-                            }
-                            attempt++;
-                        } while (
-                            openByIndexStatus != FTDI.FT_STATUS.FT_OK
-                            && attempt < retryAttempts
-                            && retryAttempts > 0
-                        );
-
-                        Guard.Against.FTDINotOk(openByIndexStatus);
-
-                        var getComPortStatus = ftdi.GetCOMPort(out var comport);
-                        if (getComPortStatus != FTDI.FT_STATUS.FT_OK)
+                    }
+                    do
+                    {
+                        status = ftdi.OpenBySerialNumber(ftdiCableSerialNumber);
+                        if (status != FTDI.FT_STATUS.FT_OK)
                         {
                             logger.LogError(
                                 SerialPortLog,
-                                "SerialPortInstance, SerialPort_Added: Error getting COM port, error: {getComPortStatus}.",
-                                getComPortStatus
+                                "SerialPortInstance, SerialPort_Added: Error opening device by serial number {SerialNumber}, attempt {AttemptNumber}, error: {Status}.",
+                                FtdiCableSerialNumber,
+                                attempt + 1,
+                                status
+                            );
+                            // Delay before retrying
+                            Task.Delay(RetryDelay).Wait();
+                        }
+                        attempt++;
+                    } while (status != FTDI.FT_STATUS.FT_OK && attempt < retryAttempts);
+
+                    if (status != FTDI.FT_STATUS.FT_OK)
+                    {
+                        logger.LogError(
+                            SerialPortLog,
+                            "SerialPortInstance, SerialPort_Added: Failed to open device with serial number {SerialNumber} after {Attempt} attempts.",
+                            FtdiCableSerialNumber,
+                            RetryAttempts
+                        );
+                    }
+                    Guard.Against.FTDINotOk(
+                        status,
+                        "SerialPortInstance, SerialPort_Added: Failed to open device, so not proceeding with search for cable serial number."
+                    );
+
+                    logger.LogInformation(
+                        SerialPortLog,
+                        "SerialPortInstance, SerialPort_Added: Cable with serial number {SerialNumber} found.",
+                        FtdiCableSerialNumber
+                    );
+
+                    var getComPortStatus = ftdi.GetCOMPort(out var comport);
+                    Guard.Against.FTDINotOk(
+                        getComPortStatus,
+                        "Cable with serial number found, but does not have an associated COM port."
+                    );
+
+                    // The COM port has been identified, so close the FTDI device.
+                    ftdi.Close();
+
+                    logger.LogInformation(
+                        SerialPortLog,
+                        "SerialPortInstance, SerialPort_Added: Cable {CableName} is on comport {Comport}.",
+                        FtdiCableName,
+                        comport
+                    );
+
+                    // ftdi.Close() has been called, so we can now use the comport to setup the serial port.
+                    currentSerialPort.PortName = comport;
+
+                    dataReceivedHandler = (sender, args) =>
+                        dataReceivedAction(currentSerialPort, args);
+                    currentSerialPort.DataReceived += dataReceivedHandler;
+
+                    if (hardwareChangeAction != null)
+                    {
+                        pinChangedHandler = (sender, args) =>
+                            hardwareChangeAction(currentSerialPort, args);
+                        currentSerialPort.PinChanged += pinChangedHandler;
+                    }
+
+                    currentSerialPort.Open();
+
+                    if (hardwareChangeAction != null)
+                    {
+                        if (currentSerialPort.CtsHolding)
+                        {
+                            logger.LogDebug(
+                                SerialPortLog,
+                                "SerialPortInstance, SerialPort_Added: Upon opening the serial port, CTS is ON."
+                            );
+                            // Send a message that the CTS is ON.
+                            WeakReferenceMessenger.Default.Send(
+                                new SerialPortHardwareStateMessage(
+                                    new SerialPortHardwareState(SerialPortHardwarePinState.CtsOn)
+                                )
                             );
                         }
-                        Guard.Against.FTDINotOk(getComPortStatus);
-                        logger.LogInformation(
-                            SerialPortLog,
-                            "SerialPortInstance, SerialPort_Added: {CableName} comport: {Comport}",
-                            ftdiCableName,
-                            comport
-                        );
-
-                        ftdi.Close();
-
-                        Guard.Against.Null(
-                            dataReceivedAction,
-                            nameof(dataReceivedAction),
-                            "SerialPortInstance: Serial instance must have an action to handle received data."
-                        );
-
-                        currentSerialPort.PortName = comport;
-                        dataReceivedHandler = (sender, args) =>
-                            dataReceivedAction(currentSerialPort, args);
-
-                        currentSerialPort.DataReceived += dataReceivedHandler;
-
-                        if (hardwareChangeAction != null)
+                        else
                         {
-                            pinChangedHandler = (sender, args) =>
-                                hardwareChangeAction(currentSerialPort, args);
-
-                            currentSerialPort.PinChanged += pinChangedHandler;
+                            logger.LogDebug(
+                                SerialPortLog,
+                                "SerialPortInstance, SerialPort_Added: Upon opening the serial port, CTS is OFF."
+                            );
+                            // Send a message that the CTS is OFF.
+                            WeakReferenceMessenger.Default.Send(
+                                new SerialPortHardwareStateMessage(
+                                    new SerialPortHardwareState(SerialPortHardwarePinState.CtsOff)
+                                )
+                            );
                         }
-
-                        currentSerialPort.Open();
-
-                        openedDevices.Add(args.Id, currentSerialPort);
                     }
-                }
-                else
-                {
-                    logger.LogInformation(SerialPortLog, "SerialPortInstance: Port found.");
+
+                    // Add to openedDevices dictionary if not already present
+                    openedDevices.TryAdd(args.Id, currentSerialPort);
                 }
             }
             catch (Exception exception)
