@@ -23,6 +23,8 @@ public readonly record struct SerialPortAdd(
     uint Channel
 );
 
+public readonly record struct SerialPortAndChannel(SerialPort Port, uint Channel);
+
 public readonly record struct SerialPortHardwareState(SerialPortHardwarePinState PinState);
 
 public enum SerialPortHardwarePinState

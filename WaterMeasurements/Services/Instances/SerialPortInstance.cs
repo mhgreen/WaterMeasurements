@@ -307,15 +307,19 @@ public partial class SerialPortInstance : ISerialPortInstance
 
                     // ftdi.Close() has been called, so we can now use the comport to setup the serial port.
                     currentSerialPort.PortName = comport;
+                    var currentSerialPortAndChannel = new SerialPortAndChannel(
+                        currentSerialPort,
+                        Channel
+                    );
 
                     dataReceivedHandler = (sender, args) =>
-                        dataReceivedAction(currentSerialPort, args);
+                        dataReceivedAction(currentSerialPortAndChannel, args);
                     currentSerialPort.DataReceived += dataReceivedHandler;
 
                     if (hardwareChangeAction != null)
                     {
                         pinChangedHandler = (sender, args) =>
-                            hardwareChangeAction(currentSerialPort, args);
+                            hardwareChangeAction(currentSerialPortAndChannel, args);
                         currentSerialPort.PinChanged += pinChangedHandler;
                     }
 
@@ -325,7 +329,7 @@ public partial class SerialPortInstance : ISerialPortInstance
                     {
                         if (currentSerialPort.CtsHolding)
                         {
-                            logger.LogDebug(
+                            logger.LogTrace(
                                 SerialPortLog,
                                 "SerialPortInstance, SerialPort_Added: Upon opening the serial port, CTS is ON."
                             );
@@ -339,7 +343,7 @@ public partial class SerialPortInstance : ISerialPortInstance
                         }
                         else
                         {
-                            logger.LogDebug(
+                            logger.LogTrace(
                                 SerialPortLog,
                                 "SerialPortInstance, SerialPort_Added: Upon opening the serial port, CTS is OFF."
                             );

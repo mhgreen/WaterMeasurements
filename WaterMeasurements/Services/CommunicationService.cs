@@ -6,6 +6,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using Ardalis.GuardClauses;
@@ -210,19 +211,25 @@ public partial class CommunicationService : ICommunicationService
 
     private void V3000CtsPinChangedHandler(object sender, SerialPinChangedEventArgs args)
     {
-        var currentSerialPort = (SerialPort)sender;
-        Guard.Against.Null(
-            currentSerialPort,
-            nameof(currentSerialPort),
-            "In V3000PinChangedHandler, currentSerialPort is null."
-        );
+        var retryCount = 0;
+        const int maxRetry = 1; // Maximum number of retries
+
+        var currentSerialPortAndChannel = (SerialPortAndChannel)sender;
+        var currentSerialPort = currentSerialPortAndChannel.Port;
+        var channel = currentSerialPortAndChannel.Channel;
+
         logger.LogDebug(
             CommunicationServiceLog,
             "CommunicationService, V3000PinChangedHandler: V3000PinChangedHandler called."
         );
 
-        var retryCount = 0;
-        const int maxRetry = 1; // Maximum number of retries
+        Guard.Against.Null(
+            currentSerialPort,
+            nameof(currentSerialPort),
+            "In V3000PinChangedHandler, currentSerialPort is null."
+        );
+
+        Guard.Against.Null(channel, nameof(channel), "In V3000PinChangedHandler, channel is null.");
 
         while (retryCount <= maxRetry)
         {
@@ -241,16 +248,30 @@ public partial class CommunicationService : ICommunicationService
                     // Attempt to access CtsHolding property
                     if (currentSerialPort.CtsHolding)
                     {
-                        logger.LogDebug(
+                        logger.LogTrace(
                             CommunicationServiceLog,
                             "CommunicationService, V3000PinChangedHandler: CTS is now ON."
+                        );
+                        // Send a message that the CTS is ON.
+                        WeakReferenceMessenger.Default.Send(
+                            new SerialPortHardwareStateMessage(
+                                new SerialPortHardwareState(SerialPortHardwarePinState.CtsOn)
+                            ),
+                            channel
                         );
                     }
                     else
                     {
-                        logger.LogDebug(
+                        logger.LogTrace(
                             CommunicationServiceLog,
                             "CommunicationService, V3000PinChangedHandler: CTS is now OFF."
+                        );
+                        // Send a message that the CTS is OFF.
+                        WeakReferenceMessenger.Default.Send(
+                            new SerialPortHardwareStateMessage(
+                                new SerialPortHardwareState(SerialPortHardwarePinState.CtsOff)
+                            ),
+                            channel
                         );
                     }
                 }
@@ -296,6 +317,9 @@ public partial class CommunicationService : ICommunicationService
         var charBufferPosition = 0;
         var iterationNumber = 0;
         int bytesToRead;
+        var currentSerialPortAndChannel = (SerialPortAndChannel)sender;
+        var currentSerialPort = currentSerialPortAndChannel.Port;
+        var channel = currentSerialPortAndChannel.Channel;
 
         // Log that the V3000DataReceivedHandler has been called.
         logger.LogDebug(
@@ -303,12 +327,15 @@ public partial class CommunicationService : ICommunicationService
             "CommunicationService, V3000DataReceivedHandler: V3000DataReceivedHandler called."
         );
 
-        var currentSerialPort = (SerialPort)sender;
-
         Guard.Against.Null(
             currentSerialPort,
             nameof(currentSerialPort),
             "In V3000DataReceivedHandler, currentSerialPort is null"
+        );
+        Guard.Against.Null(
+            channel,
+            nameof(channel),
+            "In V3000DataReceivedHandler, channel is null."
         );
 
         do
