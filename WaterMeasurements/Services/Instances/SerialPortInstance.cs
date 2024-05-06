@@ -54,6 +54,7 @@ public partial class SerialPortInstance : ISerialPortInstance
     public Action<object, SerialPinChangedEventArgs>? HardwareChangeAction { get; private set; }
     public int RetryAttempts { get; private set; }
     public int RetryDelay { get; private set; }
+    public uint Channel { get; private set; }
 
     private SerialDataReceivedEventHandler? dataReceivedHandler;
     private SerialPinChangedEventHandler? pinChangedHandler;
@@ -73,7 +74,8 @@ public partial class SerialPortInstance : ISerialPortInstance
         Action<object, SerialDataReceivedEventArgs> dataReceivedAction,
         Action<object, SerialPinChangedEventArgs>? hardwareChangeAction = null,
         int retryAttempts = 3,
-        int retryDelay = 4000
+        int retryDelay = 4000,
+        uint channel = 0
     )
     {
         this.logger = logger;
@@ -120,12 +122,21 @@ public partial class SerialPortInstance : ISerialPortInstance
                 "SerialPortInstance, constructor: RetryDelay is negative or zero."
             );
 
+            // Channel = channel;
+            Channel = (uint)
+                Guard.Against.NegativeOrZero(
+                    channel,
+                    nameof(channel),
+                    "SerialPortInstance, constructor: Channel is negative or zero."
+                );
+
             // Log that the SerialPortInstance has been created.
             logger.LogInformation(
                 SerialPortLog,
-                "SerialPortInstance: SerialPortInstance created for FTDI cable name {CableName} with serial {CableSerial}.",
+                "SerialPortInstance: SerialPortInstance created for FTDI cable name {CableName} with serial {CableSerial} on channel {Channel}.",
                 ftdiCableName,
-                ftdiCableSerialNumber
+                ftdiCableSerialNumber,
+                channel
             );
 
             // Register to get MapPageUnloadedMessage messages.
@@ -322,7 +333,8 @@ public partial class SerialPortInstance : ISerialPortInstance
                             WeakReferenceMessenger.Default.Send(
                                 new SerialPortHardwareStateMessage(
                                     new SerialPortHardwareState(SerialPortHardwarePinState.CtsOn)
-                                )
+                                ),
+                                channel
                             );
                         }
                         else
@@ -335,7 +347,8 @@ public partial class SerialPortInstance : ISerialPortInstance
                             WeakReferenceMessenger.Default.Send(
                                 new SerialPortHardwareStateMessage(
                                     new SerialPortHardwareState(SerialPortHardwarePinState.CtsOff)
-                                )
+                                ),
+                                channel
                             );
                         }
                     }

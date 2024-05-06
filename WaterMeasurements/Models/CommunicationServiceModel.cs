@@ -19,7 +19,8 @@ public readonly record struct SerialPortAdd(
     Action<object, SerialDataReceivedEventArgs> SerialMonitorAction,
     Action<object, SerialPinChangedEventArgs>? HardwareChangeAction,
     int NumberoAttempts,
-    int RetryDelay
+    int RetryDelay,
+    uint Channel
 );
 
 public readonly record struct SerialPortHardwareState(SerialPortHardwarePinState PinState);

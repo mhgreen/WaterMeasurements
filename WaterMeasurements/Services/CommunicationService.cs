@@ -22,6 +22,7 @@ using WaterMeasurements.Views;
 using Windows.ApplicationModel.VoiceCommands;
 using Windows.Devices.Enumeration;
 using Windows.Devices.SerialCommunication;
+using static WaterMeasurements.ViewModels.MainViewModel;
 
 namespace WaterMeasurements.Services;
 
@@ -68,6 +69,9 @@ public partial class CommunicationService : ICommunicationService
 
     // Dictionary to keep track of instances by name.
     private static readonly Dictionary<string, SerialPortInstance> serialPortInstances = [];
+
+    // Channel for V3000 serial port messages.
+    private readonly uint v3000Channel;
 
     public CommunicationService(
         ILogger<CommunicationService> logger,
@@ -116,7 +120,8 @@ public partial class CommunicationService : ICommunicationService
                     message.Value.SerialMonitorAction,
                     message.Value.HardwareChangeAction,
                     message.Value.NumberoAttempts,
-                    message.Value.RetryDelay
+                    message.Value.RetryDelay,
+                    message.Value.Channel
                 );
                 // Log that the instance has been created.
                 logger.LogDebug(
@@ -138,6 +143,11 @@ public partial class CommunicationService : ICommunicationService
                 }
             }
         );
+
+        // Get the next instance channel and use that for the v3000Channel.
+        // v3000Channel = WeakReferenceMessenger.Default.Send<InstanceChannelRequestMessage>();
+
+        v3000Channel = 10;
 
         SerialPort V3000SerialPort =
             new()
@@ -163,9 +173,38 @@ public partial class CommunicationService : ICommunicationService
                     V3000DataReceivedHandler,
                     V3000CtsPinChangedHandler,
                     3,
-                    4000
+                    4000,
+                    v3000Channel
                 )
             )
+        );
+
+        // Register to get SerialPortHardwareStateMessage messages on the v3000Channel.
+        WeakReferenceMessenger.Default.Register<SerialPortHardwareStateMessage, uint>(
+            this,
+            v3000Channel,
+            (recipient, message) =>
+            {
+                logger.LogDebug(
+                    CommunicationServiceLog,
+                    "CommunicationService, SerialPortHardwareStateMessage: {message}.",
+                    message
+                );
+                if (message.Value.PinState == SerialPortHardwarePinState.CtsOn)
+                {
+                    logger.LogDebug(
+                        CommunicationServiceLog,
+                        "CommunicationService, SerialPortHardwareStateMessage: CTS is ON."
+                    );
+                }
+                else if (message.Value.PinState == SerialPortHardwarePinState.CtsOff)
+                {
+                    logger.LogDebug(
+                        CommunicationServiceLog,
+                        "CommunicationService, SerialPortHardwareStateMessage: CTS is OFF."
+                    );
+                }
+            }
         );
     }
 
