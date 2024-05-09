@@ -1,14 +1,13 @@
 ﻿using WaterMeasurements.Helpers;
-
 using Windows.UI.ViewManagement;
 
 namespace WaterMeasurements;
 
 public sealed partial class MainWindow : WindowEx
 {
-    private Microsoft.UI.Dispatching.DispatcherQueue dispatcherQueue;
+    private readonly Microsoft.UI.Dispatching.DispatcherQueue dispatcherQueue;
 
-    private UISettings settings;
+    private readonly UISettings settings;
 
     public MainWindow()
     {

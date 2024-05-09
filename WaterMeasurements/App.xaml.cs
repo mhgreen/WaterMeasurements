@@ -139,7 +139,11 @@ public partial class App : Application
         // https://docs.microsoft.com/windows/windows-app-sdk/api/winrt/microsoft.ui.xaml.application.unhandledexception.
     }
 
+    // Suppressing the warning for order modifiers.
+    // If the modifiers are ordered, then the error goes away, buts shows up once the file is saved.
+#pragma warning disable IDE0036
     protected override async void OnLaunched(LaunchActivatedEventArgs args)
+#pragma warning restore IDE0036
     {
         base.OnLaunched(args);
 

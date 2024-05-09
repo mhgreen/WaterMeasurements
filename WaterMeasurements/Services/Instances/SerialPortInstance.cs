@@ -43,7 +43,11 @@ public static class FTDINotOkFTDIException
 
 public partial class SerialPortInstance : ISerialPortInstance
 {
+    // serialPortInstanceLogger is used in the SerialPortInstance class.
+    // For some reason, an error message is generated even though serialPortInstanceLogger is used in the SerialPortInstance class.
+#pragma warning disable IDE0052 // Remove unread private members
     private readonly ILogger<SerialPortInstance> logger;
+#pragma warning restore IDE0052 // Remove unread private members
     internal EventId SerialPortLog = new(22, "SerialPortInstance");
     public string? FtdiCableSerialNumber { get; private set; }
     public string? FtdiCableName { get; private set; }
@@ -307,19 +311,20 @@ public partial class SerialPortInstance : ISerialPortInstance
 
                     // ftdi.Close() has been called, so we can now use the comport to setup the serial port.
                     currentSerialPort.PortName = comport;
-                    var currentSerialPortAndChannel = new SerialPortAndChannel(
+                    var currentSerialPortChannelAndBuffer = new SerialPortChannelAndBuffer(
                         currentSerialPort,
-                        Channel
+                        Channel,
+                        new StringBuilder()
                     );
 
                     dataReceivedHandler = (sender, args) =>
-                        dataReceivedAction(currentSerialPortAndChannel, args);
+                        dataReceivedAction(currentSerialPortChannelAndBuffer, args);
                     currentSerialPort.DataReceived += dataReceivedHandler;
 
                     if (hardwareChangeAction != null)
                     {
                         pinChangedHandler = (sender, args) =>
-                            hardwareChangeAction(currentSerialPortAndChannel, args);
+                            hardwareChangeAction(currentSerialPortChannelAndBuffer, args);
                         currentSerialPort.PinChanged += pinChangedHandler;
                     }
 

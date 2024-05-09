@@ -49,6 +49,7 @@ public partial class WaterQualityService : IWaterQualityService
     // Set the EventId for logging messages.
     internal EventId WaterQualityServiceLog = new(20, "WaterQualityService");
 
+    // Disabling the warning IDE0052 because the CommunicationService is used in the constructor.
 #pragma warning disable IDE0052
     private readonly ICommunicationService CommunicationService;
 #pragma warning restore IDE0052

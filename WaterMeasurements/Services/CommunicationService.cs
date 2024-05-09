@@ -14,6 +14,8 @@ using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.Mvvm.Messaging.Messages;
 using FTD2XX_NET;
 using Microsoft.Extensions.Logging;
+using RecordParser;
+using RecordParser.Builders.Reader;
 using WaterMeasurements.Contracts.Services;
 using WaterMeasurements.Contracts.Services.Instances;
 using WaterMeasurements.Models;
@@ -34,6 +36,10 @@ public class SerialPortRequestMessage(SerialPortAdd serialPortAddMessage)
 // Serial port hardware state message.
 public class SerialPortHardwareStateMessage(SerialPortHardwareState serialPortHardwareState)
     : ValueChangedMessage<SerialPortHardwareState>(serialPortHardwareState) { }
+
+// V3000 observation message.
+public class V3000ObservationMessage(V3000Observation v3000Observation)
+    : ValueChangedMessage<V3000Observation>(v3000Observation) { }
 
 public static class FTDINotOkFTDIException
 {
@@ -60,7 +66,11 @@ public partial class CommunicationService : ICommunicationService
     private readonly ILogger<CommunicationService> logger;
     internal EventId CommunicationServiceLog = new(21, "CommunicationService");
 
+    // serialPortInstanceLogger is used in the SerialPortInstance class.
+    // For some reason, an error message is generated even though serialPortInstanceLogger is used in the SerialPortInstance class.
+#pragma warning disable IDE0052 // Remove unread private members
     private readonly ILogger<SerialPortInstance> serialPortInstanceLogger;
+#pragma warning restore IDE0052 // Remove unread private members
 
     // Regular expression to remove spaces.
     public static readonly Regex RegExRemoveSpace = RemoveSpacesRegex();
@@ -207,6 +217,48 @@ public partial class CommunicationService : ICommunicationService
                 }
             }
         );
+
+        // Register to get V3000ObservationMessage messages on the v3000Channel.
+        WeakReferenceMessenger.Default.Register<V3000ObservationMessage, uint>(
+            this,
+            v3000Channel,
+            (recipient, message) =>
+            {
+                logger.LogDebug(
+                    CommunicationServiceLog,
+                    "CommunicationService, V3000ObservationMessage"
+                );
+                logger.LogDebug(
+                    CommunicationServiceLog,
+                    "DataStorageNumber: {DataStorageNumber}, UserAssignedId: {UserAssignedId}",
+                    message.Value.DataStorageNumber,
+                    message.Value.UserAssignedId
+                );
+                logger.LogDebug(
+                    CommunicationServiceLog,
+                    "DataStorageNumber: V3000DateTime: {V3000DateTime}, ProgramNumber: {ProgramNumber}, Citation: {Citation}, BlankValue: {BlankValue}, DilutionFactor: {DilutionFactor}",
+                    message.Value.V3000DateTime,
+                    message.Value.ProgramNumber,
+                    message.Value.Citation,
+                    message.Value.BlankValue,
+                    message.Value.DilutionFactor
+                );
+                logger.LogDebug(
+                    CommunicationServiceLog,
+                    "MeasuredValue: {MeasuredValue}, UnitMeasuredValue: {UnitMeasuredValue}, MeasuredValueStatus: {MeasuredValueStatus}",
+                    message.Value.MeasuredValue,
+                    message.Value.UnitMeasuredValue,
+                    message.Value.MeasuredValueStatus
+                );
+                logger.LogDebug(
+                    CommunicationServiceLog,
+                    "SecondaryWavelength: {SecondaryWavelength}, SecondaryUnit: {SecondaryUnit}, SecondaryStatus: {SecondaryStatus}",
+                    message.Value.SecondaryWavelength,
+                    message.Value.SecondaryUnit,
+                    message.Value.SecondaryStatus
+                );
+            }
+        );
     }
 
     private void V3000CtsPinChangedHandler(object sender, SerialPinChangedEventArgs args)
@@ -214,9 +266,9 @@ public partial class CommunicationService : ICommunicationService
         var retryCount = 0;
         const int maxRetry = 1; // Maximum number of retries
 
-        var currentSerialPortAndChannel = (SerialPortAndChannel)sender;
-        var currentSerialPort = currentSerialPortAndChannel.Port;
-        var channel = currentSerialPortAndChannel.Channel;
+        var currentSerialPortChannelAndBuffer = (SerialPortChannelAndBuffer)sender;
+        var currentSerialPort = currentSerialPortChannelAndBuffer.Port;
+        var channel = currentSerialPortChannelAndBuffer.Channel;
 
         logger.LogDebug(
             CommunicationServiceLog,
@@ -314,15 +366,60 @@ public partial class CommunicationService : ICommunicationService
     {
         var V3000Observation = string.Empty;
         var charBuffer = new char[4096];
-        var charBufferPosition = 0;
-        var iterationNumber = 0;
-        int bytesToRead;
-        var currentSerialPortAndChannel = (SerialPortAndChannel)sender;
-        var currentSerialPort = currentSerialPortAndChannel.Port;
-        var channel = currentSerialPortAndChannel.Channel;
+        var currentSerialPortChannelAndBuffer = (SerialPortChannelAndBuffer)sender;
+        var currentSerialPort = currentSerialPortChannelAndBuffer.Port;
+        var channel = currentSerialPortChannelAndBuffer.Channel;
+        var observationBuffer = currentSerialPortChannelAndBuffer.ObservationBuffer;
+        var endOfMessageMarker = "\r\n";
+        var reader = new VariableLengthReaderBuilder<(
+            int DataStorageNumber,
+            DateOnly v3000Date,
+            TimeOnly v3000Time,
+            DateTime v3000DateTime,
+            int UserAssignedId,
+            int ProgramNumber,
+            string Citation,
+            string BlankValue,
+            int DilutionFactor,
+            double MeasuredValue,
+            string UnitMeasuredValue,
+            string MeasuredValueStatus,
+            int SecondaryWavelength,
+            string SecondaryUnit,
+            string SecondaryStatus
+        )>()
+            .Map(x => x.DataStorageNumber, indexColumn: 0)
+            .Map(
+                x => x.v3000Date,
+                1,
+                value =>
+                    DateOnly.FromDateTime(
+                        DateTime.Parse(value, System.Globalization.CultureInfo.InvariantCulture)
+                    )
+            )
+            .Map(
+                x => x.v3000Time,
+                2,
+                value =>
+                    TimeOnly.FromDateTime(
+                        DateTime.Parse(value, System.Globalization.CultureInfo.InvariantCulture)
+                    )
+            )
+            .Map(x => x.UserAssignedId, 3)
+            .Map(x => x.ProgramNumber, 4)
+            .Map(x => x.Citation, 5)
+            .Map(x => x.BlankValue, 6)
+            .Map(x => x.DilutionFactor, 7, value => value.IsEmpty ? 0 : int.Parse(value))
+            .Map(x => x.MeasuredValue, 8)
+            .Map(x => x.UnitMeasuredValue, 9)
+            .Map(x => x.MeasuredValueStatus, 10)
+            .Map(x => x.SecondaryWavelength, 11, value => value.IsEmpty ? 0 : int.Parse(value))
+            .Map(x => x.SecondaryUnit, 12)
+            .Map(x => x.SecondaryStatus, 13)
+            .Build(";");
 
         // Log that the V3000DataReceivedHandler has been called.
-        logger.LogDebug(
+        logger.LogTrace(
             CommunicationServiceLog,
             "CommunicationService, V3000DataReceivedHandler: V3000DataReceivedHandler called."
         );
@@ -338,65 +435,151 @@ public partial class CommunicationService : ICommunicationService
             "In V3000DataReceivedHandler, channel is null."
         );
 
-        do
+        try
         {
-            // Sleep for 25 milliseconds to allow the buffer to fill.
-            Task.Delay(25).Wait();
-            iterationNumber++;
-            bytesToRead = currentSerialPort.BytesToRead;
-            // Console.WriteLine($"<V3000DataReceivedHandler> Bytes available, iteration {iterationNumber}: {bytesToRead}");
+            // Read all available data from the serial port.
+            while (currentSerialPort.BytesToRead > 0)
+            {
+                var readData = new char[currentSerialPort.BytesToRead];
+                var bytesRead = currentSerialPort.Read(readData, 0, readData.Length);
+                observationBuffer.Append(readData, 0, bytesRead);
+
+                // Check if the end-of-message marker is in the buffer.
+                var bufferContent = observationBuffer.ToString();
+                if (bufferContent.Contains(endOfMessageMarker))
+                {
+                    // Extract the observation up to the end-of-message marker.
+                    var endOfMessageIndex =
+                        bufferContent.IndexOf(endOfMessageMarker) + endOfMessageMarker.Length;
+                    var completeObservation = bufferContent[..endOfMessageIndex];
+
+                    // Process the complete observation.
+                    ProcessObservation(completeObservation);
+
+                    // Remove the processed observation from the buffer.
+                    observationBuffer.Remove(0, endOfMessageIndex);
+                }
+            }
+        }
+        catch (TimeoutException exception)
+        {
+            logger.LogError(
+                CommunicationServiceLog,
+                exception,
+                "CommunicationService, V3000DataReceivedHandler: TimeoutException occurred while reading from the V3000."
+            );
+            throw;
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(
+                CommunicationServiceLog,
+                exception,
+                "CommunicationService, V3000DataReceivedHandler: Exception occurred while reading from the V3000."
+            );
+            throw;
+        }
+
+        void ProcessObservation(string observation)
+        {
+            // Log and parse the observation.
+            logger.LogTrace(
+                CommunicationServiceLog,
+                "Processing complete observation: {observation}",
+                observation
+            );
             try
             {
-                currentSerialPort.Read(charBuffer, charBufferPosition, bytesToRead);
-            }
-            catch (TimeoutException exception)
-            {
-                logger.LogError(
+                var parsedResult = reader.Parse(observation);
+                logger.LogTrace(
                     CommunicationServiceLog,
-                    exception,
-                    "CommunicationService, V3000DataReceivedHandler: TimeoutException occurred while reading from the V3000."
+                    "Parsed observation: {parsedResult}",
+                    parsedResult
                 );
-                throw;
+
+                // Now that the observation has been parsed, set V3000DateTime to the parsed date and time and convert to UTC.
+                // Combine the date and time into a single DateTime object.
+                parsedResult.v3000DateTime = parsedResult.v3000Date.ToDateTime(
+                    parsedResult.v3000Time
+                );
+                // Define the source time zone (Pacific Time in this case)
+                var sourceTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Pacific Standard Time");
+                // Convert the localDateTime to UTC
+                var utcDateTime = TimeZoneInfo.ConvertTimeToUtc(
+                    parsedResult.v3000DateTime,
+                    sourceTimeZone
+                );
+                parsedResult.v3000DateTime = utcDateTime;
+
+                // Create a V3000Observation instance from parsedResult
+                var v3000Observation = new V3000Observation
+                {
+                    DataStorageNumber = parsedResult.DataStorageNumber,
+                    V3000DateTime = parsedResult.v3000DateTime,
+                    UserAssignedId = parsedResult.UserAssignedId,
+                    ProgramNumber = parsedResult.ProgramNumber,
+                    Citation = parsedResult.Citation,
+                    BlankValue = parsedResult.BlankValue,
+                    DilutionFactor = parsedResult.DilutionFactor,
+                    MeasuredValue = parsedResult.MeasuredValue,
+                    UnitMeasuredValue = parsedResult.UnitMeasuredValue,
+                    MeasuredValueStatus = parsedResult.MeasuredValueStatus,
+                    SecondaryWavelength = parsedResult.SecondaryWavelength,
+                    SecondaryUnit = parsedResult.SecondaryUnit,
+                    SecondaryStatus = parsedResult.SecondaryStatus
+                };
+
+                // Generate and send the V3000ObservationMessage
+                WeakReferenceMessenger.Default.Send(
+                    new V3000ObservationMessage(v3000Observation),
+                    channel
+                );
+
+                // log the parsed result by field.
+                logger.LogTrace(
+                    CommunicationServiceLog,
+                    "DataStorageNumber: {DataStorageNumber}, UserAssignedId: {UserAssignedId}",
+                    parsedResult.DataStorageNumber,
+                    parsedResult.UserAssignedId
+                );
+                logger.LogTrace(
+                    CommunicationServiceLog,
+                    "DataStorageNumber: V3000Date: {V3000Date}, V3000Time: {V3000Time}, V3000DateTime (UTC): {V3000DateTime}",
+                    parsedResult.v3000Date,
+                    parsedResult.v3000Time,
+                    parsedResult.v3000DateTime
+                );
+                logger.LogTrace(
+                    CommunicationServiceLog,
+                    "ProgramNumber: {ProgramNumber}, Citation: {Citation}, BlankValue: {BlankValue}, DilutionFactor: {DilutionFactor}",
+                    parsedResult.ProgramNumber,
+                    parsedResult.Citation,
+                    parsedResult.BlankValue,
+                    parsedResult.DilutionFactor
+                );
+                logger.LogTrace(
+                    CommunicationServiceLog,
+                    "MeasuredValue: {MeasuredValue}, UnitMeasuredValue: {UnitMeasuredValue}, MeasuredValueStatus: {MeasuredValueStatus}",
+                    parsedResult.MeasuredValue,
+                    parsedResult.UnitMeasuredValue,
+                    parsedResult.MeasuredValueStatus
+                );
+                logger.LogTrace(
+                    CommunicationServiceLog,
+                    "SecondaryWavelength: {SecondaryWavelength}, SecondaryUnit: {SecondaryUnit}, SecondaryStatus: {SecondaryStatus}",
+                    parsedResult.SecondaryWavelength,
+                    parsedResult.SecondaryUnit,
+                    parsedResult.SecondaryStatus
+                );
             }
             catch (Exception exception)
             {
                 logger.LogError(
                     CommunicationServiceLog,
                     exception,
-                    "CommunicationService, V3000DataReceivedHandler: Exception occurred while reading from the V3000."
+                    "Exception occurred while parsing the observation."
                 );
-                throw;
             }
-            var partialResult = new string(charBuffer, charBufferPosition, bytesToRead);
-            // read until crlf is found.
-            if (partialResult.EndsWith("\r\n"))
-            {
-                V3000Observation += partialResult;
-                break;
-            }
-            charBufferPosition += (bytesToRead - 1);
-            V3000Observation += partialResult;
-            logger.LogTrace(
-                CommunicationServiceLog,
-                "CommunicationService, V3000DataReceivedHandler, partialResult: {partialResult}",
-                partialResult
-            );
-            logger.LogTrace(
-                CommunicationServiceLog,
-                "CommunicationService, V3000DataReceivedHandler, V3000 Observation: {V3000Observation}",
-                V3000Observation
-            );
-            logger.LogTrace(
-                CommunicationServiceLog,
-                "CommunicationService, V3000DataReceivedHandler, Bytes available after Read(), iteration {iterationNumber}: {currentSerialPort.BytesToRead}",
-                iterationNumber,
-                currentSerialPort.BytesToRead
-            );
-        } while (currentSerialPort.BytesToRead > 0);
-        logger.LogDebug(
-            CommunicationServiceLog,
-            "CommunicationService, V3000DataReceivedHandler, Final V3000 Observation: {V3000Observation}",
-            V3000Observation
-        );
+        }
     }
 }
