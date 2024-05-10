@@ -10,6 +10,7 @@
     xmlns:ui="using:CommunityToolkit.WinUI"
     xmlns:viewmodels="using:WaterMeasurements.ViewModels"
     xmlns:watermeasurementsmodel="using:WaterMeasurements.Models"
+    xmlns:contracts="using:WaterMeasurements.Contracts.Templates"
     xmlns:xaml="using:Microsoft.UI.Xaml"
     x:Name="MapPage"
     d:DataContext="{d:DesignInstance Type=viewmodels:MainViewModel}"
@@ -51,7 +52,7 @@
         </ControlTemplate>
 
         <!--  When using x:Bind, you need to set x:DataType  -->
-        <DataTemplate x:Key="SecchiLocationsTemplate" x:DataType="watermeasurementsmodel:SecchiLocationDisplay">
+        <DataTemplate x:Key="LocationsTemplate" x:DataType="contracts:ILocationsDisplay">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="*" />
@@ -98,7 +99,7 @@
                     Text="{x:Bind LatLon}" />
                 <!--  Visibility="{x:Bind LocationType, Converter={StaticResource RecordStatusToVisibilityConverter}}">  -->
                 <Button
-                    x:Name="SecchiLocationEdit"
+                    x:Name="LocationEdit"
                     Grid.RowSpan="2"
                     Grid.Column="3"
                     Margin="0,7,0,0"
@@ -110,7 +111,7 @@
                     <SymbolIcon Symbol="Edit" />
                 </Button>
                 <Button
-                    x:Name="SecchiLocationDelete"
+                    x:Name="LocationDelete"
                     Grid.RowSpan="2"
                     Grid.Column="4"
                     Margin="0,7,0,0"
@@ -1088,7 +1089,7 @@
                                                                 IsEnabled="True"
                                                                 IsItemClickEnabled="True"
                                                                 ItemClick="{x:Bind SecchiLocationsListView_ItemClick}"
-                                                                ItemTemplate="{StaticResource SecchiLocationsTemplate}"
+                                                                ItemTemplate="{StaticResource LocationsTemplate}"
                                                                 ItemsSource="{x:Bind SecchiView.SecchiLocations}"
                                                                 ScrollViewer.VerticalScrollBarVisibility="Visible" />
                                                         </StackPanel>

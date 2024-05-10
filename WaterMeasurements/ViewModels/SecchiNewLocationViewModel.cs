@@ -34,7 +34,7 @@ using Geometry = Esri.ArcGISRuntime.Geometry.Geometry;
 
 namespace WaterMeasurements.ViewModels;
 
-public sealed partial class LocationNameValidAttribute : ValidationAttribute
+internal sealed partial class LocationNameValidAttribute : ValidationAttribute
 {
     [GeneratedRegex("^[A-Z0-9.,_+-{}\\[\\] ()|:@^?']*$", RegexOptions.IgnoreCase, "en-US")]
     private static partial Regex MyRegex();
@@ -55,7 +55,7 @@ public sealed partial class LocationNameValidAttribute : ValidationAttribute
     }
 }
 
-public sealed partial class CoordinateValidAttribute : ValidationAttribute
+internal sealed partial class CoordinateValidAttribute : ValidationAttribute
 {
     [GeneratedRegex(@"^[\+\-]?\d*\.?\d*$")]
     private static partial Regex MyRegex();

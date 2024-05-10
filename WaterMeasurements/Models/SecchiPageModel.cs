@@ -1,4 +1,5 @@
 ﻿using Esri.ArcGISRuntime.Geometry;
+using WaterMeasurements.Contracts.Templates;
 
 namespace WaterMeasurements.Models;
 
@@ -63,7 +64,7 @@ public class SecchiLocationDisplay(
     double longitude,
     LocationType locationType,
     int locationId
-)
+) : ILocationsDisplay
 {
     public string LocationName { get; private set; } = locationName;
     public double Latitude { get; private set; } = latitude;
