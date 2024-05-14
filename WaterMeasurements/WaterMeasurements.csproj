@@ -68,6 +68,9 @@
     <None Update="appsettings.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <Page Update="Views\Templates\LocationsTemplate.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
   </ItemGroup>
 
   <ItemGroup Condition="'$(DisableMsixProjectCapabilityAddedByProject)'!='true' and '$(EnableMsixTooling)'=='true'">
@@ -84,6 +87,10 @@
   
   <ItemGroup>
     <PRIResource Remove="bin\**" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <None Remove="Views\Templates\LocationsTemplate.xaml" />
   </ItemGroup>
   
   <ItemGroup>

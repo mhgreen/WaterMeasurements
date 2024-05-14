@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ResourceDictionary
+    x:Class="WaterMeasurements.Views.Templates.LocationsTemplate"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:WaterMeasurements.Views.Templates">
+    <!--  When using x:Bind, you need to set x:DataType  -->
+    <DataTemplate x:Key="LocationsTemplate" x:DataType="local:LocationsTemplate">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="50" />
+                <ColumnDefinition Width="50" />
+            </Grid.ColumnDefinitions>
+            <Ellipse
+             x:Name="Ellipse"
+             Grid.RowSpan="2"
+             Width="16"
+             Height="16"
+             Margin="6"
+             HorizontalAlignment="Center"
+             VerticalAlignment="Center"
+             Fill="{x:Bind LocationType, Converter={StaticResource LocationTypeToColorConverter}}" />
+            <TextBlock
+             x:Name="CollectionLimit"
+             Grid.RowSpan="2"
+             Margin="0,-3,0,0"
+             HorizontalAlignment="Center"
+             VerticalAlignment="Center"
+             FontWeight="Bold"
+             Foreground="{ThemeResource ApplicationPageBackgroundThemeBrush}"
+             Style="{ThemeResource BaseTextBlockStyle}"
+             Text="S" />
+            <TextBlock
+             Grid.Column="1"
+             Margin="12,6,0,0"
+             x:Phase="1"
+             Style="{ThemeResource BaseTextBlockStyle}"
+             Text="{x:Bind LocationName}" />
+            <TextBlock
+             Grid.Row="1"
+             Grid.Column="1"
+             Margin="12,0,0,6"
+             x:Phase="2"
+             Style="{ThemeResource BodyTextBlockStyle}"
+             Text="{x:Bind LatLon}" />
+            <!--  Visibility="{x:Bind LocationType, Converter={StaticResource RecordStatusToVisibilityConverter}}">  -->
+            <Button
+             x:Name="LocationEdit"
+             Grid.RowSpan="2"
+             Grid.Column="3"
+             Margin="0,7,0,0"
+             HorizontalAlignment="Right"
+             VerticalAlignment="Center"
+             Click="Edit_Location_Click"
+             Scale="0.8, 0.8, 0.8"
+             Tag="{x:Bind LocationId}">
+                <SymbolIcon Symbol="Edit" />
+            </Button>
+            <Button
+             x:Name="LocationDelete"
+             Grid.RowSpan="2"
+             Grid.Column="4"
+             Margin="0,7,0,0"
+             HorizontalAlignment="Right"
+             VerticalAlignment="Center"
+             Click="Delete_Location_Click"
+             Scale="0.8, 0.8, 0.8"
+             Tag="{x:Bind LocationId}">
+                <SymbolIcon Symbol="Delete" />
+            </Button>
+
+        </Grid>
+    </DataTemplate>
+
+</ResourceDictionary>
