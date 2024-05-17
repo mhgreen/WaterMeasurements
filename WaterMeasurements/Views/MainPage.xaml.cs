@@ -31,6 +31,7 @@ using WaterMeasurements.Services;
 using WaterMeasurements.Services.IncrementalLoaders;
 using WaterMeasurements.ViewModels;
 using Windows.ApplicationModel.Store;
+using Windows.Media.Capture.Frames;
 using Windows.UI.Popups;
 using WinRT;
 using static WaterMeasurements.Models.PrePlannedMapConfiguration;
@@ -54,9 +55,6 @@ public class SetMapAutoPanMessage(bool value) : ValueChangedMessage<bool>(value)
 
 // Message to center the map.
 public class SetMapCenterMessage(bool value) : ValueChangedMessage<bool>(value) { }
-
-// Message to set the value of SecchiSelectView.
-public class SetSecchiSelectViewMessage(string value) : ValueChangedMessage<string>(value) { }
 
 public partial class MainPage : Page
 {
@@ -110,28 +108,10 @@ public partial class MainPage : Page
     private GraphicsOverlay? graphicsOverlay;
 
     // Graphics overlay for point selection.
-    private GraphicsOverlay? selectionOverlay;
+    private readonly GraphicsOverlay? selectionOverlay = new();
 
-    // Marker symbol for a collection location.
-    private readonly SimpleMarkerSymbol collectionLocationSymbol =
-        new(SimpleMarkerSymbolStyle.Circle, Color.FromArgb(255, 0, 120, 212), 8);
-
-    // Symbol for location highlighting.
-    private readonly SimpleMarkerSymbol highlightLocationSymbol =
-        new()
-        {
-            // Create a clear color, make it a bit bigger than the point on the map.
-            // Then create a circle with a black outline.
-            // The result is a black circle with a clear center that can be used as a highlight.
-            Color = Color.FromArgb(0, 0, 0, 0),
-            Size = 3,
-            Style = SimpleMarkerSymbolStyle.Circle,
-            Outline = new SimpleLineSymbol(
-                SimpleLineSymbolStyle.Solid,
-                Color.FromArgb(255, 174, 232, 255),
-                3
-            )
-        };
+    // Current collection view.
+    private string? currentCollectionView;
 
     private double geoTriggerDistance = 0;
 
@@ -218,32 +198,6 @@ public partial class MainPage : Page
         secchiChannelNumbers = new();
 
         InitializeComponent();
-
-        var crossMarkerSymbol = new SimpleMarkerSymbol(
-            SimpleMarkerSymbolStyle.Cross,
-            Color.FromArgb(255, 23, 217, 232),
-            10
-        );
-
-        var geometryEditorStyle = new GeometryEditorStyle
-        {
-            VertexSymbol = new SimpleMarkerSymbol(
-                SimpleMarkerSymbolStyle.Circle,
-                Color.FromArgb(255, 255, 0, 0),
-                10
-            ),
-            LineSymbol = new SimpleLineSymbol(
-                SimpleLineSymbolStyle.Solid,
-                Color.FromArgb(255, 0, 0, 255),
-                2
-            ),
-            FillSymbol = new SimpleFillSymbol(
-                SimpleFillSymbolStyle.Solid,
-                Color.FromArgb(100, 0, 0, 255),
-                new SimpleLineSymbol(SimpleLineSymbolStyle.Solid, Color.FromArgb(255, 0, 0, 255), 2)
-            ),
-            SelectedVertexSymbol = crossMarkerSymbol
-        };
 
         // Send the UI Dispatcher Queue to subscribers.
         DispatcherQueue.TryEnqueue(() =>
@@ -377,6 +331,8 @@ public partial class MainPage : Page
             }
         );
 
+        currentCollectionView = "";
+
         Initialize();
     }
 
@@ -434,10 +390,29 @@ public partial class MainPage : Page
                 );
             }
 
+            SetLocationOverlay();
+
+            // Register to get the current collection view.
+            WeakReferenceMessenger.Default.Register<SetCurrentCollectionViewMessage>(
+                this,
+                (recipient, message) =>
+                {
+                    // Log the value of the message.
+                    Logger.Debug(
+                        "MainPage.xaml.cs, MainPage: SetCurrentCollectionViewMessage, Message value: {messageValue}.",
+                        message.Value
+                    );
+                    // Set the current collection view.
+                    // currentCollectionView = message.Value;
+                    SetLocationOverlay();
+                }
+            );
+
+            /*
             if (MapView.GraphicsOverlays is not null)
             {
                 // Create a graphics overlay and add it to the map view.
-                graphicsOverlay = new GraphicsOverlay();
+                graphicsOverlay = new GraphicsOverlay { Id = "SecchiLocations" };
                 selectionOverlay = new GraphicsOverlay();
                 // var secchiLocationPoints = new GraphicsOverlay();
                 MapView.GraphicsOverlays.Add(graphicsOverlay);
@@ -474,7 +449,7 @@ public partial class MainPage : Page
                                     // Create a new graphic using the feature's geometry and the collection location symbol
                                     var graphic = new Graphic(
                                         feature.Geometry,
-                                        collectionLocationSymbol
+                                        MapSymbols.CollectionLocationSymbol
                                     );
 
                                     // Add the LocationId from the feature's attributes to the graphic's attributes
@@ -508,6 +483,8 @@ public partial class MainPage : Page
                 // Log to error that the MapView.GraphicsOverlays is null.
                 Logger.Error("MainPage.xaml.cs, Initialize: MapView.GraphicsOverlays is null.");
             }
+
+            */
 
             // Add a handler for the MapViewTapped event.
             MapView.GeoViewTapped += OnMapViewTapped;
@@ -719,7 +696,10 @@ public partial class MainPage : Page
                         // Center the map on the selected location
                         await MapView.SetViewpointCenterAsync(mapPoint);
 
-                        var graphicWithSymbol = new Graphic(mapPoint, highlightLocationSymbol);
+                        var graphicWithSymbol = new Graphic(
+                            mapPoint,
+                            MapSymbols.HighlightLocationSymbol
+                        );
                         if (selectionOverlay != null)
                         {
                             // Log to trace that the selectionOverlay is being cleared.
@@ -761,6 +741,71 @@ public partial class MainPage : Page
         }
     }
 
+    private void SetLocationOverlay()
+    {
+        Guard.Against.Null(
+            MapView.GraphicsOverlays,
+            nameof(MapView.GraphicsOverlays),
+            "MapView.GraphicsOverlays is null."
+        );
+
+        if (currentCollectionView != DataCollectionView.SelectView)
+        {
+            // Log to debug that the currentCollectionView is not equal to DataCollectionView.SelectView.
+            Logger.Debug(
+                "MainPage.xaml.cs, Initialize: currentCollectionView: {currentCollectionView}, DataCollectionView.SelectView: {DataCollectionView.SelectView}",
+                currentCollectionView,
+                DataCollectionView.SelectView
+            );
+            if (graphicsOverlay is not null)
+            {
+                // Log to trace that the graphicsOverlay is being cleared.
+                Logger.Debug("MainPage.xaml.cs, Initialize: Clearing graphicsOverlay.");
+                graphicsOverlay.ClearSelection();
+            }
+            if (selectionOverlay is not null)
+            {
+                // Log to trace that the selectionOverlay is being cleared.
+                Logger.Debug("MainPage.xaml.cs, Initialize: Clearing selectionOverlay.");
+                selectionOverlay.Graphics.Clear();
+            }
+
+            // Clear the graphics overlays.
+            MapView.GraphicsOverlays.Clear();
+
+            // Select the appropriate overlay based on type of data being displayed.
+            graphicsOverlay = DataCollectionView.SelectView switch
+            {
+                "Secchi" => SecchiView.SecchiLocationsOverlay,
+                "Turbidity" => new(),
+                "Quality" => new(),
+                "Temperature" => new(),
+                _ => null,
+            };
+            currentCollectionView = DataCollectionView.SelectView;
+
+            // Check to see if the graphics overlay is null.
+            Guard.Against.Null(
+                graphicsOverlay,
+                nameof(graphicsOverlay),
+                "GraphicsOverlay is null."
+            );
+
+            // Check to see if the selection overlay is null.
+            Guard.Against.Null(
+                selectionOverlay,
+                nameof(selectionOverlay),
+                "SelectionOverlay is null."
+            );
+
+            // Add the graphics overlay to the map view.
+            MapView.GraphicsOverlays.Add(graphicsOverlay);
+
+            // Add the selection overlay to the map view.
+            MapView.GraphicsOverlays.Add(selectionOverlay);
+        }
+    }
+
     private void MapNavView_Loaded(object sender, RoutedEventArgs e)
     {
         MapNavView.SelectedItem = MapNavView.MenuItems[1];
@@ -796,7 +841,7 @@ public partial class MainPage : Page
             // Center the map on the selected location
             MapView.SetViewpointCenterAsync(mapPoint);
 
-            var graphicWithSymbol = new Graphic(mapPoint, highlightLocationSymbol);
+            var graphicWithSymbol = new Graphic(mapPoint, MapSymbols.HighlightLocationSymbol);
             if (selectionOverlay != null)
             {
                 // Log to trace that the selectionOverlay is being cleared.
@@ -849,7 +894,7 @@ public partial class MainPage : Page
             // Center the map on the selected location
             MapView.SetViewpointCenterAsync(mapPoint);
 
-            var graphicWithSymbol = new Graphic(mapPoint, highlightLocationSymbol);
+            var graphicWithSymbol = new Graphic(mapPoint, MapSymbols.HighlightLocationSymbol);
             if (selectionOverlay != null)
             {
                 // Log to trace that the selectionOverlay is being cleared.
@@ -862,6 +907,13 @@ public partial class MainPage : Page
                     "MainPage.xaml.cs, SecchiCollectionListView_ItemClick: Adding graphicWithSymbol to selectionOverlay."
                 );
                 selectionOverlay.Graphics.Add(graphicWithSymbol);
+            }
+            else
+            {
+                // Log to error that the selectionOverlay is null.
+                Logger.Error(
+                    "MainPage.xaml.cs, SecchiCollectionListView_ItemClick: selectionOverlay is null."
+                );
             }
         }
     }
@@ -1107,7 +1159,10 @@ public partial class MainPage : Page
                     );
 
                     // Create a new graphic using the feature's geometry and the collection location symbol
-                    graphic = new Graphic(secchiAddLocation.Location, collectionLocationSymbol);
+                    graphic = new Graphic(
+                        secchiAddLocation.Location,
+                        MapSymbols.CollectionLocationSymbol
+                    );
 
                     // Add the LocationId from the feature's attributes to the graphic's attributes
                     graphic.Attributes.Add("LocationId", secchiAddLocation.LocationNumber);
@@ -1167,7 +1222,10 @@ public partial class MainPage : Page
                     else
                     {
                         // Create a new graphic using the feature's geometry and the collection location symbol
-                        graphic = new Graphic(secchiAddLocation.Location, collectionLocationSymbol);
+                        graphic = new Graphic(
+                            secchiAddLocation.Location,
+                            MapSymbols.CollectionLocationSymbol
+                        );
 
                         // Add the LocationId from the feature's attributes to the graphic's attributes
                         graphic.Attributes.Add("LocationId", secchiAddLocation.LocationNumber);
@@ -1210,7 +1268,7 @@ public partial class MainPage : Page
                             // Create a new graphic using the feature's geometry and the collection location symbol
                             graphic = new Graphic(
                                 secchiAddLocation.Location,
-                                collectionLocationSymbol
+                                MapSymbols.CollectionLocationSymbol
                             );
 
                             // Add the LocationId from the feature's attributes to the graphic's attributes

@@ -9,6 +9,7 @@ using CommunityToolkit.Mvvm.Messaging.Messages;
 using Esri.ArcGISRuntime.Data;
 using Esri.ArcGISRuntime.Geotriggers;
 using Esri.ArcGISRuntime.Location;
+using Esri.ArcGISRuntime.UI;
 using Microsoft.Extensions.Logging;
 using Microsoft.UI;
 using Microsoft.UI.Dispatching;
@@ -30,6 +31,9 @@ namespace WaterMeasurements.ViewModels;
 
 // Message from other modules to request the Secchi channel numbers.
 public class SecchiChannelRequestMessage : RequestMessage<SecchiChannelNumbersMessage> { }
+
+// Message to set the value of SecchiSelectView.
+public class SetSecchiSelectViewMessage(string value) : ValueChangedMessage<string>(value) { }
 
 public partial class SecchiViewModel : ObservableRecipient
 {
@@ -89,6 +93,14 @@ public partial class SecchiViewModel : ObservableRecipient
     // Instead of being a global variable, it could be retrieved from the feature table
     // but doing so would require a query to the feature table each time the location name is needed.
     private string? geotriggerLocationName = string.Empty;
+
+    private GraphicsOverlay secchiLocationsOverlay = new() { Id = "SecchiLocations" };
+
+    public GraphicsOverlay SecchiLocationsOverlay
+    {
+        get => secchiLocationsOverlay;
+        set => SetProperty(ref secchiLocationsOverlay, value);
+    }
 
     private SecchiLocationCollectionLoader? secchiLocations;
 
@@ -355,29 +367,28 @@ public partial class SecchiViewModel : ObservableRecipient
                             );
                         }
 
-                        /*
                         // create a where clause to get all the features
                         var queryParameters = new QueryParameters() { WhereClause = "1=1" };
 
                         // query the feature table
                         var queryResult = featureTable.QueryFeaturesAsync(queryParameters).Result;
 
-                        // iterate over the features and log their attributes
+                        // Iterate over the features and create a graphic for each feature.
+                        // This is used by the map to display the collection locations (MainPage.xaml.cs).
                         foreach (var feature in queryResult)
                         {
-                            foreach (var attribute in feature.Attributes)
-                            {
-                                logger.LogTrace(
-                                    SecchiViewModelLog,
-                                    "SecchiViewModel, StateMachine, SecchiServiceState.WaitingForLocations, secchiLocationsChannel: {secchiLocationsChannel}: FeatureTable: {featureTable}, attribute.Key: {attributeName}, attribute.Value: {attributeValue}.",
-                                    secchiLocationsChannel,
-                                    featureTable.TableName,
-                                    attribute.Key,
-                                    attribute.Value
-                                );
-                            }
+                            // Create a new graphic using the feature's geometry and the collection location symbol
+                            var graphic = new Graphic(
+                                feature.Geometry,
+                                MapSymbols.CollectionLocationSymbol
+                            );
+
+                            // Add the LocationId from the feature's attributes to the graphic's attributes
+                            graphic.Attributes.Add("LocationId", feature.Attributes["LocationId"]);
+
+                            // Add the graphic to the graphics overlay
+                            secchiLocationsOverlay.Graphics.Add(graphic);
                         }
-                        */
 
                         // Send the FeatureToTableMessage to the SqliteService to convert the feature table to a table.
                         WeakReferenceMessenger.Default.Send<FeatureToTableMessage>(

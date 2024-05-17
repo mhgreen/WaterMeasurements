@@ -20,7 +20,7 @@ using Windows.Media.Capture.Frames;
 
 namespace WaterMeasurements.Views.Templates;
 
-public abstract class LocationsTemplate
+public abstract partial class LocationsTemplate
 {
     private readonly double latitude;
     private readonly double longitude;

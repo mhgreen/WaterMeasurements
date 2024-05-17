@@ -33,6 +33,9 @@ using static WaterMeasurements.Models.PrePlannedMapConfiguration;
 
 namespace WaterMeasurements.ViewModels;
 
+// Message to set the value of the current collection view (selectView).
+public class SetCurrentCollectionViewMessage(string value) : ValueChangedMessage<string>(value) { }
+
 public partial class DataCollectionViewModel : ObservableValidator
 {
     private readonly ILogger<MapConfigurationViewModel> logger;
@@ -40,7 +43,7 @@ public partial class DataCollectionViewModel : ObservableValidator
     private readonly ILocalSettingsService? LocalSettingsService;
 
     [ObservableProperty]
-    public string selectView = "Secchi";
+    public string? selectView;
 
     public DataCollectionViewModel(
         ILogger<MapConfigurationViewModel> logger,
@@ -49,6 +52,22 @@ public partial class DataCollectionViewModel : ObservableValidator
     {
         this.logger = logger;
         LocalSettingsService = localSettingsService;
+
+        // Register to get the current collection view.
+        WeakReferenceMessenger.Default.Register<SetCurrentCollectionViewMessage>(
+            this,
+            (recipient, message) =>
+            {
+                // Log the value of the message.
+                logger.LogDebug(
+                    DataCollectionViewModelLog,
+                    "DataCollectionViewModel, SetCurrentCollectionViewMessage: Message value: {messageValue}.",
+                    message.Value
+                );
+                // Set the current collection view.
+                SelectView = message.Value;
+            }
+        );
 
         _ = InitializeAsync();
 
@@ -69,6 +88,8 @@ public partial class DataCollectionViewModel : ObservableValidator
             var PreplannedMapName = await LocalSettingsService.ReadSettingAsync<string>(
                 PrePlannedMapConfiguration.Item[Key.PreplannedMapName]
             );
+            // Send a message to set the current collection view to Secchi.
+            WeakReferenceMessenger.Default.Send(new SetCurrentCollectionViewMessage("Secchi"));
         }
         catch (Exception exception)
         {
@@ -121,6 +142,8 @@ public partial class DataCollectionViewModel : ObservableValidator
                     DataCollectionViewModelLog,
                     "DataCollectionViewModel, CollectionNavView_ItemInvoked(): Secchi item selected."
                 );
+                // Send a message to set the current collection view to Secchi.
+                WeakReferenceMessenger.Default.Send(new SetCurrentCollectionViewMessage("Secchi"));
                 break;
             case "CollectionNavTurbidity":
                 SelectView = "Turbidity";
@@ -128,6 +151,10 @@ public partial class DataCollectionViewModel : ObservableValidator
                 logger.LogDebug(
                     DataCollectionViewModelLog,
                     "DataCollectionViewModel, CollectionNavView_ItemInvoked(): Turbidity item selected."
+                );
+                // Send a message to set the current collection view to Turbidity.
+                WeakReferenceMessenger.Default.Send(
+                    new SetCurrentCollectionViewMessage("Turbidity")
                 );
                 break;
             case "CollectionNavQuality":
@@ -137,6 +164,8 @@ public partial class DataCollectionViewModel : ObservableValidator
                     DataCollectionViewModelLog,
                     "DataCollectionViewModel, CollectionNavView_ItemInvoked(): Quality item selected."
                 );
+                // Send a message to set the current collection view to Quality.
+                WeakReferenceMessenger.Default.Send(new SetCurrentCollectionViewMessage("Quality"));
                 break;
             case "CollectionNavTemperature":
                 SelectView = "Temperature";
@@ -144,6 +173,10 @@ public partial class DataCollectionViewModel : ObservableValidator
                 logger.LogDebug(
                     DataCollectionViewModelLog,
                     "DataCollectionViewModel, CollectionNavView_ItemInvoked(): Temperature item selected."
+                );
+                // Send a message to set the current collection view to Temperature.
+                WeakReferenceMessenger.Default.Send(
+                    new SetCurrentCollectionViewMessage("Temperature")
                 );
                 break;
             default:

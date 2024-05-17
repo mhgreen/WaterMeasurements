@@ -1091,6 +1091,7 @@
                                                                 ItemClick="{x:Bind SecchiLocationsListView_ItemClick}"
                                                                 ItemTemplate="{StaticResource LocationsTemplate}"
                                                                 ItemsSource="{x:Bind SecchiView.SecchiLocations}"
+                                                                SelectedItem=""
                                                                 ScrollViewer.VerticalScrollBarVisibility="Visible" />
                                                         </StackPanel>
 
