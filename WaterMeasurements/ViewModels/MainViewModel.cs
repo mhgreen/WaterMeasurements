@@ -69,6 +69,17 @@ public partial class MainViewModel : ObservableRecipient
     [ObservableProperty]
     private Brush mapBorderColor = new SolidColorBrush(Colors.Transparent);
 
+    // Observable property for the selected location in the list of locations for a measurement type.
+    // This is used to deselect the location when the user moves to a different measurement type.
+    [ObservableProperty]
+    private object? selectedLocation;
+
+    // Observable property for the map center and auto-pan options.
+    // If the location is selected from the list, the map will pan to that location.
+    // Center and auto-pan should then be set to null until selected.
+    [ObservableProperty]
+    private object? mapCenterAutoPan;
+
     public ICommand SwitchThemeCommand { get; }
 
     // Feature for the current location sent by the GeoTriggerService.

@@ -703,7 +703,7 @@
                                                             IncrementalLoadingTrigger="Edge"
                                                             IsEnabled="True"
                                                             IsItemClickEnabled="True"
-                                                            ItemClick="{x:Bind SecchiCollectionListView_ItemClick}"
+                                                            ItemClick="{x:Bind SecchiLocationsListView_ItemClick}"
                                                             ItemTemplate="{StaticResource SecchiCollectionTemplate}"
                                                             ItemsSource="{x:Bind SecchiView.SecchiObservations}"
                                                             ScrollViewer.VerticalScrollBarVisibility="Visible" />
@@ -816,7 +816,7 @@
                                         </Grid>
                                     </controls:Case>
 
-                                    <controls:Case Value="SecchiAddLocation">
+                                    <controls:Case Value="SecchiLocations">
                                         <Grid>
                                             <StackPanel>
                                                 <TextBlock
@@ -1091,7 +1091,7 @@
                                                                 ItemClick="{x:Bind SecchiLocationsListView_ItemClick}"
                                                                 ItemTemplate="{StaticResource LocationsTemplate}"
                                                                 ItemsSource="{x:Bind SecchiView.SecchiLocations}"
-                                                                SelectedItem=""
+                                                                SelectedItem="{x:Bind ViewModel.SelectedLocation, Mode=TwoWay}"
                                                                 ScrollViewer.VerticalScrollBarVisibility="Visible" />
                                                         </StackPanel>
 

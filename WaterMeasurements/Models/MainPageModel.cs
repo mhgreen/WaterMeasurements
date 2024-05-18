@@ -29,6 +29,18 @@ public enum CurrentMeasurement
     Temperature
 }
 
+// Source and type of location for adding a new location.
+public struct AddLocation
+{
+    public LocationType? LocationType { get; set; }
+    public LocationSource? LocationSource { get; set; }
+    public int? LocationNumber { get; set; }
+    public double? Latitude { get; set; }
+    public double? Longitude { get; set; }
+    public string? LocationName { get; set; }
+    public MapPoint? Location { get; set; }
+}
+
 public static class MapSymbols
 {
     // Marker symbol for a collection location.

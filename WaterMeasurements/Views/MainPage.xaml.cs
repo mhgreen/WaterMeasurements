@@ -93,7 +93,7 @@ public partial class MainPage : Page
     // private FeatureLayer? secchiLocationLayer;
 
     // New location to add to the SecchiLocations table.
-    private SecchiAddLocation secchiAddLocation;
+    private AddLocation addLocation;
 
     // New secchi measurement to add to the SecchiMeasurement table.
     private SecchiMeasurement secchiMeasurement;
@@ -112,6 +112,16 @@ public partial class MainPage : Page
 
     // Current collection view.
     private string? currentCollectionView;
+
+    // Timer to indicate when the Viewport has stopped changing.
+    private readonly DispatcherTimer viewportTimer;
+
+    // Flag to indicate if center or auto-pan buttons are selected.
+    // This is also set to true at startup.
+    // The purpose of this flag is to prevent the deselection of the
+    // center and auto-pan buttons when the Viewport has stopped changing and
+    // where the center and auto-pan buttons are typically deselected.
+    private bool centerAutoPanSelected = false;
 
     private double geoTriggerDistance = 0;
 
@@ -199,6 +209,24 @@ public partial class MainPage : Page
 
         InitializeComponent();
 
+        // Configure a timer to indicate when the Viewport has stopped changing.
+        viewportTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(250) };
+        viewportTimer.Tick += (sender, eventArgs) =>
+        {
+            // Log to trace that the Viewport has stopped changing.
+            Logger.Trace("MainPage.xaml.cs, MainPage: Viewport has stopped changing.");
+            // Stop the timer.
+            viewportTimer.Stop();
+            // If the center or auto-pan buttons have been selected, then do not deselect them.
+            if (!centerAutoPanSelected)
+            {
+                // Unselect the Center and AutoPan buttons.
+                DeselectCenterAutoPan();
+                centerAutoPanSelected = false;
+            }
+            // centerAutoPanSelected = false;
+        };
+
         // Send the UI Dispatcher Queue to subscribers.
         DispatcherQueue.TryEnqueue(() =>
         {
@@ -222,6 +250,7 @@ public partial class MainPage : Page
                     .UI
                     .LocationDisplayAutoPanMode
                     .Navigation;
+                centerAutoPanSelected = true;
             }
         );
 
@@ -240,6 +269,7 @@ public partial class MainPage : Page
                     .UI
                     .LocationDisplayAutoPanMode
                     .Recenter;
+                centerAutoPanSelected = true;
             }
         );
 
@@ -403,7 +433,6 @@ public partial class MainPage : Page
                         message.Value
                     );
                     // Set the current collection view.
-                    // currentCollectionView = message.Value;
                     SetLocationOverlay();
                 }
             );
@@ -488,6 +517,9 @@ public partial class MainPage : Page
 
             // Add a handler for the MapViewTapped event.
             MapView.GeoViewTapped += OnMapViewTapped;
+
+            // Add a handler for the ViewpointChanged event.
+            MapView.ViewpointChanged += OnViewPortChanged;
 
             // Create a geometry editor to allow the user to select a location on the map.
             geometryEditor = new GeometryEditor();
@@ -631,7 +663,30 @@ public partial class MainPage : Page
         }
     }
 
+    // Convert from AddLocation to SecchiAddLocation.
+    private static SecchiAddLocation ConvertToSecchiAddLocation(AddLocation addLocation)
+    {
+        return new SecchiAddLocation
+        {
+            LocationType = addLocation.LocationType,
+            LocationSource = addLocation.LocationSource,
+            LocationNumber = addLocation.LocationNumber,
+            Latitude = addLocation.Latitude,
+            Longitude = addLocation.Longitude,
+            LocationName = addLocation.LocationName,
+            Location = addLocation.Location
+        };
+    }
+
     #region Event handlers
+
+    private void OnViewPortChanged(object? sender, EventArgs eventargs)
+    {
+        // If the Viewport has changed, then stop the timer.
+        // If the timer is already stopped, then this has no effect.
+        viewportTimer.Stop();
+        viewportTimer.Start();
+    }
 
     private async void OnMapViewTapped(object? sender, GeoViewInputEventArgs eventArgs)
     {
@@ -641,11 +696,11 @@ public partial class MainPage : Page
 
         try
         {
-            // If not already on SecchiAddLocation view, then move to it.
-            if (secchiPageSelection.SecchiSelectView != "SecchiAddLocation")
+            // If not already on SecchiLocations view, then move to it.
+            if (secchiPageSelection.SecchiSelectView != "SecchiLocations")
             {
                 WeakReferenceMessenger.Default.Send<SetSecchiSelectViewMessage>(
-                    new SetSecchiSelectViewMessage("SecchiAddLocation")
+                    new SetSecchiSelectViewMessage("SecchiLocations")
                 );
             }
 
@@ -680,6 +735,9 @@ public partial class MainPage : Page
                     // Get the LocationId from the graphic's attributes.
                     var locationId = (int)value;
 
+                    // Clear Center and AutoPan buttons.
+                    DeselectCenterAutoPan();
+
                     // Find the location in the SecchiLocations list view.
                     SecchiLocationsListView.SelectedItem =
                         SecchiView.SecchiLocations.FirstOrDefault(location =>
@@ -704,12 +762,12 @@ public partial class MainPage : Page
                         {
                             // Log to trace that the selectionOverlay is being cleared.
                             Logger.Trace(
-                                "MainPage.xaml.cs, SecchiLocationsListView_ItemClick: Clearing selectionOverlay."
+                                "MainPage.xaml.cs, OnMapViewTapped: Clearing selectionOverlay."
                             );
                             selectionOverlay.Graphics.Clear();
                             // Log to trace that the graphicWithSymbol is being added to the selectionOverlay.
                             Logger.Trace(
-                                "MainPage.xaml.cs, SecchiLocationsListView_ItemClick: Adding graphicWithSymbol to selectionOverlay."
+                                "MainPage.xaml.cs, OnMapViewTapped: Adding graphicWithSymbol to selectionOverlay."
                             );
                             selectionOverlay.Graphics.Add(graphicWithSymbol);
                         }
@@ -746,27 +804,27 @@ public partial class MainPage : Page
         Guard.Against.Null(
             MapView.GraphicsOverlays,
             nameof(MapView.GraphicsOverlays),
-            "MapView.GraphicsOverlays is null."
+            "MainPage.xaml.cs, SetLocationOverlay: MapView.GraphicsOverlays is null."
         );
 
         if (currentCollectionView != DataCollectionView.SelectView)
         {
             // Log to debug that the currentCollectionView is not equal to DataCollectionView.SelectView.
             Logger.Debug(
-                "MainPage.xaml.cs, Initialize: currentCollectionView: {currentCollectionView}, DataCollectionView.SelectView: {DataCollectionView.SelectView}",
+                "MainPage.xaml.cs, SetLocationOverlay: currentCollectionView: {currentCollectionView}, DataCollectionView.SelectView: {DataCollectionView.SelectView}",
                 currentCollectionView,
                 DataCollectionView.SelectView
             );
             if (graphicsOverlay is not null)
             {
                 // Log to trace that the graphicsOverlay is being cleared.
-                Logger.Debug("MainPage.xaml.cs, Initialize: Clearing graphicsOverlay.");
+                Logger.Trace("MainPage.xaml.cs, SetLocationOverlay: Clearing graphicsOverlay.");
                 graphicsOverlay.ClearSelection();
             }
             if (selectionOverlay is not null)
             {
                 // Log to trace that the selectionOverlay is being cleared.
-                Logger.Debug("MainPage.xaml.cs, Initialize: Clearing selectionOverlay.");
+                Logger.Trace("MainPage.xaml.cs, SetLocationOverlay: Clearing selectionOverlay.");
                 selectionOverlay.Graphics.Clear();
             }
 
@@ -788,15 +846,21 @@ public partial class MainPage : Page
             Guard.Against.Null(
                 graphicsOverlay,
                 nameof(graphicsOverlay),
-                "GraphicsOverlay is null."
+                "MainPage.xaml.cs, SetLocationOverlay: GraphicsOverlay is null."
             );
 
             // Check to see if the selection overlay is null.
             Guard.Against.Null(
                 selectionOverlay,
                 nameof(selectionOverlay),
-                "SelectionOverlay is null."
+                "MainPage.xaml.cs, SetLocationOverlay: SelectionOverlay is null."
             );
+
+            // When the data collection view is changed, clear the selected location.
+            // If this is not done, then the selected location will remain highlighted when the view is changed.
+            // Another possibility is to re-select the location when the view is changed to a list with an item selected,
+            // though that might create a slightly confusing user experience.
+            ViewModel.SelectedLocation = null;
 
             // Add the graphics overlay to the map view.
             MapView.GraphicsOverlays.Add(graphicsOverlay);
@@ -809,6 +873,15 @@ public partial class MainPage : Page
     private void MapNavView_Loaded(object sender, RoutedEventArgs e)
     {
         MapNavView.SelectedItem = MapNavView.MenuItems[1];
+        centerAutoPanSelected = true;
+    }
+
+    private void DeselectCenterAutoPan()
+    {
+        // Deselect the Center and AutoPan buttons.
+        // Center (MapNavView.MenuItems[0]) and
+        // AutoPan (MapNavView.MenuItems[1]) are de-selected.
+        MapNavView.SelectedItem = null;
     }
 
     private void CollectionNavView_Loaded(object sender, RoutedEventArgs e)
@@ -841,6 +914,9 @@ public partial class MainPage : Page
             // Center the map on the selected location
             MapView.SetViewpointCenterAsync(mapPoint);
 
+            // Deselect the Center and AutoPan buttons.
+            DeselectCenterAutoPan();
+
             var graphicWithSymbol = new Graphic(mapPoint, MapSymbols.HighlightLocationSymbol);
             if (selectionOverlay != null)
             {
@@ -858,6 +934,7 @@ public partial class MainPage : Page
         }
     }
 
+    /*
     public void SecchiCollectionListView_ItemClick(object sender, ItemClickEventArgs eventArgs)
     {
         _ = sender;
@@ -865,7 +942,7 @@ public partial class MainPage : Page
 
         if (item is not null)
         {
-            Logger.Trace(
+            Logger.Debug(
                 "MainPage.xaml.cs, SecchiCollectionListView_ItemClick: {locationName}, Lat {latitude}, Lon {longitude}, OBJECTID {ObjectId}",
                 item.LocationName,
                 item.Latitude,
@@ -883,6 +960,12 @@ public partial class MainPage : Page
                 );
                 return;
             }
+
+            // Log to debug that the Center and AutoPan buttons are being deselected.
+            Logger.Debug(
+                "MainPage.xaml.cs, SecchiCollectionListView_ItemClick: Deselecting Center and AutoPan buttons."
+            );
+            DeselectCenterAutoPan();
 
             // Create a MapPoint from the latitude and longitude
             var mapPoint = new MapPoint(
@@ -917,6 +1000,7 @@ public partial class MainPage : Page
             }
         }
     }
+    */
 
     public void SecchiNavView_ItemInvoked(
         NavigationView sender,
@@ -967,10 +1051,8 @@ public partial class MainPage : Page
                 secchiPageSelection.SecchiSelectView = "SecchiDataEntry";
                 break;
             case "SecchiNavLocationAdd":
-                Logger.Debug(
-                    "MainPage.xaml.cs, SecchiNavView_ItemInvoked(): Add Location selected."
-                );
-                secchiPageSelection.SecchiSelectView = "SecchiAddLocation";
+                Logger.Debug("MainPage.xaml.cs, SecchiNavView_ItemInvoked(): Locations selected.");
+                secchiPageSelection.SecchiSelectView = "SecchiLocations";
                 secchiLocationAddPageSelected = true;
                 break;
             case "SecchiNavCollected":
@@ -1099,7 +1181,7 @@ public partial class MainPage : Page
             // the next location number is one more than the maximum
             var nextLocationNumber = maxLocationId + 1;
 
-            secchiAddLocation.LocationNumber = nextLocationNumber;
+            addLocation.LocationNumber = nextLocationNumber;
 
             // Log to trace the nextLocationNumber.
             Logger.Trace(
@@ -1109,7 +1191,7 @@ public partial class MainPage : Page
 
             // Set the location name to the value of SecchiNewLocationView.LocationName.
             // This could be retrieved from either SecchiNewLocationView or from SecchiLocationName in MainPage.xaml
-            secchiAddLocation.LocationName = SecchiNewLocationView.LocationName;
+            addLocation.LocationName = SecchiNewLocationView.LocationName;
 
             // Log to trace SecchiNewLocationView.LocationName.
             Logger.Trace(
@@ -1117,7 +1199,7 @@ public partial class MainPage : Page
                 SecchiNewLocationView.LocationName
             );
 
-            switch (secchiAddLocation.LocationSource)
+            switch (addLocation.LocationSource)
             {
                 case LocationSource.EnteredLatLong:
 
@@ -1139,17 +1221,17 @@ public partial class MainPage : Page
 
                     // Set the location to the entered latitude and longitude.
                     // This is retrieved from either SecchiNewLocationView or from EnteredLatitude and EnteredLongitude in MainPage.xaml
-                    secchiAddLocation.Location = new MapPoint(
+                    addLocation.Location = new MapPoint(
                         double.Parse(SecchiNewLocationView.LongitudeEntry),
                         double.Parse(SecchiNewLocationView.LatitudeEntry),
                         SpatialReferences.Wgs84
                     );
 
-                    latitude = secchiAddLocation.Location.As<MapPoint>().Y;
-                    longitude = secchiAddLocation.Location.As<MapPoint>().X;
+                    latitude = addLocation.Location.As<MapPoint>().Y;
+                    longitude = addLocation.Location.As<MapPoint>().X;
 
-                    secchiAddLocation.Latitude = latitude;
-                    secchiAddLocation.Longitude = longitude;
+                    addLocation.Latitude = latitude;
+                    addLocation.Longitude = longitude;
 
                     // Log to trace the latitude and lon values of the mapPoint.
                     Logger.Trace(
@@ -1160,19 +1242,19 @@ public partial class MainPage : Page
 
                     // Create a new graphic using the feature's geometry and the collection location symbol
                     graphic = new Graphic(
-                        secchiAddLocation.Location,
+                        addLocation.Location,
                         MapSymbols.CollectionLocationSymbol
                     );
 
                     // Add the LocationId from the feature's attributes to the graphic's attributes
-                    graphic.Attributes.Add("LocationId", secchiAddLocation.LocationNumber);
+                    graphic.Attributes.Add("LocationId", addLocation.LocationNumber);
 
                     // Add the graphic to the graphics overlay
                     graphicsOverlay.Graphics.Add(graphic);
 
-                    await MapView.SetViewpointCenterAsync(secchiAddLocation.Location, 2500);
+                    await MapView.SetViewpointCenterAsync(addLocation.Location, 2500);
 
-                    SecchiView.AddNewLocation(secchiAddLocation);
+                    SecchiView.AddNewLocation(ConvertToSecchiAddLocation(addLocation));
 
                     SecchiNewLocationView.LocationName = string.Empty;
                     SecchiNewLocationView.LatitudeEntry = string.Empty;
@@ -1195,16 +1277,16 @@ public partial class MainPage : Page
                         break;
                     }
 
-                    secchiAddLocation.Location = new MapPoint(
+                    addLocation.Location = new MapPoint(
                         MapView.LocationDisplay.Location.Position.X,
                         MapView.LocationDisplay.Location.Position.Y,
                         SpatialReferences.Wgs84
                     );
 
-                    latitude = secchiAddLocation.Location.Y;
-                    secchiAddLocation.Latitude = latitude;
-                    longitude = secchiAddLocation.Location.X;
-                    secchiAddLocation.Longitude = longitude;
+                    latitude = addLocation.Location.Y;
+                    addLocation.Latitude = latitude;
+                    longitude = addLocation.Location.X;
+                    addLocation.Longitude = longitude;
 
                     Logger.Trace(
                         "MainPage.xaml.cs, SaveSecchiLocationAsync, CurrentGPS: presentLocation: Lat {latitude}, Lon {longitude}.",
@@ -1223,20 +1305,20 @@ public partial class MainPage : Page
                     {
                         // Create a new graphic using the feature's geometry and the collection location symbol
                         graphic = new Graphic(
-                            secchiAddLocation.Location,
+                            addLocation.Location,
                             MapSymbols.CollectionLocationSymbol
                         );
 
                         // Add the LocationId from the feature's attributes to the graphic's attributes
-                        graphic.Attributes.Add("LocationId", secchiAddLocation.LocationNumber);
+                        graphic.Attributes.Add("LocationId", addLocation.LocationNumber);
 
                         // Add the graphic to the graphics overlay
                         graphicsOverlay.Graphics.Add(graphic);
                     }
 
-                    await MapView.SetViewpointCenterAsync(secchiAddLocation.Location, 2500);
+                    await MapView.SetViewpointCenterAsync(addLocation.Location, 2500);
 
-                    SecchiView.AddNewLocation(secchiAddLocation);
+                    SecchiView.AddNewLocation(ConvertToSecchiAddLocation(addLocation));
 
                     SecchiNewLocationView.LocationName = string.Empty;
 
@@ -1262,17 +1344,17 @@ public partial class MainPage : Page
                         var newLocation = MapView.GeometryEditor.Stop();
                         if (newLocation is not null)
                         {
-                            // Set the new location to the secchiAddLocation.Location.
-                            secchiAddLocation.Location = newLocation.As<MapPoint>();
+                            // Set the new location to the addLocation.Location.
+                            addLocation.Location = newLocation.As<MapPoint>();
 
                             // Create a new graphic using the feature's geometry and the collection location symbol
                             graphic = new Graphic(
-                                secchiAddLocation.Location,
+                                addLocation.Location,
                                 MapSymbols.CollectionLocationSymbol
                             );
 
                             // Add the LocationId from the feature's attributes to the graphic's attributes
-                            graphic.Attributes.Add("LocationId", secchiAddLocation.LocationNumber);
+                            graphic.Attributes.Add("LocationId", addLocation.LocationNumber);
 
                             // Add the graphic to the graphics overlay
                             graphicsOverlay.Graphics.Add(graphic);
@@ -1282,12 +1364,12 @@ public partial class MainPage : Page
                                 .Project(SpatialReferences.Wgs84)
                                 .As<MapPoint>()
                                 .Y;
-                            secchiAddLocation.Latitude = latitude;
+                            addLocation.Latitude = latitude;
                             longitude = newLocation
                                 .Project(SpatialReferences.Wgs84)
                                 .As<MapPoint>()
                                 .X;
-                            secchiAddLocation.Longitude = longitude;
+                            addLocation.Longitude = longitude;
                             Logger.Trace(
                                 "MainPage.xaml.cs, SaveSecchiLocationAsync: point on map is at: Lat {lat}, Lon {lon}.",
                                 latitude,
@@ -1303,7 +1385,7 @@ public partial class MainPage : Page
                                 return;
                             }
 
-                            SecchiView.AddNewLocation(secchiAddLocation);
+                            SecchiView.AddNewLocation(ConvertToSecchiAddLocation(addLocation));
 
                             SecchiNewLocationView.LocationName = string.Empty;
 
@@ -1443,14 +1525,14 @@ public partial class MainPage : Page
                     if (graphicsOverlay is not null)
                     {
                         // graphicsOverlay.Graphics.Add(new Graphic(geometry, newLocationSymbol));
-                        // Add the new location to the map with a tag of 'LocationId' and the value of secchiAddLocation.LocationNumber.
+                        // Add the new location to the map with a tag of 'LocationId' and the value of addLocation.LocationNumber.
                         // This is used to identify the location when it is selected.
                         graphicsOverlay.Graphics.Add(
                             new Graphic(
                                 geometry,
                                 new Dictionary<string, object?>
                                 {
-                                    { "LocationId", secchiAddLocation.LocationNumber }
+                                    { "LocationId", addLocation.LocationNumber }
                                 },
                                 newLocationSymbol
                             )
@@ -1510,12 +1592,12 @@ public partial class MainPage : Page
                 switch (tag)
                 {
                     case "Occasional":
-                        secchiAddLocation.LocationType = LocationType.Occasional;
+                        addLocation.LocationType = LocationType.Occasional;
                         SecchiLocationTypeDropDown.Content = "Occasional";
                         SecchiNewLocationView.LocationTypeSet = true;
                         break;
                     case "Ongoing":
-                        secchiAddLocation.LocationType = LocationType.Ongoing;
+                        addLocation.LocationType = LocationType.Ongoing;
                         SecchiLocationTypeDropDown.Content = "Ongoing";
                         SecchiNewLocationView.LocationTypeSet = true;
                         break;
@@ -1533,7 +1615,7 @@ public partial class MainPage : Page
             // Log to trace the value of locationType with a label.
             Logger.Trace(
                 "MainPage.xaml.cs, LocationType_Click: Location Type: {locationType}",
-                secchiAddLocation.LocationType
+                addLocation.LocationType
             );
         }
         catch (Exception exception)
@@ -1664,14 +1746,14 @@ public partial class MainPage : Page
                         {
                             MapView.GeometryEditor.Stop();
                         }
-                        secchiAddLocation.LocationSource = LocationSource.CurrentGPS;
+                        addLocation.LocationSource = LocationSource.CurrentGPS;
                         LatLongEntry.Visibility = Visibility.Collapsed;
                         SecchiNewLocationView.LocationSourceActive = false;
                         SecchiLocationSourceDropDown.Content = "Current GPS";
                         SecchiNewLocationView.LocationSourceSet = true;
                         break;
                     case "PointOnMap":
-                        secchiAddLocation.LocationSource = LocationSource.PointOnMap;
+                        addLocation.LocationSource = LocationSource.PointOnMap;
 
                         var presentLocation = MapView.LocationDisplay.Location.Position;
 
@@ -1693,11 +1775,11 @@ public partial class MainPage : Page
                         SecchiNewLocationView.LocationSourceSet = true;
                         break;
                     case "EnterLatLong":
-                        if (secchiAddLocation.LocationSource == LocationSource.PointOnMap)
+                        if (addLocation.LocationSource == LocationSource.PointOnMap)
                         {
                             MapView.GeometryEditor.Stop();
                         }
-                        secchiAddLocation.LocationSource = LocationSource.EnteredLatLong;
+                        addLocation.LocationSource = LocationSource.EnteredLatLong;
                         SecchiLocationSourceDropDown.Content = "Enter Lat/Long";
                         LatLongEntry.Visibility = Visibility.Visible;
                         SecchiNewLocationView.LocationSourceActive = true;
@@ -1716,7 +1798,7 @@ public partial class MainPage : Page
             // Log to trace the value of locationSource with a label.
             Logger.Trace(
                 "MainPage.xaml.cs, LocationSource_Click: Location Source: {locationSource}",
-                secchiAddLocation.LocationSource
+                addLocation.LocationSource
             );
         }
         catch (Exception exception)
