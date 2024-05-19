@@ -78,11 +78,11 @@ internal sealed partial class CoordinateValidAttribute : ValidationAttribute
     }
 }
 
-public partial class SecchiNewLocationViewModel : ObservableValidator
+public partial class NewLocationViewModel : ObservableValidator
 {
-    private readonly ILogger<SecchiNewLocationViewModel> logger;
+    private readonly ILogger<NewLocationViewModel> logger;
 
-    internal EventId SecchiNewLocationViewModelLog = new(18, "SecchiNewLocationViewModel");
+    internal EventId SecchiNewLocationViewModelLog = new(18, "NewLocationViewModel");
 
     private readonly ILocalSettingsService? LocalSettingsService;
 
@@ -108,8 +108,8 @@ public partial class SecchiNewLocationViewModel : ObservableValidator
     private bool latitudeEntryValid;
     private bool longitudeEntryValid;
 
-    public SecchiNewLocationViewModel(
-        ILogger<SecchiNewLocationViewModel> logger,
+    public NewLocationViewModel(
+        ILogger<NewLocationViewModel> logger,
         ILocalSettingsService localSettingsService
     )
     {
@@ -127,14 +127,14 @@ public partial class SecchiNewLocationViewModel : ObservableValidator
                 // Log to trace the value of message.Value with a label.
                 logger.LogTrace(
                     SecchiNewLocationViewModelLog,
-                    "SecchiNewLocationViewModel, Initialize: MapExtentChangedMessage, {envelope}",
+                    "NewLocationViewModel, Initialize: MapExtentChangedMessage, {envelope}",
                     extent.ToString()
                 );
                 envelope = extent.As<Envelope>();
                 // Log to trace the minX, minY, maxX, and maxY values of the envelope.
                 logger.LogTrace(
                     SecchiNewLocationViewModelLog,
-                    "SecchiNewLocationViewModel, Initialize: MapExtentChangedMessage, minX: {minX}, minY: {minY}, maxX: {maxX}, maxY: {maxY}",
+                    "NewLocationViewModel, Initialize: MapExtentChangedMessage, minX: {minX}, minY: {minY}, maxX: {maxX}, maxY: {maxY}",
                     envelope.XMin,
                     envelope.YMin,
                     envelope.XMax,
@@ -182,7 +182,7 @@ public partial class SecchiNewLocationViewModel : ObservableValidator
             logger.LogError(
                 SecchiNewLocationViewModelLog,
                 exception,
-                "SecchiNewLocationViewModel, Initialize(): exception: {exception}.",
+                "NewLocationViewModel, Initialize(): exception: {exception}.",
                 exception.Message.ToString()
             );
         }
@@ -220,12 +220,12 @@ public partial class SecchiNewLocationViewModel : ObservableValidator
         // Log to trace that LocationTypeSetChanged was called.
         logger.LogTrace(
             SecchiNewLocationViewModelLog,
-            "SecchiNewLocationViewModel: OnLocationTypeSetChanged invoked."
+            "NewLocationViewModel: OnLocationTypeSetChanged invoked."
         );
         // Log to trace the newValue and oldValue.
         logger.LogTrace(
             SecchiNewLocationViewModelLog,
-            "SecchiNewLocationViewModel: OnLocationTypeSetChanged, oldValue: {oldValue}, newValue: {newValue}.",
+            "NewLocationViewModel: OnLocationTypeSetChanged, oldValue: {oldValue}, newValue: {newValue}.",
             oldValue,
             newValue
         );
@@ -244,12 +244,12 @@ public partial class SecchiNewLocationViewModel : ObservableValidator
         // Log to trace that LocationSourceSetChanged was called.
         logger.LogTrace(
             SecchiNewLocationViewModelLog,
-            "SecchiNewLocationViewModel: OnLocationSourceSetChanged invoked."
+            "NewLocationViewModel: OnLocationSourceSetChanged invoked."
         );
         // Log to trace the newValue and oldValue.
         logger.LogTrace(
             SecchiNewLocationViewModelLog,
-            "SecchiNewLocationViewModel: OnLocationSourceSetChanged, oldValue: {oldValue}, newValue: {newValue}.",
+            "NewLocationViewModel: OnLocationSourceSetChanged, oldValue: {oldValue}, newValue: {newValue}.",
             oldValue,
             newValue
         );
@@ -275,12 +275,12 @@ public partial class SecchiNewLocationViewModel : ObservableValidator
         // Log to trace that the LocationNameIsChanging command was called.
         logger.LogTrace(
             SecchiNewLocationViewModelLog,
-            "SecchiNewLocationViewModel: LocationNameIsChanging invoked."
+            "NewLocationViewModel: LocationNameIsChanging invoked."
         );
         // Log the LocationName.
         logger.LogTrace(
             SecchiNewLocationViewModelLog,
-            "SecchiNewLocationViewModel: LocationNameIsChanging, LocationName: {LocationName}.",
+            "NewLocationViewModel: LocationNameIsChanging, LocationName: {LocationName}.",
             LocationName
         );
         try
@@ -294,7 +294,7 @@ public partial class SecchiNewLocationViewModel : ObservableValidator
             // Log isValid to debug.
             logger.LogTrace(
                 SecchiNewLocationViewModelLog,
-                "SecchiNewLocationViewModel: LocationNameIsChanging locationNameValid: {isValid}.",
+                "NewLocationViewModel: LocationNameIsChanging locationNameValid: {isValid}.",
                 locationNameValid
             );
             if (locationNameValid is false)
@@ -304,7 +304,7 @@ public partial class SecchiNewLocationViewModel : ObservableValidator
                 {
                     logger.LogDebug(
                         SecchiNewLocationViewModelLog,
-                        "SecchiNewLocationViewModel: LocationNameIsChanging firstValidationResult: {firstValidationResult}.",
+                        "NewLocationViewModel: LocationNameIsChanging firstValidationResult: {firstValidationResult}.",
                         firstValidationResult
                     );
                 }
@@ -314,7 +314,7 @@ public partial class SecchiNewLocationViewModel : ObservableValidator
                     {
                         logger.LogTrace(
                             SecchiNewLocationViewModelLog,
-                            "SecchiNewLocationViewModel: LocationNameIsChanging NeedName error."
+                            "NewLocationViewModel: LocationNameIsChanging NeedName error."
                         );
                         LocationNameError = locationNeeded;
                         LocationNameErrorVisibility = "Visible";
@@ -324,7 +324,7 @@ public partial class SecchiNewLocationViewModel : ObservableValidator
                     {
                         logger.LogTrace(
                             SecchiNewLocationViewModelLog,
-                            "SecchiNewLocationViewModel: LocationNameIsChanging NotOneToHundred error."
+                            "NewLocationViewModel: LocationNameIsChanging NotOneToHundred error."
                         );
                         LocationNameError = notOneToHundred;
                         LocationNameErrorVisibility = "Visible";
@@ -334,7 +334,7 @@ public partial class SecchiNewLocationViewModel : ObservableValidator
                     {
                         logger.LogTrace(
                             SecchiNewLocationViewModelLog,
-                            "SecchiNewLocationViewModel: LocationNameIsChanging InvalidLocationName error."
+                            "NewLocationViewModel: LocationNameIsChanging InvalidLocationName error."
                         );
                         LocationNameError = invalidLocationName;
                         LocationNameErrorVisibility = "Visible";
@@ -354,7 +354,7 @@ public partial class SecchiNewLocationViewModel : ObservableValidator
             logger.LogError(
                 SecchiNewLocationViewModelLog,
                 exception,
-                "SecchiNewLocationViewModel: LocationNameIsChanging exception: {exception}.",
+                "NewLocationViewModel: LocationNameIsChanging exception: {exception}.",
                 exception.Message.ToString()
             );
         }
@@ -371,12 +371,12 @@ public partial class SecchiNewLocationViewModel : ObservableValidator
         // Log to trace that the LatitudeIsChanging command was called.
         logger.LogTrace(
             SecchiNewLocationViewModelLog,
-            "SecchiNewLocationViewModel: LatitudeIsChanging invoked."
+            "NewLocationViewModel: LatitudeIsChanging invoked."
         );
         // Log the Latitude.
         logger.LogTrace(
             SecchiNewLocationViewModelLog,
-            "SecchiNewLocationViewModel: LatitudeIsChanging, Latitude: {Latitude}.",
+            "NewLocationViewModel: LatitudeIsChanging, Latitude: {Latitude}.",
             LatitudeEntry
         );
         try
@@ -390,7 +390,7 @@ public partial class SecchiNewLocationViewModel : ObservableValidator
             // Log isValid to debug.
             logger.LogTrace(
                 SecchiNewLocationViewModelLog,
-                "SecchiNewLocationViewModel: LatitudeEntryIsChanging latitudeEntryValid: {isValid}.",
+                "NewLocationViewModel: LatitudeEntryIsChanging latitudeEntryValid: {isValid}.",
                 latitudeEntryValid
             );
             if (latitudeEntryValid is false)
@@ -400,7 +400,7 @@ public partial class SecchiNewLocationViewModel : ObservableValidator
                 {
                     logger.LogDebug(
                         SecchiNewLocationViewModelLog,
-                        "SecchiNewLocationViewModel: LatitudeEntryIsChanging firstValidationResult: {firstValidationResult}.",
+                        "NewLocationViewModel: LatitudeEntryIsChanging firstValidationResult: {firstValidationResult}.",
                         firstValidationResult
                     );
                 }
@@ -410,7 +410,7 @@ public partial class SecchiNewLocationViewModel : ObservableValidator
                     {
                         logger.LogTrace(
                             SecchiNewLocationViewModelLog,
-                            "SecchiNewLocationViewModel: LatitudeEntryIsChanging NeedName error."
+                            "NewLocationViewModel: LatitudeEntryIsChanging NeedName error."
                         );
                         LatitudeEntryError = latitudeNeeded;
                         LatitudeEntryErrorVisibility = "Visible";
@@ -421,7 +421,7 @@ public partial class SecchiNewLocationViewModel : ObservableValidator
                     {
                         logger.LogTrace(
                             SecchiNewLocationViewModelLog,
-                            "SecchiNewLocationViewModel: LatitudeEntryIsChanging InvalidCoordinate error."
+                            "NewLocationViewModel: LatitudeEntryIsChanging InvalidCoordinate error."
                         );
                         LatitudeEntryError = coordinateInvalid;
                         LatitudeEntryErrorVisibility = "Visible";
@@ -435,7 +435,7 @@ public partial class SecchiNewLocationViewModel : ObservableValidator
                 {
                     logger.LogError(
                         SecchiNewLocationViewModelLog,
-                        "SecchiNewLocationViewModel: LatitudeEntryIsChanging envelope is null."
+                        "NewLocationViewModel: LatitudeEntryIsChanging envelope is null."
                     );
                     return;
                 }
@@ -444,7 +444,7 @@ public partial class SecchiNewLocationViewModel : ObservableValidator
                 {
                     logger.LogTrace(
                         SecchiNewLocationViewModelLog,
-                        "SecchiNewLocationViewModel: LatitudeEntryIsChanging LatitudeNotInEnvelope error."
+                        "NewLocationViewModel: LatitudeEntryIsChanging LatitudeNotInEnvelope error."
                     );
                     LatitudeEntryError = latitudeNotInEnvelope;
                     LatitudeEntryErrorVisibility = "Visible";
@@ -463,7 +463,7 @@ public partial class SecchiNewLocationViewModel : ObservableValidator
             logger.LogError(
                 SecchiNewLocationViewModelLog,
                 exception,
-                "SecchiNewLocationViewModel: LatitudeEntryIsChanging exception: {exception}.",
+                "NewLocationViewModel: LatitudeEntryIsChanging exception: {exception}.",
                 exception.Message.ToString()
             );
         }
@@ -480,12 +480,12 @@ public partial class SecchiNewLocationViewModel : ObservableValidator
         // Log to trace that the LongitudeIsChanging command was called.
         logger.LogTrace(
             SecchiNewLocationViewModelLog,
-            "SecchiNewLocationViewModel: LongitudeIsChanging invoked."
+            "NewLocationViewModel: LongitudeIsChanging invoked."
         );
         // Log the Longitude.
         logger.LogTrace(
             SecchiNewLocationViewModelLog,
-            "SecchiNewLocationViewModel: LongitudeIsChanging, Longitude: {Longitude}.",
+            "NewLocationViewModel: LongitudeIsChanging, Longitude: {Longitude}.",
             LongitudeEntry
         );
         try
@@ -499,7 +499,7 @@ public partial class SecchiNewLocationViewModel : ObservableValidator
             // Log isValid to debug.
             logger.LogTrace(
                 SecchiNewLocationViewModelLog,
-                "SecchiNewLocationViewModel: LongitudeEntryIsChanging longitudeEntryValid: {isValid}.",
+                "NewLocationViewModel: LongitudeEntryIsChanging longitudeEntryValid: {isValid}.",
                 longitudeEntryValid
             );
             if (longitudeEntryValid is false)
@@ -509,7 +509,7 @@ public partial class SecchiNewLocationViewModel : ObservableValidator
                 {
                     logger.LogDebug(
                         SecchiNewLocationViewModelLog,
-                        "SecchiNewLocationViewModel: LongitudeEntryIsChanging firstValidationResult: {firstValidationResult}.",
+                        "NewLocationViewModel: LongitudeEntryIsChanging firstValidationResult: {firstValidationResult}.",
                         firstValidationResult
                     );
                 }
@@ -519,7 +519,7 @@ public partial class SecchiNewLocationViewModel : ObservableValidator
                     {
                         logger.LogTrace(
                             SecchiNewLocationViewModelLog,
-                            "SecchiNewLocationViewModel: LongitudeEntryIsChanging NeedName error."
+                            "NewLocationViewModel: LongitudeEntryIsChanging NeedName error."
                         );
                         LongitudeEntryError = longitudeNeeded;
                         LongitudeEntryErrorVisibility = "Visible";
@@ -530,7 +530,7 @@ public partial class SecchiNewLocationViewModel : ObservableValidator
                     {
                         logger.LogTrace(
                             SecchiNewLocationViewModelLog,
-                            "SecchiNewLocationViewModel: LongitudeEntryIsChanging InvalidCoordinate error."
+                            "NewLocationViewModel: LongitudeEntryIsChanging InvalidCoordinate error."
                         );
                         LongitudeEntryError = coordinateInvalid;
                         LongitudeEntryErrorVisibility = "Visible";
@@ -544,7 +544,7 @@ public partial class SecchiNewLocationViewModel : ObservableValidator
                 {
                     logger.LogError(
                         SecchiNewLocationViewModelLog,
-                        "SecchiNewLocationViewModel: LongitudeEntryIsChanging envelope is null."
+                        "NewLocationViewModel: LongitudeEntryIsChanging envelope is null."
                     );
                     return;
                 }
@@ -553,7 +553,7 @@ public partial class SecchiNewLocationViewModel : ObservableValidator
                 {
                     logger.LogTrace(
                         SecchiNewLocationViewModelLog,
-                        "SecchiNewLocationViewModel: LongitudeEntryIsChanging LongitudeNotInEnvelope error."
+                        "NewLocationViewModel: LongitudeEntryIsChanging LongitudeNotInEnvelope error."
                     );
                     LongitudeEntryError = longitudeNotInEnvelope;
                     LongitudeEntryErrorVisibility = "Visible";
@@ -572,7 +572,7 @@ public partial class SecchiNewLocationViewModel : ObservableValidator
             logger.LogError(
                 SecchiNewLocationViewModelLog,
                 exception,
-                "SecchiNewLocationViewModel: LongitudeEntryIsChanging exception: {exception}.",
+                "NewLocationViewModel: LongitudeEntryIsChanging exception: {exception}.",
                 exception.Message.ToString()
             );
         }
@@ -591,12 +591,12 @@ public partial class SecchiNewLocationViewModel : ObservableValidator
         // Log to trace that LocationSourceActiveChanged was called.
         logger.LogTrace(
             SecchiNewLocationViewModelLog,
-            "SecchiNewLocationViewModel: OnLocationSourceActiveChanged invoked."
+            "NewLocationViewModel: OnLocationSourceActiveChanged invoked."
         );
         // Log to trace the newValue and oldValue.
         logger.LogTrace(
             SecchiNewLocationViewModelLog,
-            "SecchiNewLocationViewModel: OnLocationSourceActiveChanged, oldValue: {oldValue}, newValue: {newValue}.",
+            "NewLocationViewModel: OnLocationSourceActiveChanged, oldValue: {oldValue}, newValue: {newValue}.",
             oldValue,
             newValue
         );

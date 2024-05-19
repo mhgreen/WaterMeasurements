@@ -63,7 +63,7 @@ public partial class MainPage : Page
     public MapConfigurationViewModel MapConfigurationView { get; }
     public DataCollectionViewModel DataCollectionView { get; }
     public SecchiConfigurationViewModel SecchiConfigurationView { get; }
-    public SecchiNewLocationViewModel SecchiNewLocationView { get; }
+    public NewLocationViewModel NewLocationView { get; }
 
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
@@ -88,7 +88,7 @@ public partial class MainPage : Page
 
     private SecchiChannelNumbers secchiChannelNumbers;
 
-    private FeatureTable? secchiLocationFeatures;
+    // private FeatureTable? secchiLocationFeatures;
 
     // private FeatureLayer? secchiLocationLayer;
 
@@ -134,6 +134,8 @@ public partial class MainPage : Page
             .UI
             .LocationDisplayAutoPanMode
             .Recenter;
+        // Clear the selected location.
+        ClearLocationSelection();
     }
 
     [RelayCommand]
@@ -143,6 +145,8 @@ public partial class MainPage : Page
             .UI
             .LocationDisplayAutoPanMode
             .Navigation;
+        // Clear the selected location.
+        ClearLocationSelection();
     }
 
     [RelayCommand]
@@ -197,7 +201,7 @@ public partial class MainPage : Page
         MapConfigurationView = App.GetService<MapConfigurationViewModel>();
         DataCollectionView = App.GetService<DataCollectionViewModel>();
         SecchiConfigurationView = App.GetService<SecchiConfigurationViewModel>();
-        SecchiNewLocationView = App.GetService<SecchiNewLocationViewModel>();
+        NewLocationView = App.GetService<NewLocationViewModel>();
 
         Logger.Debug("MainPage.xaml.cs, MainPage: Starting");
 
@@ -251,6 +255,8 @@ public partial class MainPage : Page
                     .LocationDisplayAutoPanMode
                     .Navigation;
                 centerAutoPanSelected = true;
+                // Clear the selected location.
+                ClearLocationSelection();
             }
         );
 
@@ -270,6 +276,8 @@ public partial class MainPage : Page
                     .LocationDisplayAutoPanMode
                     .Recenter;
                 centerAutoPanSelected = true;
+                // Clear the selected location.
+                ClearLocationSelection();
             }
         );
 
@@ -536,8 +544,8 @@ public partial class MainPage : Page
                 geoTriggerDistance
             );
 
-            SecchiNewLocationView.LocationTypeSet = false;
-            SecchiNewLocationView.LocationSourceSet = false;
+            NewLocationView.LocationTypeSet = false;
+            NewLocationView.LocationSourceSet = false;
 
             // Register for PreplannedMapConfigurationStatusMessage messages.
             // Log the result of the message.
@@ -676,6 +684,17 @@ public partial class MainPage : Page
             LocationName = addLocation.LocationName,
             Location = addLocation.Location
         };
+    }
+
+    private void ClearLocationSelection()
+    {
+        // Clear the selected location.
+        if (ViewModel.SelectedLocation is not null)
+        {
+            ViewModel.SelectedLocation = null;
+        }
+        // Clear the selection overlay.
+        selectionOverlay?.Graphics.Clear();
     }
 
     #region Event handlers
@@ -860,7 +879,7 @@ public partial class MainPage : Page
             // If this is not done, then the selected location will remain highlighted when the view is changed.
             // Another possibility is to re-select the location when the view is changed to a list with an item selected,
             // though that might create a slightly confusing user experience.
-            ViewModel.SelectedLocation = null;
+            ClearLocationSelection();
 
             // Add the graphics overlay to the map view.
             MapView.GraphicsOverlays.Add(graphicsOverlay);
@@ -1119,17 +1138,14 @@ public partial class MainPage : Page
     }
 
     [RelayCommand]
-    private async Task SaveSecchiLocationAsync()
+    private async Task SaveLocationAsync()
     {
-        // Log to trace that the SaveSecchiLocationAsync method was called.
-        Logger.Trace(
-            "MainPage.xaml.cs, SaveSecchiLocationAsync: SaveSecchiLocationAsync method called."
-        );
+        // Log to trace that the SaveLocationAsync method was called.
+        Logger.Trace("MainPage.xaml.cs, SaveLocationAsync: SaveLocationAsync method called.");
 
         double latitude;
         double longitude;
-
-        Graphic graphic = new();
+        Graphic graphic;
 
         try
         {
@@ -1137,7 +1153,7 @@ public partial class MainPage : Page
             {
                 // Log to trace that the LocationDisplay.Location is null.
                 Logger.Error(
-                    "MainPage.xaml.cs, SaveSecchiLocationAsync: LocationDisplay.Location is null."
+                    "MainPage.xaml.cs, SaveLocationAsync: LocationDisplay.Location is null."
                 );
                 return;
             }
@@ -1146,7 +1162,7 @@ public partial class MainPage : Page
             {
                 // Log to trace that the MapView.GeometryEditor is null.
                 Logger.Error(
-                    "MainPage.xaml.cs, SaveSecchiLocationAsync: MapView.GeometryEditor is null."
+                    "MainPage.xaml.cs, SaveLocationAsync: MapView.GeometryEditor is null."
                 );
                 return;
             }
@@ -1154,15 +1170,40 @@ public partial class MainPage : Page
             if (graphicsOverlay is null)
             {
                 // Log to trace that the graphicsOverlay is null.
-                Logger.Error("MainPage.xaml.cs, SaveSecchiLocationAsync: graphicsOverlay is null.");
+                Logger.Error("MainPage.xaml.cs, SaveLocationAsync: graphicsOverlay is null.");
                 return;
             }
 
+            // Get the next location number.
+            var nextLocationNumber = DataCollectionView.SelectView switch
+            {
+                "Secchi" => await SecchiView.NextLocationId(),
+                "Turbidity" => new(),
+                "Quality" => new(),
+                "Temperature" => new(),
+                _ => 0,
+            };
+
+            // Log to trace the nextLocationNumber.
+            Logger.Trace(
+                "MainPage.xaml.cs, SaveLocationAsync: nextLocationNumber: {nextLocationNumber}",
+                nextLocationNumber
+            );
+
+            Guard.Against.NegativeOrZero(
+                nextLocationNumber,
+                nameof(nextLocationNumber),
+                "MainPage.xaml.cs, SaveLocationAsync: nextLocationNumber is negative or zero."
+            );
+
+            addLocation.LocationNumber = nextLocationNumber;
+
+            /*
             if (secchiLocationFeatures is null)
             {
                 // Log to trace that the secchiLocationFeatures is null.
                 Logger.Error(
-                    "MainPage.xaml.cs, SaveSecchiLocationAsync: secchiLocationFeatures is null."
+                    "MainPage.xaml.cs, SaveLocationAsync: secchiLocationFeatures is null."
                 );
                 return;
             }
@@ -1181,22 +1222,21 @@ public partial class MainPage : Page
             // the next location number is one more than the maximum
             var nextLocationNumber = maxLocationId + 1;
 
-            addLocation.LocationNumber = nextLocationNumber;
-
             // Log to trace the nextLocationNumber.
             Logger.Trace(
-                "MainPage.xaml.cs, SaveSecchiLocationAsync: nextLocationNumber: {nextLocationNumber}",
+                "MainPage.xaml.cs, SaveLocationAsync: nextLocationNumber: {nextLocationNumber}",
                 nextLocationNumber
             );
+            */
 
-            // Set the location name to the value of SecchiNewLocationView.LocationName.
-            // This could be retrieved from either SecchiNewLocationView or from SecchiLocationName in MainPage.xaml
-            addLocation.LocationName = SecchiNewLocationView.LocationName;
+            // Set the location name to the value of NewLocationView.LocationName.
+            // This could be retrieved from either NewLocationView or from SecchiLocationName in MainPage.xaml
+            addLocation.LocationName = NewLocationView.LocationName;
 
-            // Log to trace SecchiNewLocationView.LocationName.
+            // Log to trace NewLocationView.LocationName.
             Logger.Trace(
-                "MainPage.xaml.cs, SaveSecchiLocationAsync: SecchiNewLocationView.LocationName: {LocationName}",
-                SecchiNewLocationView.LocationName
+                "MainPage.xaml.cs, SaveLocationAsync: NewLocationView.LocationName: {LocationName}",
+                NewLocationView.LocationName
             );
 
             switch (addLocation.LocationSource)
@@ -1205,7 +1245,7 @@ public partial class MainPage : Page
 
                     // Log to trace the entered latitude and longitude.
                     Logger.Trace(
-                        "MainPage.xaml.cs, SaveSecchiLocationAsync: EnteredLatLong: Latitude: {latitude}, Longitude: {longitude}.",
+                        "MainPage.xaml.cs, SaveLocationAsync: EnteredLatLong: Latitude: {latitude}, Longitude: {longitude}.",
                         EnteredLatitude.Text,
                         EnteredLongitude.Text
                     );
@@ -1214,16 +1254,16 @@ public partial class MainPage : Page
                     {
                         // Log to trace that the graphicsOverlay is null.
                         Logger.Error(
-                            "MainPage.xaml.cs, SaveSecchiLocationAsync: graphicsOverlay is null."
+                            "MainPage.xaml.cs, SaveLocationAsync: graphicsOverlay is null."
                         );
                         return;
                     }
 
                     // Set the location to the entered latitude and longitude.
-                    // This is retrieved from either SecchiNewLocationView or from EnteredLatitude and EnteredLongitude in MainPage.xaml
+                    // This is retrieved from either NewLocationView or from EnteredLatitude and EnteredLongitude in MainPage.xaml
                     addLocation.Location = new MapPoint(
-                        double.Parse(SecchiNewLocationView.LongitudeEntry),
-                        double.Parse(SecchiNewLocationView.LatitudeEntry),
+                        double.Parse(NewLocationView.LongitudeEntry),
+                        double.Parse(NewLocationView.LatitudeEntry),
                         SpatialReferences.Wgs84
                     );
 
@@ -1235,7 +1275,7 @@ public partial class MainPage : Page
 
                     // Log to trace the latitude and lon values of the mapPoint.
                     Logger.Trace(
-                        "MainPage.xaml.cs, SaveSecchiLocationAsync:: Added point to map at: Lat {latitude}, Lon {lon}.",
+                        "MainPage.xaml.cs, SaveLocationAsync:: Added point to map at: Lat {latitude}, Lon {lon}.",
                         latitude,
                         longitude
                     );
@@ -1254,16 +1294,37 @@ public partial class MainPage : Page
 
                     await MapView.SetViewpointCenterAsync(addLocation.Location, 2500);
 
-                    SecchiView.AddNewLocation(ConvertToSecchiAddLocation(addLocation));
+                    // Select the appropriate measurement type to add based on current view.
+                    switch (DataCollectionView.SelectView)
+                    {
+                        case "Secchi":
+                            SecchiView.AddNewLocation(ConvertToSecchiAddLocation(addLocation));
+                            // Return to the location display view.
+                            SecchiView.LocationDisplay = "CurrentLocations";
+                            break;
+                        case "Turbidity":
+                            // Your code here
+                            break;
+                        case "Quality":
+                            // Your code here
+                            break;
+                        case "Temperature":
+                            // Your code here
+                            break;
+                        default:
+                            // Log to error that the DataCollectionView.SelectView is not recognized and its value.
+                            Logger.Error(
+                                "MainPage.xaml.cs, SaveLocationAsync: Value for DataCollectionView.SelectView not recognized: {DataCollectionView.SelectView}.",
+                                DataCollectionView.SelectView
+                            );
+                            break;
+                    }
 
-                    SecchiNewLocationView.LocationName = string.Empty;
-                    SecchiNewLocationView.LatitudeEntry = string.Empty;
-                    SecchiNewLocationView.LongitudeEntry = string.Empty;
+                    NewLocationView.LocationName = string.Empty;
+                    NewLocationView.LatitudeEntry = string.Empty;
+                    NewLocationView.LongitudeEntry = string.Empty;
 
-                    SecchiNewLocationView.LocationCanBeSaved = false;
-
-                    // Return to the location display view.
-                    SecchiView.LocationDisplay = "CurrentLocations";
+                    NewLocationView.LocationCanBeSaved = false;
 
                     break;
 
@@ -1272,7 +1333,7 @@ public partial class MainPage : Page
                     {
                         // Log to trace that the LocationDisplay.Location is null.
                         Logger.Error(
-                            "MainPage.xaml.cs, SaveSecchiLocationAsync: LocationDisplay.Location is null."
+                            "MainPage.xaml.cs, SaveLocationAsync: LocationDisplay.Location is null."
                         );
                         break;
                     }
@@ -1289,7 +1350,7 @@ public partial class MainPage : Page
                     addLocation.Longitude = longitude;
 
                     Logger.Trace(
-                        "MainPage.xaml.cs, SaveSecchiLocationAsync, CurrentGPS: presentLocation: Lat {latitude}, Lon {longitude}.",
+                        "MainPage.xaml.cs, SaveLocationAsync, CurrentGPS: presentLocation: Lat {latitude}, Lon {longitude}.",
                         latitude,
                         longitude
                     );
@@ -1298,7 +1359,7 @@ public partial class MainPage : Page
                     {
                         // Log to trace that the graphicsOverlay is null.
                         Logger.Error(
-                            "MainPage.xaml.cs, SaveSecchiLocationAsync: graphicsOverlay is null."
+                            "MainPage.xaml.cs, SaveLocationAsync: graphicsOverlay is null."
                         );
                     }
                     else
@@ -1318,14 +1379,34 @@ public partial class MainPage : Page
 
                     await MapView.SetViewpointCenterAsync(addLocation.Location, 2500);
 
-                    SecchiView.AddNewLocation(ConvertToSecchiAddLocation(addLocation));
+                    // Select the appropriate measurement type to add based on current view.
+                    switch (DataCollectionView.SelectView)
+                    {
+                        case "Secchi":
+                            SecchiView.AddNewLocation(ConvertToSecchiAddLocation(addLocation));
+                            // Return to the location display view.
+                            SecchiView.LocationDisplay = "CurrentLocations";
+                            break;
+                        case "Turbidity":
+                            // Your code here
+                            break;
+                        case "Quality":
+                            // Your code here
+                            break;
+                        case "Temperature":
+                            // Your code here
+                            break;
+                        default:
+                            // Log to error that the DataCollectionView.SelectView is not recognized and its value.
+                            Logger.Error(
+                                "MainPage.xaml.cs, SaveLocationAsync: Value for DataCollectionView.SelectView not recognized: {DataCollectionView.SelectView}.",
+                                DataCollectionView.SelectView
+                            );
+                            break;
+                    }
 
-                    SecchiNewLocationView.LocationName = string.Empty;
-
-                    SecchiNewLocationView.LocationCanBeSaved = false;
-
-                    // Return to the location display view.
-                    SecchiView.LocationDisplay = "CurrentLocations";
+                    NewLocationView.LocationName = string.Empty;
+                    NewLocationView.LocationCanBeSaved = false;
 
                     break;
 
@@ -1334,7 +1415,7 @@ public partial class MainPage : Page
                     {
                         // Log to trace that the MapView.GeometryEditor is null.
                         Logger.Error(
-                            "MainPage.xaml.cs, SaveSecchiLocationAsync: MapView.GeometryEditor is null."
+                            "MainPage.xaml.cs, SaveLocationAsync: MapView.GeometryEditor is null."
                         );
                         break;
                     }
@@ -1371,49 +1452,60 @@ public partial class MainPage : Page
                                 .X;
                             addLocation.Longitude = longitude;
                             Logger.Trace(
-                                "MainPage.xaml.cs, SaveSecchiLocationAsync: point on map is at: Lat {lat}, Lon {lon}.",
+                                "MainPage.xaml.cs, SaveLocationAsync: point on map is at: Lat {lat}, Lon {lon}.",
                                 latitude,
                                 longitude
                             );
-                            // Create the feature.
-                            if (secchiLocationFeatures is null)
+                            // Select the appropriate measurement type to add based on current view.
+                            switch (DataCollectionView.SelectView)
                             {
-                                // Log to trace that the secchiLocationFeatures is null.
-                                Logger.Error(
-                                    "MainPage.xaml.cs, SaveSecchiLocationAsync: secchiLocationFeatures is null."
-                                );
-                                return;
+                                case "Secchi":
+                                    SecchiView.AddNewLocation(
+                                        ConvertToSecchiAddLocation(addLocation)
+                                    );
+                                    // Return to the location display view.
+                                    SecchiView.LocationDisplay = "CurrentLocations";
+                                    break;
+                                case "Turbidity":
+                                    // Your code here
+                                    break;
+                                case "Quality":
+                                    // Your code here
+                                    break;
+                                case "Temperature":
+                                    // Your code here
+                                    break;
+                                default:
+                                    // Log to error that the DataCollectionView.SelectView is not recognized and its value.
+                                    Logger.Error(
+                                        "MainPage.xaml.cs, SaveLocationAsync: Value for DataCollectionView.SelectView not recognized: {DataCollectionView.SelectView}.",
+                                        DataCollectionView.SelectView
+                                    );
+                                    break;
                             }
 
-                            SecchiView.AddNewLocation(ConvertToSecchiAddLocation(addLocation));
+                            NewLocationView.LocationName = string.Empty;
 
-                            SecchiNewLocationView.LocationName = string.Empty;
-
-                            SecchiNewLocationView.LocationCanBeSaved = false;
+                            NewLocationView.LocationCanBeSaved = false;
                         }
 
                         // Since the drop-down is set to "Point on Map", start the geometry editor.
                         // This provides for a consistent user experience if the page is navigated away from and then back.
                         // MapView.GeometryEditor.Start(GeometryType.Point);
-
-                        // Return to the location display view.
-                        SecchiView.LocationDisplay = "CurrentLocations";
                     }
                     break;
 
                 default:
-                    Logger.Error(
-                        "MainPage.xaml.cs, SaveSecchiLocationAsync: LocationSource not set."
-                    );
+                    Logger.Error("MainPage.xaml.cs, SaveLocationAsync: LocationSource not set.");
                     break;
             }
         }
         catch (Exception exception)
         {
-            // Log to trace that an error occurred in SaveSecchiLocationAsync.
+            // Log to trace that an error occurred in SaveLocationAsync.
             Logger.Error(
                 exception,
-                "MainPage.xaml.cs, SaveSecchiLocationAsync: An error occurred in SaveSecchiLocationAsync: {exception}.",
+                "MainPage.xaml.cs, SaveLocationAsync: An error occurred in SaveLocationAsync: {exception}.",
                 exception.Message.ToString()
             );
         }
@@ -1594,12 +1686,12 @@ public partial class MainPage : Page
                     case "Occasional":
                         addLocation.LocationType = LocationType.Occasional;
                         SecchiLocationTypeDropDown.Content = "Occasional";
-                        SecchiNewLocationView.LocationTypeSet = true;
+                        NewLocationView.LocationTypeSet = true;
                         break;
                     case "Ongoing":
                         addLocation.LocationType = LocationType.Ongoing;
                         SecchiLocationTypeDropDown.Content = "Ongoing";
-                        SecchiNewLocationView.LocationTypeSet = true;
+                        NewLocationView.LocationTypeSet = true;
                         break;
                     default:
                         // Log to trace that an invalid tag value was encountered.
@@ -1607,7 +1699,7 @@ public partial class MainPage : Page
                             "MainPage.xaml.cs, LocationType_Click: Invalid tag value: {tag}",
                             tag
                         );
-                        SecchiNewLocationView.LocationTypeSet = false;
+                        NewLocationView.LocationTypeSet = false;
                         break;
                 }
             }
@@ -1634,6 +1726,12 @@ public partial class MainPage : Page
         // Log to trace that the AddLocation_Click method was called.
         Logger.Trace("MainPage.xaml.cs, AddLocation_Click: AddLocation_Click method called.");
 
+        // Clear the selected location.
+        ClearLocationSelection();
+
+        // Deselect the Center and AutoPan buttons.
+        DeselectCenterAutoPan();
+
         var currentCollectionType = SecchiLocationSourceDropDown.Content.ToString();
 
         if (currentCollectionType == "Map Point")
@@ -1645,8 +1743,30 @@ public partial class MainPage : Page
 
         try
         {
-            // Go to the add location view.
-            SecchiView.LocationDisplay = "AddLocation";
+            // Go to the add location view based on current measurement type.
+            switch (DataCollectionView.SelectView)
+            {
+                case "Secchi":
+                    // Go to the Secchi add location view.
+                    SecchiView.LocationDisplay = "AddLocation";
+                    break;
+                case "Turbidity":
+                    // Your code here
+                    break;
+                case "Quality":
+                    // Your code here
+                    break;
+                case "Temperature":
+                    // Your code here
+                    break;
+                default:
+                    // Log to error that the DataCollectionView.SelectView is not recognized and its value.
+                    Logger.Error(
+                        "MainPage.xaml.cs, AddLocation_Click: Value for DataCollectionView.SelectView not recognized: {DataCollectionView.SelectView}.",
+                        DataCollectionView.SelectView
+                    );
+                    break;
+            }
         }
         catch (Exception exception)
         {
@@ -1672,9 +1792,9 @@ public partial class MainPage : Page
             _ = sender as Button;
 
             // Clear the location name, latitude, and longitude.
-            SecchiNewLocationView.LocationName = string.Empty;
-            SecchiNewLocationView.LatitudeEntry = string.Empty;
-            SecchiNewLocationView.LongitudeEntry = string.Empty;
+            NewLocationView.LocationName = string.Empty;
+            NewLocationView.LatitudeEntry = string.Empty;
+            NewLocationView.LongitudeEntry = string.Empty;
 
             var currentCollectionType = SecchiLocationSourceDropDown.Content.ToString();
 
@@ -1685,8 +1805,30 @@ public partial class MainPage : Page
                 MapView.GeometryEditor?.Stop();
             }
 
-            // Return to the location display view.
-            SecchiView.LocationDisplay = "CurrentLocations";
+            // Select the appropriate location list based on current view.
+            switch (DataCollectionView.SelectView)
+            {
+                case "Secchi":
+                    // Return to the location display view.
+                    SecchiView.LocationDisplay = "CurrentLocations";
+                    break;
+                case "Turbidity":
+                    // Your code here
+                    break;
+                case "Quality":
+                    // Your code here
+                    break;
+                case "Temperature":
+                    // Your code here
+                    break;
+                default:
+                    // Log to error that the DataCollectionView.SelectView is not recognized and its value.
+                    Logger.Error(
+                        "MainPage.xaml.cs, SaveLocationAsync: Value for DataCollectionView.SelectView not recognized: {DataCollectionView.SelectView}.",
+                        DataCollectionView.SelectView
+                    );
+                    break;
+            }
         }
         catch (Exception exception)
         {
@@ -1748,9 +1890,9 @@ public partial class MainPage : Page
                         }
                         addLocation.LocationSource = LocationSource.CurrentGPS;
                         LatLongEntry.Visibility = Visibility.Collapsed;
-                        SecchiNewLocationView.LocationSourceActive = false;
+                        NewLocationView.LocationSourceActive = false;
                         SecchiLocationSourceDropDown.Content = "Current GPS";
-                        SecchiNewLocationView.LocationSourceSet = true;
+                        NewLocationView.LocationSourceSet = true;
                         break;
                     case "PointOnMap":
                         addLocation.LocationSource = LocationSource.PointOnMap;
@@ -1770,9 +1912,9 @@ public partial class MainPage : Page
 
                         MapView.SetViewpointCenterAsync(presentLocation, 2500);
                         LatLongEntry.Visibility = Visibility.Collapsed;
-                        SecchiNewLocationView.LocationSourceActive = false;
+                        NewLocationView.LocationSourceActive = false;
                         SecchiLocationSourceDropDown.Content = "Map Point";
-                        SecchiNewLocationView.LocationSourceSet = true;
+                        NewLocationView.LocationSourceSet = true;
                         break;
                     case "EnterLatLong":
                         if (addLocation.LocationSource == LocationSource.PointOnMap)
@@ -1782,8 +1924,8 @@ public partial class MainPage : Page
                         addLocation.LocationSource = LocationSource.EnteredLatLong;
                         SecchiLocationSourceDropDown.Content = "Enter Lat/Long";
                         LatLongEntry.Visibility = Visibility.Visible;
-                        SecchiNewLocationView.LocationSourceActive = true;
-                        SecchiNewLocationView.LocationSourceSet = true;
+                        NewLocationView.LocationSourceActive = true;
+                        NewLocationView.LocationSourceSet = true;
                         break;
                     default:
                         // Log to trace that an invalid tag value was encountered.
@@ -1851,12 +1993,6 @@ public partial class MainPage : Page
         var button = sender as Button;
         try
         {
-            Guard.Against.Null(
-                secchiLocationFeatures,
-                nameof(secchiLocationFeatures),
-                "secchiLocationFeatures is null."
-            );
-
             Guard.Against.Null(button, nameof(button), "Button in Delete_Location_Click is null.");
 
             // Log to trace the name of the button.
@@ -1881,8 +2017,30 @@ public partial class MainPage : Page
                 selectionOverlay.Graphics.Clear();
             }
 
-            // Delete the location.
-            SecchiView.DeleteLocation(locationId);
+            // Select the appropriate measurement type to add based on current view.
+            switch (DataCollectionView.SelectView)
+            {
+                case "Secchi":
+                    // Delete the location.
+                    SecchiView.DeleteLocation(locationId);
+                    break;
+                case "Turbidity":
+                    // Your code here
+                    break;
+                case "Quality":
+                    // Your code here
+                    break;
+                case "Temperature":
+                    // Your code here
+                    break;
+                default:
+                    // Log to error that the DataCollectionView.SelectView is not recognized and its value.
+                    Logger.Error(
+                        "MainPage.xaml.cs, SaveLocationAsync: Value for DataCollectionView.SelectView not recognized: {DataCollectionView.SelectView}.",
+                        DataCollectionView.SelectView
+                    );
+                    break;
+            }
 
             if (graphicsOverlay is null)
             {

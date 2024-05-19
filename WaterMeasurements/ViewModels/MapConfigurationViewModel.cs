@@ -83,54 +83,66 @@ public partial class MapConfigurationViewModel : ObservableValidator
             PreplannedMapName
         );
 
-        var results = new List<ValidationResult>();
-        preplannedMapNameValid = Validator.TryValidateProperty(
-            PreplannedMapName,
-            new ValidationContext(this, null, null) { MemberName = nameof(PreplannedMapName) },
-            results
-        );
-        // Log isValid to debug.
-        Logger.LogTrace(
-            MapConfigurationViewModelLog,
-            "PreplannedMapNameIsChanging(): isValid: {isValid}.",
-            preplannedMapNameValid
-        );
-        if (preplannedMapNameValid is false)
+        try
         {
-            var firstValidationResult = results.FirstOrDefault();
-            if (firstValidationResult != null)
+            var results = new List<ValidationResult>();
+            preplannedMapNameValid = Validator.TryValidateProperty(
+                PreplannedMapName,
+                new ValidationContext(this, null, null) { MemberName = nameof(PreplannedMapName) },
+                results
+            );
+            // Log isValid to debug.
+            Logger.LogTrace(
+                MapConfigurationViewModelLog,
+                "PreplannedMapNameIsChanging(): isValid: {isValid}.",
+                preplannedMapNameValid
+            );
+            if (preplannedMapNameValid is false)
             {
-                Logger.LogDebug(
-                    MapConfigurationViewModelLog,
-                    "PreplannedMapNameIsChanging(): firstValidationResult: {firstValidationResult}.",
-                    firstValidationResult
-                );
+                var firstValidationResult = results.FirstOrDefault();
+                if (firstValidationResult != null)
+                {
+                    Logger.LogDebug(
+                        MapConfigurationViewModelLog,
+                        "PreplannedMapNameIsChanging(): firstValidationResult: {firstValidationResult}.",
+                        firstValidationResult
+                    );
+                }
+                if (firstValidationResult is not null)
+                {
+                    if (firstValidationResult.ToString() == "NeedName")
+                    {
+                        Logger.LogTrace(
+                            MapConfigurationViewModelLog,
+                            "PreplannedMapNameIsChanging(): NeedName error."
+                        );
+                        PreplannedMapNameError = unableToValide;
+                        PreplannedMapNameErrorVisibility = "Visible";
+                    }
+                    if (firstValidationResult.ToString() == "NotOneToHundred")
+                    {
+                        Logger.LogTrace(
+                            MapConfigurationViewModelLog,
+                            "PreplannedMapNameIsChanging(): NotOneToHundred error."
+                        );
+                        PreplannedMapNameError = stringNotOneToHundred;
+                        PreplannedMapNameErrorVisibility = "Visible";
+                    }
+                }
             }
-            if (firstValidationResult is not null)
+            else
             {
-                if (firstValidationResult.ToString() == "NeedName")
-                {
-                    Logger.LogTrace(
-                        MapConfigurationViewModelLog,
-                        "PreplannedMapNameIsChanging(): NeedName error."
-                    );
-                    PreplannedMapNameError = unableToValide;
-                    PreplannedMapNameErrorVisibility = "Visible";
-                }
-                if (firstValidationResult.ToString() == "NotOneToHundred")
-                {
-                    Logger.LogTrace(
-                        MapConfigurationViewModelLog,
-                        "PreplannedMapNameIsChanging(): NotOneToHundred error."
-                    );
-                    PreplannedMapNameError = stringNotOneToHundred;
-                    PreplannedMapNameErrorVisibility = "Visible";
-                }
+                PreplannedMapNameErrorVisibility = "Collapsed";
             }
         }
-        else
+        catch (Exception exception)
         {
-            PreplannedMapNameErrorVisibility = "Collapsed";
+            Logger.LogError(
+                MapConfigurationViewModelLog,
+                exception,
+                "PreplannedMapNameIsChanging(): exception: {exception}.",
+                exception.Message.ToString()
+            );
         }
     }
 
@@ -265,50 +277,68 @@ public partial class MapConfigurationViewModel : ObservableValidator
             "MapNavView_ItemInvoked(): MapNavView_ItemInvoked event fired."
         );
 
-        // Log the name of the invoked item.
-        Logger.LogDebug(
-            MapConfigurationViewModelLog,
-            "MapNavView_ItemInvoked(): Invoked item name: {invokedItemName}.",
-            args.InvokedItemContainer.Name
-        );
-
-        // Log the sender name.
-        Logger.LogDebug(
-            MapConfigurationViewModelLog,
-            "MapNavView_ItemInvoked(): Sender name: {senderName}.",
-            sender.Name
-        );
-
-        switch (args.InvokedItemContainer.Name)
+        try
         {
-            case "MapNavCenter":
-                // Log that the MapNavCenter item was invoked.
-                Logger.LogDebug(
-                    MapConfigurationViewModelLog,
-                    "MapNavView_ItemInvoked(): MapNavCenter item invoked."
-                );
-                // Send a center message.
-                WeakReferenceMessenger.Default.Send(new SetMapCenterMessage(true));
-                break;
-            case "MapNavAutoPan":
-                // Log that the MapNavAutoPan item was invoked.
-                Logger.LogDebug(
-                    MapConfigurationViewModelLog,
-                    "MapNavView_ItemInvoked(): MapNavAutoPan item invoked."
-                );
-                // Send an auto pan message.
-                WeakReferenceMessenger.Default.Send(new SetMapAutoPanMessage(true));
-                break;
-            case "SettingsItem":
-                // Log that the SettingsItem item was invoked.
-                Logger.LogDebug(
-                    MapConfigurationViewModelLog,
-                    "MapNavView_ItemInvoked(): SettingsItem item invoked."
-                );
-                SelectView = "Settings";
-                break;
-            default:
-                break;
+            Guard.Against.Null(
+                args.InvokedItemContainer,
+                nameof(args.InvokedItemContainer),
+                "MapNavView_ItemInvoked(): InvokedItemContainer is null."
+            );
+
+            // Log the name of the invoked item.
+            Logger.LogDebug(
+                MapConfigurationViewModelLog,
+                "MapNavView_ItemInvoked(): Invoked item name: {invokedItemName}.",
+                args.InvokedItemContainer.Name
+            );
+
+            // Log the sender name.
+            Logger.LogDebug(
+                MapConfigurationViewModelLog,
+                "MapNavView_ItemInvoked(): Sender name: {senderName}.",
+                sender.Name
+            );
+
+            switch (args.InvokedItemContainer.Name)
+            {
+                case "MapNavCenter":
+                    // Log that the MapNavCenter item was invoked.
+                    Logger.LogDebug(
+                        MapConfigurationViewModelLog,
+                        "MapNavView_ItemInvoked(): MapNavCenter item invoked."
+                    );
+                    // Send a center message.
+                    WeakReferenceMessenger.Default.Send(new SetMapCenterMessage(true));
+                    break;
+                case "MapNavAutoPan":
+                    // Log that the MapNavAutoPan item was invoked.
+                    Logger.LogDebug(
+                        MapConfigurationViewModelLog,
+                        "MapNavView_ItemInvoked(): MapNavAutoPan item invoked."
+                    );
+                    // Send an auto pan message.
+                    WeakReferenceMessenger.Default.Send(new SetMapAutoPanMessage(true));
+                    break;
+                case "SettingsItem":
+                    // Log that the SettingsItem item was invoked.
+                    Logger.LogDebug(
+                        MapConfigurationViewModelLog,
+                        "MapNavView_ItemInvoked(): SettingsItem item invoked."
+                    );
+                    SelectView = "Settings";
+                    break;
+                default:
+                    break;
+            }
+        }
+        catch (Exception exception)
+        {
+            // Log the exception message.
+            Logger.LogError(
+                exception,
+                "MapNavView_ItemInvoked(): An error occurred in MapNavView_ItemInvoked: {exception}",
+                exception.Message
+            );
         }
     }
 
@@ -351,7 +381,8 @@ public partial class MapConfigurationViewModel : ObservableValidator
 
     private void MapConfigurationErrorsChanged(object? sender, DataErrorsChangedEventArgs error)
     {
-        // OnPropertyChanged(nameof(Errors)); // Update Errors on every Error change, so I can bind to it.
+        // Update Errors on every Error change for binding.
+        // OnPropertyChanged(nameof(Errors));
         // Log to trace that the MapConfigurationErrorsChanged event was fired.
         Logger.LogTrace(
             MapConfigurationViewModelLog,

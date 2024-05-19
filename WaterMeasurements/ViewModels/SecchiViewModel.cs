@@ -89,6 +89,9 @@ public partial class SecchiViewModel : ObservableRecipient
     private bool haveLocationsTable = false;
     private bool haveObservationsTable = false;
 
+    // SemaphoreSlim to for returning the next location id.
+    private readonly SemaphoreSlim locationIdSemaphore = new(1, 1);
+
     // The location name for the collection point is provided via geotrigger.
     // Instead of being a global variable, it could be retrieved from the feature table
     // but doing so would require a query to the feature table each time the location name is needed.
@@ -1439,6 +1442,56 @@ public partial class SecchiViewModel : ObservableRecipient
                 "Exception generated in SecchiViewModel, DeleteObservation: {message}.",
                 exception.Message.ToString()
             );
+        }
+    }
+
+    public async Task<int> NextLocationId()
+    {
+        await locationIdSemaphore.WaitAsync();
+        try
+        {
+            Guard.Against.Null(
+                currentLocationsTable,
+                nameof(currentLocationsTable),
+                "SecchiViewModel, NextLocationId(): currentLocationsTable can not be null."
+            );
+
+            // create a where clause to get all the features
+            var queryParameters = new QueryParameters() { WhereClause = "1=1" };
+
+            // query the feature table
+            var queryResult = await currentLocationsTable.QueryFeaturesAsync(queryParameters);
+
+            // find the maximum LocationId
+            var maxLocationId = queryResult
+                .Select(feature => Convert.ToInt32(feature.Attributes["LocationId"]))
+                .Max();
+
+            // the next location number is one more than the maximum
+            var nextLocationNumber = maxLocationId + 1;
+
+            // Log to debug the nextLocationId.
+            logger.LogDebug(
+                SecchiViewModelLog,
+                "SecchiViewModel, NextLocationId(): NextLocationId: {nextLocationNumber}.",
+                nextLocationNumber
+            );
+
+            return nextLocationNumber;
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(
+                SecchiViewModelLog,
+                exception,
+                "Exception generated in SecchiViewModel, NextLocationId: {message}.",
+                exception.Message.ToString()
+            );
+            return 0;
+        }
+        finally
+        {
+            locationIdSemaphore.Release();
         }
     }
 

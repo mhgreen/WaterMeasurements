@@ -854,15 +854,15 @@
                                                                     x:Name="SecchiLocationName"
                                                                     Margin="0,0,0,0"
                                                                     IsSpellCheckEnabled="False"
-                                                                    Text="{x:Bind SecchiNewLocationView.LocationName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                                    TextChanged="{x:Bind SecchiNewLocationView.LocationNameIsChanging, Mode=OneWay}" />
+                                                                    Text="{x:Bind NewLocationView.LocationName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                    TextChanged="{x:Bind NewLocationView.LocationNameIsChanging, Mode=OneWay}" />
                                                                 <TextBlock
                                                                     x:Name="LocationNameError"
                                                                     Margin="0,0,0,0"
                                                                     Foreground="{ThemeResource SystemFillColorCriticalBrush}"
                                                                     Style="{StaticResource CaptionTextBlockStyle}"
-                                                                    Text="{x:Bind SecchiNewLocationView.LocationNameError, Mode=OneWay}"
-                                                                    Visibility="{x:Bind SecchiNewLocationView.LocationNameErrorVisibility, Mode=OneWay}" />
+                                                                    Text="{x:Bind NewLocationView.LocationNameError, Mode=OneWay}"
+                                                                    Visibility="{x:Bind NewLocationView.LocationNameErrorVisibility, Mode=OneWay}" />
 
                                                                 <ToolTipService.ToolTip>
                                                                     <ToolTip
@@ -937,8 +937,8 @@
                                                                     Margin="0,0,0,0"
                                                                     Foreground="{ThemeResource SystemFillColorCriticalBrush}"
                                                                     Style="{StaticResource CaptionTextBlockStyle}"
-                                                                    Text="{x:Bind SecchiNewLocationView.SourceAndTypeError, Mode=OneWay}"
-                                                                    Visibility="{x:Bind SecchiNewLocationView.SourceAndTypeErrorVisibility, Mode=OneWay}" />
+                                                                    Text="{x:Bind NewLocationView.SourceAndTypeError, Mode=OneWay}"
+                                                                    Visibility="{x:Bind NewLocationView.SourceAndTypeErrorVisibility, Mode=OneWay}" />
                                                             </StackPanel>
 
                                                             <StackPanel
@@ -975,8 +975,8 @@
                                                                         Grid.Column="0"
                                                                         Margin="0,0,0,0"
                                                                         IsSpellCheckEnabled="False"
-                                                                        Text="{x:Bind SecchiNewLocationView.LatitudeEntry, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                                        TextChanged="{x:Bind SecchiNewLocationView.LatitudeIsChanging, Mode=OneWay}" />
+                                                                        Text="{x:Bind NewLocationView.LatitudeEntry, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                        TextChanged="{x:Bind NewLocationView.LatitudeIsChanging, Mode=OneWay}" />
                                                                     <TextBlock
                                                                         x:Name="EnteredLatitudeError"
                                                                         Grid.Row="2"
@@ -984,16 +984,16 @@
                                                                         Margin="0,0,0,0"
                                                                         Foreground="{ThemeResource SystemFillColorCriticalBrush}"
                                                                         Style="{StaticResource CaptionTextBlockStyle}"
-                                                                        Text="{x:Bind SecchiNewLocationView.LatitudeEntryError, Mode=OneWay}"
-                                                                        Visibility="{x:Bind SecchiNewLocationView.LatitudeEntryErrorVisibility, Mode=OneWay}" />
+                                                                        Text="{x:Bind NewLocationView.LatitudeEntryError, Mode=OneWay}"
+                                                                        Visibility="{x:Bind NewLocationView.LatitudeEntryErrorVisibility, Mode=OneWay}" />
                                                                     <TextBox
                                                                         x:Name="EnteredLongitude"
                                                                         Grid.Row="1"
                                                                         Grid.Column="1"
                                                                         Margin="0,0,0,0"
                                                                         IsSpellCheckEnabled="False"
-                                                                        Text="{x:Bind SecchiNewLocationView.LongitudeEntry, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                                        TextChanged="{x:Bind SecchiNewLocationView.LongitudeIsChanging, Mode=OneWay}" />
+                                                                        Text="{x:Bind NewLocationView.LongitudeEntry, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                        TextChanged="{x:Bind NewLocationView.LongitudeIsChanging, Mode=OneWay}" />
                                                                     <TextBlock
                                                                         x:Name="EnteredLongitudeError"
                                                                         Grid.Row="2"
@@ -1001,8 +1001,8 @@
                                                                         Margin="0,0,0,0"
                                                                         Foreground="{ThemeResource SystemFillColorCriticalBrush}"
                                                                         Style="{StaticResource CaptionTextBlockStyle}"
-                                                                        Text="{x:Bind SecchiNewLocationView.LongitudeEntryError, Mode=OneWay}"
-                                                                        Visibility="{x:Bind SecchiNewLocationView.LongitudeEntryErrorVisibility, Mode=OneWay}" />
+                                                                        Text="{x:Bind NewLocationView.LongitudeEntryError, Mode=OneWay}"
+                                                                        Visibility="{x:Bind NewLocationView.LongitudeEntryErrorVisibility, Mode=OneWay}" />
                                                                 </Grid>
                                                             </StackPanel>
 
@@ -1030,8 +1030,8 @@
                                                                         <Button
                                                                             x:Name="LocationSaveButton"
                                                                             x:Uid="Main_SecchiSaveButton"
-                                                                            Command="{x:Bind SaveSecchiLocationCommand, Mode=OneWay}"
-                                                                            IsEnabled="{x:Bind SecchiNewLocationView.LocationCanBeSaved, Mode=OneWay}" />
+                                                                            Command="{x:Bind SaveLocationCommand, Mode=OneWay}"
+                                                                            IsEnabled="{x:Bind NewLocationView.LocationCanBeSaved, Mode=OneWay}" />
                                                                         <ToolTipService.ToolTip>
                                                                             <ToolTip
                                                                                 x:Uid="Main_LocationSaveToolTip"
