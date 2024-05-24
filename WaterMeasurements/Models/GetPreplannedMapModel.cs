@@ -3,12 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
 using CommunityToolkit.Mvvm.ComponentModel;
-
-using Esri.ArcGISRuntime.Portal;
-using Esri.ArcGISRuntime.Mapping;
 using Esri.ArcGISRuntime.Geometry;
+using Esri.ArcGISRuntime.Mapping;
+using Esri.ArcGISRuntime.Portal;
 using Esri.ArcGISRuntime.Symbology;
 using Esri.ArcGISRuntime.Tasks;
 using Esri.ArcGISRuntime.Tasks.Offline;
@@ -43,13 +41,11 @@ public static class PrePlannedMapConfiguration
         DeleteOfflineMap,
         DownloadOfflineMap,
         ArcgisApiKey,
-        OfflineMapIdentifier
+        OfflineMapIdentifier,
+        ArcgisLicenseKey
     }
 
-    public static Dictionary<Key, string> Item
-    {
-        get; private set;
-    } =
+    public static Dictionary<Key, string> Item { get; private set; } =
         new()
         {
             { Key.PreplannedMapInitialRun, "PreplannedMapInitialRun" },
@@ -60,6 +56,7 @@ public static class PrePlannedMapConfiguration
             { Key.DeleteOfflineMap, "DeleteOfflineMap" },
             { Key.DownloadOfflineMap, "DownloadOfflineMap" },
             { Key.ArcgisApiKey, "ArcGISApiKey" },
-            { Key.OfflineMapIdentifier, "OfflineMapIdentifier" }
+            { Key.OfflineMapIdentifier, "OfflineMapIdentifier" },
+            { Key.ArcgisLicenseKey, "LicenseKey" }
         };
 }

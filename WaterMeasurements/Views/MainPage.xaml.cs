@@ -64,6 +64,7 @@ public partial class MainPage : Page
     public DataCollectionViewModel DataCollectionView { get; }
     public SecchiConfigurationViewModel SecchiConfigurationView { get; }
     public NewLocationViewModel NewLocationView { get; }
+    public ILocalSettingsService LocalSettingsService { get; }
 
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
@@ -93,7 +94,7 @@ public partial class MainPage : Page
     // private FeatureLayer? secchiLocationLayer;
 
     // New location to add to the SecchiLocations table.
-    private AddLocation addLocation;
+    private AddLocation locationInfo;
 
     // New secchi measurement to add to the SecchiMeasurement table.
     private SecchiMeasurement secchiMeasurement;
@@ -149,20 +150,33 @@ public partial class MainPage : Page
         ClearLocationSelection();
     }
 
+    /*
     [RelayCommand]
     public void StoreDeveloperKeyAsync()
     {
         apiKey = ApiKeyArcGIS.Password;
         Logger.Debug("API key changed to: " + apiKey);
 
-        Task.Run(async () =>
-            {
-                await ViewModel.StoreSettingByKeyAsync(
-                    PrePlannedMapConfiguration.Item[Key.ArcgisApiKey],
-                    apiKey
-                );
-            })
-            .Wait();
+        try
+        {
+            Task.Run(async () =>
+                {
+                    await ViewModel.StoreSettingByKeyAsync(
+                        PrePlannedMapConfiguration.Item[Key.ArcgisApiKey],
+                        apiKey
+                    );
+                })
+                .Wait();
+        }
+        catch (Exception exception)
+        {
+            // Log the exception message to error.
+            Logger.Error(
+                exception,
+                "An error occurred in MainPage.xaml.cs, StoreDeveloperKeyAsync: {exception}",
+                exception.Message
+            );
+        }
     }
 
     [RelayCommand]
@@ -170,15 +184,28 @@ public partial class MainPage : Page
     {
         Logger.Debug("webMapId changed to: " + WebMapId.Text);
 
-        Task.Run(async () =>
-            {
-                await ViewModel.StoreSettingByKeyAsync(
-                    PrePlannedMapConfiguration.Item[Key.OfflineMapIdentifier],
-                    WebMapId.Text
-                );
-            })
-            .Wait();
+        try
+        {
+            Task.Run(async () =>
+                {
+                    await ViewModel.StoreSettingByKeyAsync(
+                        PrePlannedMapConfiguration.Item[Key.OfflineMapIdentifier],
+                        WebMapId.Text
+                    );
+                })
+                .Wait();
+        }
+        catch (Exception exception)
+        {
+            // Log the exception message to error.
+            Logger.Error(
+                exception,
+                "An error occurred in MainPage.xaml.cs, StoreWebMapIdAsync: {exception}",
+                exception.Message
+            );
+        }
     }
+    */
 
     private void RevealApiKey_Changed(object sender, RoutedEventArgs routedEventArgs)
     {
@@ -202,6 +229,7 @@ public partial class MainPage : Page
         DataCollectionView = App.GetService<DataCollectionViewModel>();
         SecchiConfigurationView = App.GetService<SecchiConfigurationViewModel>();
         NewLocationView = App.GetService<NewLocationViewModel>();
+        LocalSettingsService = App.GetService<ILocalSettingsService>();
 
         Logger.Debug("MainPage.xaml.cs, MainPage: Starting");
 
@@ -218,7 +246,7 @@ public partial class MainPage : Page
         viewportTimer.Tick += (sender, eventArgs) =>
         {
             // Log to trace that the Viewport has stopped changing.
-            Logger.Trace("MainPage.xaml.cs, MainPage: Viewport has stopped changing.");
+            // Logger.Trace("MainPage.xaml.cs, MainPage: Viewport has stopped changing.");
             // Stop the timer.
             viewportTimer.Stop();
             // If the center or auto-pan buttons have been selected, then do not deselect them.
@@ -380,15 +408,31 @@ public partial class MainPage : Page
         {
             Logger.Debug("MainPage.xaml.cs, Initialize: Initializing MainPage");
 
+            /*
             apiKey = await ViewModel.RetrieveSettingByKeyAsync<string>(
                 PrePlannedMapConfiguration.Item[Key.ArcgisApiKey]
             );
+
             webMapId = await ViewModel.RetrieveSettingByKeyAsync<string>(
                 PrePlannedMapConfiguration.Item[Key.OfflineMapIdentifier]
             );
             var preplannedMapName = await ViewModel.RetrieveSettingByKeyAsync<string>(
                 PrePlannedMapConfiguration.Item[Key.PreplannedMapName]
             );
+            */
+
+            // Get the preplanned map name from local settings.
+            var preplannedMapName = await LocalSettingsService.ReadSettingAsync<string>(
+                Item[Key.PreplannedMapName]
+            );
+
+            // Get the web map id from local settings.
+            webMapId = await LocalSettingsService.ReadSettingAsync<string>(
+                Item[Key.OfflineMapIdentifier]
+            );
+
+            // Get the ArcGIS API key from local settings.
+            apiKey = await LocalSettingsService.ReadSettingAsync<string>(Item[Key.ArcgisApiKey]);
 
             if (string.IsNullOrEmpty(apiKey))
             {
@@ -604,7 +648,10 @@ public partial class MainPage : Page
             // Request an ArcGIS Runtime initialization from the ConfigurationService via the MainViewModel.
             // Do this by calling ArcGISRuntimeInitialize() from RequestArcGISRuntimeInitializeMessage in the MainViewModel.
             // This is done this way in order to manage the sequence of events.
-            await ViewModel.RequestArcGISRuntimeInitializeMessage();
+            // await ViewModel.RequestArcGISRuntimeInitializeMessage();
+
+            // Send an ArcGISRuntimeInitializeRequestMessage requesting runtime initialization from the ConfigurationService.
+            WeakReferenceMessenger.Default.Send(new ArcGISRuntimeInitializeRequestMessage());
 
             // When the page is unloaded, unsubscribe from the location data source.
             MapPage.Unloaded += async (s, e) =>
@@ -1196,7 +1243,7 @@ public partial class MainPage : Page
                 "MainPage.xaml.cs, SaveLocationAsync: nextLocationNumber is negative or zero."
             );
 
-            addLocation.LocationNumber = nextLocationNumber;
+            locationInfo.LocationNumber = nextLocationNumber;
 
             /*
             if (secchiLocationFeatures is null)
@@ -1231,7 +1278,7 @@ public partial class MainPage : Page
 
             // Set the location name to the value of NewLocationView.LocationName.
             // This could be retrieved from either NewLocationView or from SecchiLocationName in MainPage.xaml
-            addLocation.LocationName = NewLocationView.LocationName;
+            locationInfo.LocationName = NewLocationView.LocationName;
 
             // Log to trace NewLocationView.LocationName.
             Logger.Trace(
@@ -1239,7 +1286,7 @@ public partial class MainPage : Page
                 NewLocationView.LocationName
             );
 
-            switch (addLocation.LocationSource)
+            switch (locationInfo.LocationSource)
             {
                 case LocationSource.EnteredLatLong:
 
@@ -1261,17 +1308,17 @@ public partial class MainPage : Page
 
                     // Set the location to the entered latitude and longitude.
                     // This is retrieved from either NewLocationView or from EnteredLatitude and EnteredLongitude in MainPage.xaml
-                    addLocation.Location = new MapPoint(
+                    locationInfo.Location = new MapPoint(
                         double.Parse(NewLocationView.LongitudeEntry),
                         double.Parse(NewLocationView.LatitudeEntry),
                         SpatialReferences.Wgs84
                     );
 
-                    latitude = addLocation.Location.As<MapPoint>().Y;
-                    longitude = addLocation.Location.As<MapPoint>().X;
+                    latitude = locationInfo.Location.As<MapPoint>().Y;
+                    longitude = locationInfo.Location.As<MapPoint>().X;
 
-                    addLocation.Latitude = latitude;
-                    addLocation.Longitude = longitude;
+                    locationInfo.Latitude = latitude;
+                    locationInfo.Longitude = longitude;
 
                     // Log to trace the latitude and lon values of the mapPoint.
                     Logger.Trace(
@@ -1282,23 +1329,23 @@ public partial class MainPage : Page
 
                     // Create a new graphic using the feature's geometry and the collection location symbol
                     graphic = new Graphic(
-                        addLocation.Location,
+                        locationInfo.Location,
                         MapSymbols.CollectionLocationSymbol
                     );
 
                     // Add the LocationId from the feature's attributes to the graphic's attributes
-                    graphic.Attributes.Add("LocationId", addLocation.LocationNumber);
+                    graphic.Attributes.Add("LocationId", locationInfo.LocationNumber);
 
                     // Add the graphic to the graphics overlay
                     graphicsOverlay.Graphics.Add(graphic);
 
-                    await MapView.SetViewpointCenterAsync(addLocation.Location, 2500);
+                    await MapView.SetViewpointCenterAsync(locationInfo.Location, 2500);
 
                     // Select the appropriate measurement type to add based on current view.
                     switch (DataCollectionView.SelectView)
                     {
                         case "Secchi":
-                            SecchiView.AddNewLocation(ConvertToSecchiAddLocation(addLocation));
+                            SecchiView.AddNewLocation(ConvertToSecchiAddLocation(locationInfo));
                             // Return to the location display view.
                             SecchiView.LocationDisplay = "CurrentLocations";
                             break;
@@ -1338,16 +1385,16 @@ public partial class MainPage : Page
                         break;
                     }
 
-                    addLocation.Location = new MapPoint(
+                    locationInfo.Location = new MapPoint(
                         MapView.LocationDisplay.Location.Position.X,
                         MapView.LocationDisplay.Location.Position.Y,
                         SpatialReferences.Wgs84
                     );
 
-                    latitude = addLocation.Location.Y;
-                    addLocation.Latitude = latitude;
-                    longitude = addLocation.Location.X;
-                    addLocation.Longitude = longitude;
+                    latitude = locationInfo.Location.Y;
+                    locationInfo.Latitude = latitude;
+                    longitude = locationInfo.Location.X;
+                    locationInfo.Longitude = longitude;
 
                     Logger.Trace(
                         "MainPage.xaml.cs, SaveLocationAsync, CurrentGPS: presentLocation: Lat {latitude}, Lon {longitude}.",
@@ -1366,24 +1413,24 @@ public partial class MainPage : Page
                     {
                         // Create a new graphic using the feature's geometry and the collection location symbol
                         graphic = new Graphic(
-                            addLocation.Location,
+                            locationInfo.Location,
                             MapSymbols.CollectionLocationSymbol
                         );
 
                         // Add the LocationId from the feature's attributes to the graphic's attributes
-                        graphic.Attributes.Add("LocationId", addLocation.LocationNumber);
+                        graphic.Attributes.Add("LocationId", locationInfo.LocationNumber);
 
                         // Add the graphic to the graphics overlay
                         graphicsOverlay.Graphics.Add(graphic);
                     }
 
-                    await MapView.SetViewpointCenterAsync(addLocation.Location, 2500);
+                    await MapView.SetViewpointCenterAsync(locationInfo.Location, 2500);
 
                     // Select the appropriate measurement type to add based on current view.
                     switch (DataCollectionView.SelectView)
                     {
                         case "Secchi":
-                            SecchiView.AddNewLocation(ConvertToSecchiAddLocation(addLocation));
+                            SecchiView.AddNewLocation(ConvertToSecchiAddLocation(locationInfo));
                             // Return to the location display view.
                             SecchiView.LocationDisplay = "CurrentLocations";
                             break;
@@ -1425,17 +1472,17 @@ public partial class MainPage : Page
                         var newLocation = MapView.GeometryEditor.Stop();
                         if (newLocation is not null)
                         {
-                            // Set the new location to the addLocation.Location.
-                            addLocation.Location = newLocation.As<MapPoint>();
+                            // Set the new location to the locationInfo.Location.
+                            locationInfo.Location = newLocation.As<MapPoint>();
 
                             // Create a new graphic using the feature's geometry and the collection location symbol
                             graphic = new Graphic(
-                                addLocation.Location,
+                                locationInfo.Location,
                                 MapSymbols.CollectionLocationSymbol
                             );
 
                             // Add the LocationId from the feature's attributes to the graphic's attributes
-                            graphic.Attributes.Add("LocationId", addLocation.LocationNumber);
+                            graphic.Attributes.Add("LocationId", locationInfo.LocationNumber);
 
                             // Add the graphic to the graphics overlay
                             graphicsOverlay.Graphics.Add(graphic);
@@ -1445,12 +1492,12 @@ public partial class MainPage : Page
                                 .Project(SpatialReferences.Wgs84)
                                 .As<MapPoint>()
                                 .Y;
-                            addLocation.Latitude = latitude;
+                            locationInfo.Latitude = latitude;
                             longitude = newLocation
                                 .Project(SpatialReferences.Wgs84)
                                 .As<MapPoint>()
                                 .X;
-                            addLocation.Longitude = longitude;
+                            locationInfo.Longitude = longitude;
                             Logger.Trace(
                                 "MainPage.xaml.cs, SaveLocationAsync: point on map is at: Lat {lat}, Lon {lon}.",
                                 latitude,
@@ -1461,7 +1508,7 @@ public partial class MainPage : Page
                             {
                                 case "Secchi":
                                     SecchiView.AddNewLocation(
-                                        ConvertToSecchiAddLocation(addLocation)
+                                        ConvertToSecchiAddLocation(locationInfo)
                                     );
                                     // Return to the location display view.
                                     SecchiView.LocationDisplay = "CurrentLocations";
@@ -1617,14 +1664,14 @@ public partial class MainPage : Page
                     if (graphicsOverlay is not null)
                     {
                         // graphicsOverlay.Graphics.Add(new Graphic(geometry, newLocationSymbol));
-                        // Add the new location to the map with a tag of 'LocationId' and the value of addLocation.LocationNumber.
+                        // Add the new location to the map with a tag of 'LocationId' and the value of locationInfo.LocationNumber.
                         // This is used to identify the location when it is selected.
                         graphicsOverlay.Graphics.Add(
                             new Graphic(
                                 geometry,
                                 new Dictionary<string, object?>
                                 {
-                                    { "LocationId", addLocation.LocationNumber }
+                                    { "LocationId", locationInfo.LocationNumber }
                                 },
                                 newLocationSymbol
                             )
@@ -1684,12 +1731,12 @@ public partial class MainPage : Page
                 switch (tag)
                 {
                     case "Occasional":
-                        addLocation.LocationType = LocationType.Occasional;
+                        locationInfo.LocationType = LocationType.Occasional;
                         SecchiLocationTypeDropDown.Content = "Occasional";
                         NewLocationView.LocationTypeSet = true;
                         break;
                     case "Ongoing":
-                        addLocation.LocationType = LocationType.Ongoing;
+                        locationInfo.LocationType = LocationType.Ongoing;
                         SecchiLocationTypeDropDown.Content = "Ongoing";
                         NewLocationView.LocationTypeSet = true;
                         break;
@@ -1707,7 +1754,7 @@ public partial class MainPage : Page
             // Log to trace the value of locationType with a label.
             Logger.Trace(
                 "MainPage.xaml.cs, LocationType_Click: Location Type: {locationType}",
-                addLocation.LocationType
+                locationInfo.LocationType
             );
         }
         catch (Exception exception)
@@ -1888,14 +1935,14 @@ public partial class MainPage : Page
                         {
                             MapView.GeometryEditor.Stop();
                         }
-                        addLocation.LocationSource = LocationSource.CurrentGPS;
+                        locationInfo.LocationSource = LocationSource.CurrentGPS;
                         LatLongEntry.Visibility = Visibility.Collapsed;
                         NewLocationView.LocationSourceActive = false;
                         SecchiLocationSourceDropDown.Content = "Current GPS";
                         NewLocationView.LocationSourceSet = true;
                         break;
                     case "PointOnMap":
-                        addLocation.LocationSource = LocationSource.PointOnMap;
+                        locationInfo.LocationSource = LocationSource.PointOnMap;
 
                         var presentLocation = MapView.LocationDisplay.Location.Position;
 
@@ -1917,11 +1964,11 @@ public partial class MainPage : Page
                         NewLocationView.LocationSourceSet = true;
                         break;
                     case "EnterLatLong":
-                        if (addLocation.LocationSource == LocationSource.PointOnMap)
+                        if (locationInfo.LocationSource == LocationSource.PointOnMap)
                         {
                             MapView.GeometryEditor.Stop();
                         }
-                        addLocation.LocationSource = LocationSource.EnteredLatLong;
+                        locationInfo.LocationSource = LocationSource.EnteredLatLong;
                         SecchiLocationSourceDropDown.Content = "Enter Lat/Long";
                         LatLongEntry.Visibility = Visibility.Visible;
                         NewLocationView.LocationSourceActive = true;
@@ -1940,7 +1987,7 @@ public partial class MainPage : Page
             // Log to trace the value of locationSource with a label.
             Logger.Trace(
                 "MainPage.xaml.cs, LocationSource_Click: Location Source: {locationSource}",
-                addLocation.LocationSource
+                locationInfo.LocationSource
             );
         }
         catch (Exception exception)
@@ -1964,13 +2011,39 @@ public partial class MainPage : Page
         {
             Guard.Against.Null(button, nameof(button), "Button in Edit_Location_Click is null.");
 
-            var locationId = button.Tag;
+            // Get the locationId from the button's tag.
+            var locationId = (int)button.Tag;
 
             // Log to trace the value of sender and eventArgs.
             Logger.Trace(
                 "MainPage.xaml.cs, Edit_Location_Click: LocationId: {locationId}",
                 locationId
             );
+
+            // Select the appropriate measurement type to add based on current view.
+            switch (DataCollectionView.SelectView)
+            {
+                case "Secchi":
+                    // Edit the observation.
+                    SecchiView.UpdateLocation(locationId);
+                    break;
+                case "Turbidity":
+                    // Your code here
+                    break;
+                case "Quality":
+                    // Your code here
+                    break;
+                case "Temperature":
+                    // Your code here
+                    break;
+                default:
+                    // Log to error that the DataCollectionView.SelectView is not recognized and its value.
+                    Logger.Error(
+                        "MainPage.xaml.cs, SaveLocationAsync: Value for DataCollectionView.SelectView not recognized: {DataCollectionView.SelectView}.",
+                        DataCollectionView.SelectView
+                    );
+                    break;
+            }
         }
         catch (Exception exception)
         {
@@ -2113,13 +2186,37 @@ public partial class MainPage : Page
         {
             Guard.Against.Null(button, nameof(button), "Button in Edit_Observation_Click is null.");
 
-            var objectId = button.Tag;
+            // Get the locationId from the button's tag.
+            var observationId = (int)button.Tag;
 
             // Log to trace the value of sender and eventArgs.
             Logger.Trace(
                 "MainPage.xaml.cs, Edit_Observation_Click: OBJECTID: {objectId}",
-                objectId
+                observationId
             );
+            // Select the appropriate measurement type to add based on current view.
+            switch (DataCollectionView.SelectView)
+            {
+                case "Secchi":
+                    // Edit the observation.
+                    break;
+                case "Turbidity":
+                    // Your code here
+                    break;
+                case "Quality":
+                    // Your code here
+                    break;
+                case "Temperature":
+                    // Your code here
+                    break;
+                default:
+                    // Log to error that the DataCollectionView.SelectView is not recognized and its value.
+                    Logger.Error(
+                        "MainPage.xaml.cs, SaveLocationAsync: Value for DataCollectionView.SelectView not recognized: {DataCollectionView.SelectView}.",
+                        DataCollectionView.SelectView
+                    );
+                    break;
+            }
         }
         catch (Exception exception)
         {

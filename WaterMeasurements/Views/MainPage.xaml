@@ -2,6 +2,7 @@
     x:Class="WaterMeasurements.Views.MainPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:contracts="using:WaterMeasurements.Contracts.Templates"
     xmlns:controls="using:CommunityToolkit.WinUI.Controls"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:esri="using:Esri.ArcGISRuntime.UI.Controls"
@@ -10,7 +11,6 @@
     xmlns:ui="using:CommunityToolkit.WinUI"
     xmlns:viewmodels="using:WaterMeasurements.ViewModels"
     xmlns:watermeasurementsmodel="using:WaterMeasurements.Models"
-    xmlns:contracts="using:WaterMeasurements.Contracts.Templates"
     xmlns:xaml="using:Microsoft.UI.Xaml"
     x:Name="MapPage"
     d:DataContext="{d:DesignInstance Type=viewmodels:MainViewModel}"
@@ -420,6 +420,12 @@
                                                             Margin="5,0,0,0"
                                                             Click="{x:Bind MapConfigurationView.ArcGISApiKeyHelpClick}"
                                                             Template="{StaticResource ButtonHelpTemplate}" />
+                                                        <ToolTipService.ToolTip>
+                                                            <ToolTip
+                                                                Content="API key for application from developer account."
+                                                                HorizontalOffset="200"
+                                                                VerticalOffset="-48" />
+                                                        </ToolTipService.ToolTip>
                                                     </StackPanel>
                                                     <PasswordBox
                                                         x:Name="ApiKeyArcGIS"
@@ -429,15 +435,18 @@
                                                         Margin="10,5,0,0"
                                                         HorizontalAlignment="Stretch"
                                                         AutomationProperties.Name="ArcGIS API key password box"
-                                                        LostFocus="{x:Bind StoreDeveloperKeyAsync, Mode=OneWay}"
-                                                        Password="{x:Bind apiKey, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                                                        LostFocus="{x:Bind MapConfigurationView.StoreApiKeyAsync, Mode=OneWay}"
+                                                        Password="{x:Bind MapConfigurationView.ApiKey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                        PasswordChanged="{x:Bind MapConfigurationView.ApiKeyIsChanging, Mode=OneWay}"
                                                         PasswordRevealMode="Hidden" />
                                                     <TextBlock
                                                         x:Name="ApiKeyArcGISError"
                                                         VerticalAlignment="Center"
+                                                        Margin="10,0,0,0"
+                                                        Grid.Row="2"
                                                         Foreground="{ThemeResource SystemFillColorCriticalBrush}"
-                                                        Text="Map will not load without a valid ArcGIS API key."
-                                                        Visibility="Collapsed" />
+                                                        Text="{x:Bind MapConfigurationView.ApiKeyError, Mode=OneWay}"
+                                                        Visibility="{x:Bind MapConfigurationView.ApiKeyErrorVisibility, Mode=OneWay}" />
                                                     <CheckBox
                                                         x:Name="RevealApiKey"
                                                         x:Uid="Settings_RevealApiKey"
@@ -470,18 +479,27 @@
                                                                 Margin="5,-5,0,0"
                                                                 Click="{x:Bind MapConfigurationView.ArcGISApiKeyHelpClick}"
                                                                 Template="{StaticResource ButtonHelpTemplate}" />
+                                                            <ToolTipService.ToolTip>
+                                                                <ToolTip
+                                                                    Content="Id from hosted Web Map, ID field in Details."
+                                                                    HorizontalOffset="200"
+                                                                    VerticalOffset="-48" />
+                                                            </ToolTipService.ToolTip>
                                                         </StackPanel>
                                                         <TextBox
                                                             x:Name="WebMapId"
+                                                            MaxWidth="450"
+                                                            IsSpellCheckEnabled="False"
                                                             Margin="10,5,0,0"
-                                                            LostFocus="{x:Bind StoreWebMapIdAsync, Mode=OneWay}"
-                                                            Text="{x:Bind webMapId, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" />
+                                                            LostFocus="{x:Bind MapConfigurationView.StorePreplannedMapIdAsync, Mode=OneWay}"
+                                                            Text="{x:Bind MapConfigurationView.PreplannedMapId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                                                            TextChanged="{x:Bind MapConfigurationView.PreplannedMapIdIsChanging, Mode=OneWay}"/>
                                                         <TextBlock
                                                             x:Name="WebMapIdError"
                                                             HorizontalAlignment="right"
                                                             Foreground="{ThemeResource SystemFillColorCriticalBrush}"
-                                                            Text="Unable to load map without map identifier."
-                                                            Visibility="Collapsed" />
+                                                            Text="{x:Bind MapConfigurationView.PreplannedMapIdError, Mode=OneWay}"
+                                                            Visibility="{x:Bind MapConfigurationView.PreplannedMapIdErrorVisibility, Mode=OneWay}" />
                                                     </StackPanel>
 
                                                     <StackPanel Margin="0,15,0,0">
@@ -556,17 +574,26 @@
                             <FontIcon FontFamily="{StaticResource AppIconFont}" Glyph="&#xe901;" />
                         </NavigationViewItem.Icon>
                     </NavigationViewItem>
-                    <NavigationViewItem x:Name="CollectionNavTurbidity" Content="Turbidity" Visibility="Visible">
+                    <NavigationViewItem
+                        x:Name="CollectionNavTurbidity"
+                        Content="Turbidity"
+                        Visibility="Visible">
                         <NavigationViewItem.Icon>
                             <FontIcon FontFamily="{StaticResource AppIconFont}" Glyph="&#xe900;" />
                         </NavigationViewItem.Icon>
                     </NavigationViewItem>
-                    <NavigationViewItem x:Name="CollectionNavQuality" Content="Quality" Visibility="Visible">
+                    <NavigationViewItem
+                        x:Name="CollectionNavQuality"
+                        Content="Quality"
+                        Visibility="Visible">
                         <NavigationViewItem.Icon>
                             <FontIcon FontFamily="{StaticResource AppIconFont}" Glyph="&#xe904;" />
                         </NavigationViewItem.Icon>
                     </NavigationViewItem>
-                    <NavigationViewItem x:Name="CollectionNavTemperature" Content="Temperature" Visibility="Visible">
+                    <NavigationViewItem
+                        x:Name="CollectionNavTemperature"
+                        Content="Temperature"
+                        Visibility="Visible">
                         <NavigationViewItem.Icon>
                             <FontIcon FontFamily="{StaticResource AppIconFont}" Glyph="&#xe902;" />
                         </NavigationViewItem.Icon>
@@ -853,6 +880,7 @@
                                                                 <TextBox
                                                                     x:Name="SecchiLocationName"
                                                                     Margin="0,0,0,0"
+                                                                    IsReadOnly="False"
                                                                     IsSpellCheckEnabled="False"
                                                                     Text="{x:Bind NewLocationView.LocationName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                                     TextChanged="{x:Bind NewLocationView.LocationNameIsChanging, Mode=OneWay}" />
@@ -1091,8 +1119,8 @@
                                                                 ItemClick="{x:Bind SecchiLocationsListView_ItemClick}"
                                                                 ItemTemplate="{StaticResource LocationsTemplate}"
                                                                 ItemsSource="{x:Bind SecchiView.SecchiLocations}"
-                                                                SelectedItem="{x:Bind ViewModel.SelectedLocation, Mode=TwoWay}"
-                                                                ScrollViewer.VerticalScrollBarVisibility="Visible" />
+                                                                ScrollViewer.VerticalScrollBarVisibility="Visible"
+                                                                SelectedItem="{x:Bind ViewModel.SelectedLocation, Mode=TwoWay}" />
                                                         </StackPanel>
 
                                                     </controls:Case>
@@ -1263,7 +1291,7 @@
                     </StackPanel>
 
                 </controls:Case>
-                
+
                 <controls:Case Value="Turbidity" />
                 <controls:Case Value="Quality" />
                 <controls:Case Value="Temperature" />

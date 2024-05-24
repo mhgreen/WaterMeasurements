@@ -1610,7 +1610,7 @@ public partial class SecchiViewModel : ObservableRecipient
         }
     }
 
-    // Send a message to the GeoDatabaseService to delete a feature from the SecchiLocations feature table.
+    // Send a message to the GeoDatabaseService and SqliteService to delete a feature from the SecchiLocations feature table.
     public void DeleteLocation(int locationId)
     {
         // Log to debug that DeleteLocation was called.
@@ -1702,6 +1702,123 @@ public partial class SecchiViewModel : ObservableRecipient
                     new DeleteLocationRecordFromTable(locationId, DbType.SecchiLocations)
                 )
             );
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(
+                SecchiViewModelLog,
+                exception,
+                "Exception generated in SecchiViewModel, DeleteLocation: {message}.",
+                exception.Message.ToString()
+            );
+        }
+    }
+
+    // Send a message to the GeoDatabaseService and SqliteService to update a feature from the SecchiLocations feature table.
+    public void UpdateLocation(int locationId)
+    {
+        // Log to debug that DeleteLocation was called.
+        logger.LogDebug(
+            SecchiViewModelLog,
+            "SecchiViewModel, UpdateLocation: UpdateLocation called."
+        );
+
+        try
+        {
+            Guard.Against.Null(
+                SecchiLocations,
+                nameof(SecchiLocations),
+                "SecchiViewModel, UpdateLocation: SecchiLocations can not be null."
+            );
+
+            Guard.Against.Null(
+                currentLocationsTable,
+                nameof(currentLocationsTable),
+                "SecchiViewModel, UpdateLocation: currentLocationsTable can not be null."
+            );
+
+            // Log to debug the locationId.
+            logger.LogDebug(
+                SecchiViewModelLog,
+                "SecchiViewModel, UpdateLocation: LocationId: {locationId}.",
+                locationId
+            );
+
+            // Create a query to get the feature to update.
+            var queryParameters = new QueryParameters
+            {
+                WhereClause = $"LocationId = {locationId}"
+            };
+
+            // Query the feature table.
+            var queryResult = currentLocationsTable.QueryFeaturesAsync(queryParameters).Result;
+
+            // Log to debug the number of features returned by the query.
+            logger.LogDebug(
+                SecchiViewModelLog,
+                "SecchiViewModel, UpdateLocation: Number of features returned by the query: {queryResult.Count()}.",
+                queryResult.Count()
+            );
+
+            // Iterate over the features and log their attributes.
+            foreach (var feature in queryResult)
+            {
+                foreach (var attribute in feature.Attributes)
+                {
+                    logger.LogTrace(
+                        SecchiViewModelLog,
+                        "SecchiViewModel, UpdateLocation: FeatureTable: {currentLocationsTable.TableName}, attribute.Key: {attributeName}, attribute.Value: {attributeValue}.",
+                        currentLocationsTable.TableName,
+                        attribute.Key,
+                        attribute.Value
+                    );
+                }
+            }
+
+            /*
+            // Send an UpdateFeatureMessage to the GeoDatabaseService.
+            WeakReferenceMessenger.Default.Send<UpdateFeatureMessage, uint>(
+                new UpdateFeatureMessage(
+                    new FeatureUpdateMessage("SecchiLocations", "LocationId", queryResult.First())
+                ),
+                secchiLocationsChannel
+            );
+
+            // Find the item in SecchiLocations that matches locationID and remove that item.
+            var secchiLocationDisplay = SecchiLocations.FirstOrDefault(x =>
+                x.LocationId == locationId
+            );
+            if (secchiLocationDisplay != null)
+            {
+                SecchiLocations.Remove(secchiLocationDisplay);
+            }
+            else
+            {
+                logger.LogError(
+                    SecchiViewModelLog,
+                    "SecchiViewModel, UpdateLocation:: LocationId: {locationId} not found in SecchiLocations.",
+                    locationId
+                );
+            }
+
+            // Send a message to the SqliteService to update the location in the table.
+            WeakReferenceMessenger.Default.Send<UpdateLocationRecordInTableMessage>(
+                new UpdateLocationRecordInTableMessage(
+                    new UpdateLocationRecordInTable(
+                        new LocationRecord(
+                            secchiLocationDisplay.Latitude,
+                            secchiLocationDisplay.Longitude,
+                            secchiLocationDisplay.LocationId,
+                            secchiLocationDisplay.LocationName,
+                            secchiLocationDisplay.LocationType,
+                            secchiLocationDisplay.RecordStatus,
+                            secchiLocationDisplay.LocationCollected
+                        ),
+                        DbType.SecchiLocations
+                    )
+                )
+            );
+            */
         }
         catch (Exception exception)
         {

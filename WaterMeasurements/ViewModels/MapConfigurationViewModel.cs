@@ -43,13 +43,25 @@ public partial class MapConfigurationViewModel : ObservableValidator
     //public event EventHandler? SettingsUpdateFailed;
 
     private bool preplannedMapNameValid = false;
+    private bool preplannedMapIdValid = false;
+    private bool apiKeyValid = false;
+    private bool licenseKeyValid = false;
 
     // It does not seem possible to localize the error messages in the DataAnnotations.
     // Using the ResourceExtensions.GetLocalized() method to get the localized strings.
 
-    private static readonly string unableToValide = ResourceExtensions.GetLocalized(
+    private static readonly string unableToValideWithoutName = ResourceExtensions.GetLocalized(
         "Error_UnableWithoutName"
     );
+
+    private static readonly string unableToValideWithoutId = ResourceExtensions.GetLocalized(
+        "Error_UnableWithoutId"
+    );
+
+    private static readonly string unableToValideWithoutKey = ResourceExtensions.GetLocalized(
+        "Error_UnableWithoutKey"
+    );
+
     private static readonly string stringNotOneToHundred = ResourceExtensions.GetLocalized(
         "Error_NotBetweenOneAndHundred"
     );
@@ -60,10 +72,43 @@ public partial class MapConfigurationViewModel : ObservableValidator
     private string? preplannedMapName;
 
     [ObservableProperty]
+    [Required(ErrorMessage = "NeedId")]
+    [StringLength(100, MinimumLength = 1, ErrorMessage = "NotOneToHundred")]
+    private string? preplannedMapId;
+
+    [ObservableProperty]
+    [Required(ErrorMessage = "NeedKey")]
+    [StringLength(100, MinimumLength = 1, ErrorMessage = "NotOneToHundred")]
+    private string? apiKey;
+
+    [ObservableProperty]
+    [Required(ErrorMessage = "NeedLicense")]
+    [StringLength(100, MinimumLength = 1, ErrorMessage = "NotOneToHundred")]
+    private string? licenseKey;
+
+    [ObservableProperty]
     private string? preplannedMapNameError;
 
     [ObservableProperty]
     private string? preplannedMapNameErrorVisibility = "Collapsed";
+
+    [ObservableProperty]
+    private string? preplannedMapIdError;
+
+    [ObservableProperty]
+    private string? preplannedMapIdErrorVisibility = "Collapsed";
+
+    [ObservableProperty]
+    private string? apiKeyError;
+
+    [ObservableProperty]
+    private string? apiKeyErrorVisibility = "Collapsed";
+
+    [ObservableProperty]
+    private string? licenseKeyError;
+
+    [ObservableProperty]
+    private string? licenseKeyErrorVisibility = "Collapsed";
 
     [ObservableProperty]
     public string selectView = "Map";
@@ -74,12 +119,12 @@ public partial class MapConfigurationViewModel : ObservableValidator
         // Log to trace that the PreplannedMapNameIsChanging command was called.
         Logger.LogTrace(
             MapConfigurationViewModelLog,
-            "PreplannedMapNameIsChanging(): PreplannedMapNameIsChanging invoked."
+            "MapConfigurationViewModel, PreplannedMapNameIsChanging: PreplannedMapNameIsChanging invoked."
         );
         // Log the PreplannedMapName.
         Logger.LogTrace(
             MapConfigurationViewModelLog,
-            "PreplannedMapNameIsChanging(): PreplannedMapName: {preplannedMapName}.",
+            "MapConfigurationViewModel, PreplannedMapNameIsChanging: PreplannedMapName: {preplannedMapName}.",
             PreplannedMapName
         );
 
@@ -91,10 +136,10 @@ public partial class MapConfigurationViewModel : ObservableValidator
                 new ValidationContext(this, null, null) { MemberName = nameof(PreplannedMapName) },
                 results
             );
-            // Log isValid to debug.
+            // Log isValid to trace.
             Logger.LogTrace(
                 MapConfigurationViewModelLog,
-                "PreplannedMapNameIsChanging(): isValid: {isValid}.",
+                "MapConfigurationViewModel, PreplannedMapNameIsChanging: isValid: {isValid}.",
                 preplannedMapNameValid
             );
             if (preplannedMapNameValid is false)
@@ -104,7 +149,7 @@ public partial class MapConfigurationViewModel : ObservableValidator
                 {
                     Logger.LogDebug(
                         MapConfigurationViewModelLog,
-                        "PreplannedMapNameIsChanging(): firstValidationResult: {firstValidationResult}.",
+                        "MapConfigurationViewModel, PreplannedMapNameIsChanging: firstValidationResult: {firstValidationResult}.",
                         firstValidationResult
                     );
                 }
@@ -114,16 +159,16 @@ public partial class MapConfigurationViewModel : ObservableValidator
                     {
                         Logger.LogTrace(
                             MapConfigurationViewModelLog,
-                            "PreplannedMapNameIsChanging(): NeedName error."
+                            "MapConfigurationViewModel, PreplannedMapNameIsChanging: NeedName error."
                         );
-                        PreplannedMapNameError = unableToValide;
+                        PreplannedMapNameError = unableToValideWithoutName;
                         PreplannedMapNameErrorVisibility = "Visible";
                     }
                     if (firstValidationResult.ToString() == "NotOneToHundred")
                     {
                         Logger.LogTrace(
                             MapConfigurationViewModelLog,
-                            "PreplannedMapNameIsChanging(): NotOneToHundred error."
+                            "MapConfigurationViewModel, PreplannedMapNameIsChanging: NotOneToHundred error."
                         );
                         PreplannedMapNameError = stringNotOneToHundred;
                         PreplannedMapNameErrorVisibility = "Visible";
@@ -140,7 +185,282 @@ public partial class MapConfigurationViewModel : ObservableValidator
             Logger.LogError(
                 MapConfigurationViewModelLog,
                 exception,
-                "PreplannedMapNameIsChanging(): exception: {exception}.",
+                "MapConfigurationViewModel, PreplannedMapNameIsChanging: exception: {exception}.",
+                exception.Message.ToString()
+            );
+        }
+    }
+
+    [RelayCommand]
+    public void PreplannedMapIdIsChanging()
+    {
+        // Log to trace that the PreplannedMapIdIsChanging command was called.
+        Logger.LogDebug(
+            MapConfigurationViewModelLog,
+            "MapConfigurationViewModel, PreplannedMapIdIsChanging: PreplannedMapIdIsChanging invoked."
+        );
+        // Log the PreplannedMapId.
+        Logger.LogDebug(
+            MapConfigurationViewModelLog,
+            "MapConfigurationViewModel, PreplannedMapIdIsChanging: PreplannedMapId: {preplannedMapId}.",
+            PreplannedMapId
+        );
+
+        try
+        {
+            var results = new List<ValidationResult>();
+            preplannedMapIdValid = Validator.TryValidateProperty(
+                PreplannedMapId,
+                new ValidationContext(this, null, null) { MemberName = nameof(PreplannedMapId) },
+                results
+            );
+            // Log isValid to trace.
+            Logger.LogDebug(
+                MapConfigurationViewModelLog,
+                "MapConfigurationViewModel, PreplannedMapIdIsChanging: isValid: {isValid}.",
+                preplannedMapIdValid
+            );
+            if (preplannedMapIdValid is false)
+            {
+                var firstValidationResult = results.FirstOrDefault();
+                if (firstValidationResult != null)
+                {
+                    Logger.LogDebug(
+                        MapConfigurationViewModelLog,
+                        "MapConfigurationViewModel, PreplannedMapIdIsChanging: firstValidationResult: {firstValidationResult}.",
+                        firstValidationResult
+                    );
+                }
+                if (firstValidationResult is not null)
+                {
+                    if (firstValidationResult.ToString() == "NeedId")
+                    {
+                        Logger.LogDebug(
+                            MapConfigurationViewModelLog,
+                            "MapConfigurationViewModel, PreplannedMapIdIsChanging: NeedId error."
+                        );
+                        PreplannedMapIdError = unableToValideWithoutId;
+                        PreplannedMapIdErrorVisibility = "Visible";
+                    }
+                    if (firstValidationResult.ToString() == "NotOneToHundred")
+                    {
+                        Logger.LogDebug(
+                            MapConfigurationViewModelLog,
+                            "MapConfigurationViewModel, PreplannedMapIdIsChanging: NotOneToHundred error."
+                        );
+                        PreplannedMapIdError = stringNotOneToHundred;
+                        PreplannedMapIdErrorVisibility = "Visible";
+                    }
+                }
+            }
+            else
+            {
+                PreplannedMapIdErrorVisibility = "Collapsed";
+            }
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(
+                MapConfigurationViewModelLog,
+                exception,
+                "MapConfigurationViewModel, PreplannedMapIdIsChanging: exception: {exception}.",
+                exception.Message.ToString()
+            );
+        }
+    }
+
+    [RelayCommand]
+    public void ApiKeyIsChanging()
+    {
+        // Log to trace that the ApiKeyIsChanging command was called.
+        Logger.LogTrace(
+            MapConfigurationViewModelLog,
+            "MapConfigurationViewModel, ApiKeyIsChanging: ApiKeyIsChanging invoked."
+        );
+        // Log the ApiKey.
+        Logger.LogTrace(
+            MapConfigurationViewModelLog,
+            "MapConfigurationViewModel, ApiKeyIsChanging: ApiKey: {apiKey}.",
+            ApiKey
+        );
+        try
+        {
+            var results = new List<ValidationResult>();
+            apiKeyValid = Validator.TryValidateProperty(
+                ApiKey,
+                new ValidationContext(this, null, null) { MemberName = nameof(ApiKey) },
+                results
+            );
+            // Log isValid to trace.
+            Logger.LogTrace(
+                MapConfigurationViewModelLog,
+                "MapConfigurationViewModel, ApiKeyIsChanging: isValid: {isValid}.",
+                apiKeyValid
+            );
+            if (apiKeyValid is false)
+            {
+                var firstValidationResult = results.FirstOrDefault();
+                if (firstValidationResult != null)
+                {
+                    Logger.LogDebug(
+                        MapConfigurationViewModelLog,
+                        "MapConfigurationViewModel, ApiKeyIsChanging: firstValidationResult: {firstValidationResult}.",
+                        firstValidationResult
+                    );
+                }
+                if (firstValidationResult is not null)
+                {
+                    if (firstValidationResult.ToString() == "NeedKey")
+                    {
+                        Logger.LogTrace(
+                            MapConfigurationViewModelLog,
+                            "MapConfigurationViewModel, ApiKeyIsChanging: NeedKey error."
+                        );
+                        ApiKeyError = unableToValideWithoutKey;
+                        ApiKeyErrorVisibility = "Visible";
+                    }
+                    if (firstValidationResult.ToString() == "NotOneToHundred")
+                    {
+                        Logger.LogTrace(
+                            MapConfigurationViewModelLog,
+                            "MapConfigurationViewModel, ApiKeyIsChanging: NotOneToHundred error."
+                        );
+                        ApiKeyError = stringNotOneToHundred;
+                        ApiKeyErrorVisibility = "Visible";
+                    }
+                }
+            }
+            else
+            {
+                ApiKeyErrorVisibility = "Collapsed";
+            }
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(
+                MapConfigurationViewModelLog,
+                exception,
+                "MapConfigurationViewModel, ApiKeyIsChanging: exception: {exception}.",
+                exception.Message.ToString()
+            );
+        }
+    }
+
+    [RelayCommand]
+    public void LicenseKeyIsChanging()
+    {
+        // Log to trace that the LicenseKeyIsChanging command was called.
+        Logger.LogTrace(
+            MapConfigurationViewModelLog,
+            "MapConfigurationViewModel, LicenseKeyIsChanging: LicenseKeyIsChanging invoked."
+        );
+        // Log the LicenseKey.
+        Logger.LogTrace(
+            MapConfigurationViewModelLog,
+            "MapConfigurationViewModel, LicenseKeyIsChanging: LicenseKey: {licenseKey}.",
+            LicenseKey
+        );
+        try
+        {
+            var results = new List<ValidationResult>();
+            licenseKeyValid = Validator.TryValidateProperty(
+                LicenseKey,
+                new ValidationContext(this, null, null) { MemberName = nameof(LicenseKey) },
+                results
+            );
+            // Log isValid to trace.
+            Logger.LogTrace(
+                MapConfigurationViewModelLog,
+                "MapConfigurationViewModel, LicenseKeyIsChanging: isValid: {isValid}.",
+                licenseKeyValid
+            );
+            if (licenseKeyValid is false)
+            {
+                var firstValidationResult = results.FirstOrDefault();
+                if (firstValidationResult != null)
+                {
+                    Logger.LogDebug(
+                        MapConfigurationViewModelLog,
+                        "MapConfigurationViewModel, LicenseKeyIsChanging: firstValidationResult: {firstValidationResult}.",
+                        firstValidationResult
+                    );
+                }
+                if (firstValidationResult is not null)
+                {
+                    if (firstValidationResult.ToString() == "NeedLicense")
+                    {
+                        Logger.LogTrace(
+                            MapConfigurationViewModelLog,
+                            "MapConfigurationViewModel, LicenseKeyIsChanging: NeedLicense error."
+                        );
+                        LicenseKeyError = unableToValideWithoutKey;
+                        LicenseKeyErrorVisibility = "Visible";
+                    }
+                    if (firstValidationResult.ToString() == "NotOneToHundred")
+                    {
+                        Logger.LogTrace(
+                            MapConfigurationViewModelLog,
+                            "MapConfigurationViewModel, LicenseKeyIsChanging: NotOneToHundred error."
+                        );
+                        LicenseKeyError = stringNotOneToHundred;
+                        LicenseKeyErrorVisibility = "Visible";
+                    }
+                }
+            }
+            else
+            {
+                LicenseKeyErrorVisibility = "Collapsed";
+            }
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(
+                MapConfigurationViewModelLog,
+                exception,
+                "MapConfigurationViewModel, LicenseKeyIsChanging: exception: {exception}.",
+                exception.Message.ToString()
+            );
+        }
+    }
+
+    [RelayCommand]
+    public void StoreApiKeyAsync()
+    {
+        try
+        {
+            Logger.LogTrace(
+                MapConfigurationViewModelLog,
+                "MapConfigurationViewModel, StoreApiKeyAsync: invoked with apiKey set to: {apiKey}",
+                ApiKey
+            );
+
+            Guard.Against.Null(
+                LocalSettingsService,
+                nameof(LocalSettingsService),
+                "MapConfigurationViewModel, StoreApiKeyAsync: LocalSettingsService is null."
+            );
+            if (ApiKey is not null && apiKeyValid)
+            {
+                Task.Run(async () =>
+                    {
+                        await LocalSettingsService.SaveSettingAsync(Item[Key.ArcgisApiKey], ApiKey);
+                    })
+                    .Wait();
+            }
+            else
+            {
+                Logger.LogTrace(
+                    MapConfigurationViewModelLog,
+                    "MapConfigurationViewModel, StoreApiKeyAsync: ApiKey did not pass validation or is not yet validated via ApiKeyIsChanging(), not saving the value."
+                );
+            }
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(
+                MapConfigurationViewModelLog,
+                exception,
+                "MapConfigurationViewModel, StoreApiKeyAsync: exception: {exception}.",
                 exception.Message.ToString()
             );
         }
@@ -153,23 +473,21 @@ public partial class MapConfigurationViewModel : ObservableValidator
         {
             Logger.LogTrace(
                 MapConfigurationViewModelLog,
-                "StorePreplannedMapNameAsync(): invoked with preplannedMap set to: {preplannedMap}",
+                "MapConfigurationViewModel, StorePreplannedMapNameAsync: invoked with preplannedMap set to: {preplannedMap}",
                 PreplannedMapName
             );
 
             Guard.Against.Null(
                 LocalSettingsService,
                 nameof(LocalSettingsService),
-                "Configuration Service, StorePreplannedMapNameAsync(): LocalSettingsService is null."
+                "MapConfigurationViewModel, StorePreplannedMapNameAsync: LocalSettingsService is null."
             );
             if (PreplannedMapName is not null && preplannedMapNameValid)
             {
                 Task.Run(async () =>
                     {
                         await LocalSettingsService.SaveSettingAsync(
-                            PrePlannedMapConfiguration.Item[
-                                PrePlannedMapConfiguration.Key.PreplannedMapName
-                            ],
+                            Item[Key.PreplannedMapName],
                             PreplannedMapName
                         );
                     })
@@ -179,7 +497,7 @@ public partial class MapConfigurationViewModel : ObservableValidator
             {
                 Logger.LogTrace(
                     MapConfigurationViewModelLog,
-                    "StorePreplannedMapNameAsync(): PreplannedMapName did not pass validation or is not yet validated via PreplannedMapNameIsChanging(), not saving the value."
+                    "MapConfigurationViewModel, StorePreplannedMapNameAsync: PreplannedMapName did not pass validation or is not yet validated via PreplannedMapNameIsChanging(), not saving the value."
                 );
             }
         }
@@ -188,7 +506,99 @@ public partial class MapConfigurationViewModel : ObservableValidator
             Logger.LogError(
                 MapConfigurationViewModelLog,
                 exception,
-                "Configuration Service, StorePreplannedMapNameAsync(): exception: {exception}.",
+                "MapConfigurationViewModel, StorePreplannedMapNameAsync: exception: {exception}.",
+                exception.Message.ToString()
+            );
+        }
+    }
+
+    [RelayCommand]
+    public void StorePreplannedMapIdAsync()
+    {
+        try
+        {
+            Logger.LogTrace(
+                MapConfigurationViewModelLog,
+                "MapConfigurationViewModel, StorePreplannedMapIdAsync: invoked with preplannedMap set to: {preplannedMap}",
+                PreplannedMapId
+            );
+
+            Guard.Against.Null(
+                LocalSettingsService,
+                nameof(LocalSettingsService),
+                "MapConfigurationViewModel, StorePreplannedMapIdAsync: LocalSettingsService is null."
+            );
+            if (PreplannedMapId is not null && preplannedMapIdValid)
+            {
+                Task.Run(async () =>
+                    {
+                        await LocalSettingsService.SaveSettingAsync(
+                            Item[Key.OfflineMapIdentifier],
+                            PreplannedMapId
+                        );
+                    })
+                    .Wait();
+            }
+            else
+            {
+                Logger.LogTrace(
+                    MapConfigurationViewModelLog,
+                    "MapConfigurationViewModel, StorePreplannedMapIdAsync: PreplannedMapId did not pass validation or is not yet validated via PreplannedMapIdIsChanging(), not saving the value."
+                );
+            }
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(
+                MapConfigurationViewModelLog,
+                exception,
+                "MapConfigurationViewModel, StorePreplannedMapIdAsync: exception: {exception}.",
+                exception.Message.ToString()
+            );
+        }
+    }
+
+    [RelayCommand]
+    public void StoreLicenseKeyAsync()
+    {
+        try
+        {
+            Logger.LogTrace(
+                MapConfigurationViewModelLog,
+                "MapConfigurationViewModel, StoreLicenseKeyAsync: invoked with licenseKey set to: {licenseKey}",
+                LicenseKey
+            );
+
+            Guard.Against.Null(
+                LocalSettingsService,
+                nameof(LocalSettingsService),
+                "MapConfigurationViewModel, StoreLicenseKeyAsync: LocalSettingsService is null."
+            );
+            if (LicenseKey is not null && licenseKeyValid)
+            {
+                Task.Run(async () =>
+                    {
+                        await LocalSettingsService.SaveSettingAsync(
+                            Item[Key.ArcgisLicenseKey],
+                            LicenseKey
+                        );
+                    })
+                    .Wait();
+            }
+            else
+            {
+                Logger.LogTrace(
+                    MapConfigurationViewModelLog,
+                    "MapConfigurationViewModel, StoreLicenseKeyAsync: LicenseKey did not pass validation or is not yet validated via LicenseKeyIsChanging(), not saving the value."
+                );
+            }
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(
+                MapConfigurationViewModelLog,
+                exception,
+                "MapConfigurationViewModel, StoreLicenseKeyAsync: exception: {exception}.",
                 exception.Message.ToString()
             );
         }
@@ -200,7 +610,7 @@ public partial class MapConfigurationViewModel : ObservableValidator
         // Log to trace that the SelectMapPage command was called.
         Logger.LogTrace(
             MapConfigurationViewModelLog,
-            "SelectMapPage(): SelectMapPage command called."
+            "MapConfigurationViewModel, SelectMapPage: SelectMapPage command called."
         );
         SelectView = "Map";
     }
@@ -211,9 +621,16 @@ public partial class MapConfigurationViewModel : ObservableValidator
         var message = string.Join(Environment.NewLine, GetErrors().Select(e => e.ErrorMessage));
 
         // Log to trace that the ShowErrors command was called.
-        Logger.LogTrace(MapConfigurationViewModelLog, "ShowErrors(): ShowErrors command called.");
+        Logger.LogTrace(
+            MapConfigurationViewModelLog,
+            "MapConfigurationViewModel, ShowErrors: ShowErrors command called."
+        );
         // Log the message.
-        Logger.LogTrace(MapConfigurationViewModelLog, "ShowErrors(): Message: {message}.", message);
+        Logger.LogTrace(
+            MapConfigurationViewModelLog,
+            "MapConfigurationViewModel, ShowErrors: Message: {message}.",
+            message
+        );
     }
 
     public MapConfigurationViewModel(
@@ -239,11 +656,37 @@ public partial class MapConfigurationViewModel : ObservableValidator
             Guard.Against.Null(
                 LocalSettingsService,
                 nameof(LocalSettingsService),
-                "Configuration Service, Initialize(): LocalSettingsService is null."
+                "MapConfigurationViewModel, Initialize(): LocalSettingsService is null."
             );
             // Get the preplanned map name from local settings.
             PreplannedMapName = await LocalSettingsService.ReadSettingAsync<string>(
                 PrePlannedMapConfiguration.Item[PrePlannedMapConfiguration.Key.PreplannedMapName]
+            );
+            // Log the preplanned map name.
+            Logger.LogDebug(
+                MapConfigurationViewModelLog,
+                "MapConfigurationViewModel, Initialize: PreplannedMapName: {PreplannedMapName}.",
+                PreplannedMapName
+            );
+            // Get the preplanned map id from local settings.
+            PreplannedMapId = await LocalSettingsService.ReadSettingAsync<string>(
+                PrePlannedMapConfiguration.Item[PrePlannedMapConfiguration.Key.OfflineMapIdentifier]
+            );
+            // Log the preplanned map id.
+            Logger.LogDebug(
+                MapConfigurationViewModelLog,
+                "MapConfigurationViewModel, Initialize: PreplannedMapId: {PreplannedMapId}.",
+                PreplannedMapId
+            );
+            // Get the api key from local settings.
+            ApiKey = await LocalSettingsService.ReadSettingAsync<string>(
+                PrePlannedMapConfiguration.Item[PrePlannedMapConfiguration.Key.ArcgisApiKey]
+            );
+            // Log the api key.
+            Logger.LogDebug(
+                MapConfigurationViewModelLog,
+                "MapConfigurationViewModel, Initialize: ApiKey: {ApiKey}.",
+                ApiKey
             );
         }
         catch (Exception exception)
@@ -251,7 +694,7 @@ public partial class MapConfigurationViewModel : ObservableValidator
             Logger.LogError(
                 MapConfigurationViewModelLog,
                 exception,
-                "Configuration Service, Initialize(): exception: {exception}.",
+                "MapConfigurationViewModel, Initialize: exception: {exception}.",
                 exception.Message.ToString()
             );
         }
@@ -274,7 +717,7 @@ public partial class MapConfigurationViewModel : ObservableValidator
         // Log to debug that the MapNavView_ItemInvoked event was fired.
         Logger.LogDebug(
             MapConfigurationViewModelLog,
-            "MapNavView_ItemInvoked(): MapNavView_ItemInvoked event fired."
+            "MapConfigurationViewModel, MapNavView_ItemInvoked: MapNavView_ItemInvoked event fired."
         );
 
         try
@@ -282,20 +725,20 @@ public partial class MapConfigurationViewModel : ObservableValidator
             Guard.Against.Null(
                 args.InvokedItemContainer,
                 nameof(args.InvokedItemContainer),
-                "MapNavView_ItemInvoked(): InvokedItemContainer is null."
+                "MapConfigurationViewModel, MapNavView_ItemInvoked: InvokedItemContainer is null."
             );
 
             // Log the name of the invoked item.
             Logger.LogDebug(
                 MapConfigurationViewModelLog,
-                "MapNavView_ItemInvoked(): Invoked item name: {invokedItemName}.",
+                "MapConfigurationViewModel, MapNavView_ItemInvoked: Invoked item name: {invokedItemName}.",
                 args.InvokedItemContainer.Name
             );
 
             // Log the sender name.
             Logger.LogDebug(
                 MapConfigurationViewModelLog,
-                "MapNavView_ItemInvoked(): Sender name: {senderName}.",
+                "MapConfigurationViewModel, MapNavView_ItemInvoked: Sender name: {senderName}.",
                 sender.Name
             );
 
@@ -305,7 +748,7 @@ public partial class MapConfigurationViewModel : ObservableValidator
                     // Log that the MapNavCenter item was invoked.
                     Logger.LogDebug(
                         MapConfigurationViewModelLog,
-                        "MapNavView_ItemInvoked(): MapNavCenter item invoked."
+                        "MapConfigurationViewModel, MapNavView_ItemInvoked: MapNavCenter item invoked."
                     );
                     // Send a center message.
                     WeakReferenceMessenger.Default.Send(new SetMapCenterMessage(true));
@@ -314,7 +757,7 @@ public partial class MapConfigurationViewModel : ObservableValidator
                     // Log that the MapNavAutoPan item was invoked.
                     Logger.LogDebug(
                         MapConfigurationViewModelLog,
-                        "MapNavView_ItemInvoked(): MapNavAutoPan item invoked."
+                        "MapConfigurationViewModel, MapNavView_ItemInvoked: MapNavAutoPan item invoked."
                     );
                     // Send an auto pan message.
                     WeakReferenceMessenger.Default.Send(new SetMapAutoPanMessage(true));
@@ -323,7 +766,7 @@ public partial class MapConfigurationViewModel : ObservableValidator
                     // Log that the SettingsItem item was invoked.
                     Logger.LogDebug(
                         MapConfigurationViewModelLog,
-                        "MapNavView_ItemInvoked(): SettingsItem item invoked."
+                        "MapConfigurationViewModel, MapNavView_ItemInvoked: SettingsItem item invoked."
                     );
                     SelectView = "Settings";
                     break;
@@ -336,7 +779,7 @@ public partial class MapConfigurationViewModel : ObservableValidator
             // Log the exception message.
             Logger.LogError(
                 exception,
-                "MapNavView_ItemInvoked(): An error occurred in MapNavView_ItemInvoked: {exception}",
+                "MapConfigurationViewModel, MapNavView_ItemInvoked: An error occurred in MapNavView_ItemInvoked: {exception}",
                 exception.Message
             );
         }
@@ -347,7 +790,7 @@ public partial class MapConfigurationViewModel : ObservableValidator
         // Log that the ArcGISApiKeyHelpClick event was fired.
         Logger.LogDebug(
             MapConfigurationViewModelLog,
-            "ArcGISApiKeyHelpClick(): ArcGISApiKeyHelpClick event fired."
+            "MapConfigurationViewModel, ArcGISApiKeyHelpClick: ArcGISApiKeyHelpClick event fired."
         );
     }
 
@@ -358,6 +801,7 @@ public partial class MapConfigurationViewModel : ObservableValidator
             select error.ErrorMessage
         );
 
+    /*
     private void MapConfigurationPropertyChanged(object? sender, PropertyChangedEventArgs error)
     {
         // Log to trace that the MapConfigurationPropertyChanged event was fired.
@@ -368,7 +812,8 @@ public partial class MapConfigurationViewModel : ObservableValidator
 
         if (error.PropertyName != nameof(HasErrors))
         {
-            // OnPropertyChanged(nameof(HasErrors)); // Update HasErrors on every change, so I can bind to it.
+            // Update Errors on every Error change for binding.
+            // OnPropertyChanged(nameof(HasErrors));
             // Log to trace that the HasErrors property was updated.
             Logger.LogTrace(
                 MapConfigurationViewModelLog,
@@ -412,4 +857,5 @@ public partial class MapConfigurationViewModel : ObservableValidator
             );
         }
     }
+    */
 }

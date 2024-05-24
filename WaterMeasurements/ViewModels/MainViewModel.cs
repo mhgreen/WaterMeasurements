@@ -455,6 +455,7 @@ public partial class MainViewModel : ObservableRecipient
         }
     }
 
+    /*
     public async Task InitializeArcGISRuntimeAsync()
     {
         try
@@ -477,6 +478,7 @@ public partial class MainViewModel : ObservableRecipient
             );
         }
     }
+    */
 
     private void SubscribeGeoDbDownload(DispatcherQueue uiDispatcherQueue)
     {
@@ -553,6 +555,7 @@ public partial class MainViewModel : ObservableRecipient
         }
     }
 
+    /*
     public async Task RequestArcGISRuntimeInitializeMessage()
     {
         logger.LogDebug(
@@ -578,6 +581,7 @@ public partial class MainViewModel : ObservableRecipient
             );
         }
     }
+    */
 
     // Set the theme dropdown one the main page to the current theme.
     private async Task IndicateCurrentTheme()

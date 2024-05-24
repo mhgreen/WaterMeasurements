@@ -294,4 +294,10 @@
   <data name="Main_TransferLocationToolTip.Content" xml:space="preserve">
     <value>Transfer locations between data collection types</value>
   </data>
+  <data name="Error_UnableWithoutId" xml:space="preserve">
+    <value>Unable to validate without identifier.</value>
+  </data>
+  <data name="Error_UnableWithoutKey" xml:space="preserve">
+    <value>Unable to validate without key.</value>
+  </data>
 </root>

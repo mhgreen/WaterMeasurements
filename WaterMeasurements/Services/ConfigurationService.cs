@@ -3,33 +3,31 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
-using Microsoft.Extensions.Logging;
-
+using Ardalis.GuardClauses;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.Mvvm.Messaging.Messages;
-
 using Esri.ArcGISRuntime;
 using Esri.ArcGISRuntime.Http;
 using Esri.ArcGISRuntime.Security;
-
-using WaterMeasurements.ViewModels;
+using Microsoft.Extensions.Logging;
+using WaterMeasurements.Contracts.Services;
 using WaterMeasurements.Models;
 using WaterMeasurements.Services;
-using WaterMeasurements.Contracts.Services;
-
-using Ardalis.GuardClauses;
+using WaterMeasurements.ViewModels;
 using Windows.Networking.Connectivity;
-using static WaterMeasurements.Models.PrePlannedMapConfiguration;
 using Windows.System;
+using static WaterMeasurements.Models.PrePlannedMapConfiguration;
 
 namespace WaterMeasurements.Services;
 
 // Message to notify modules that ArcGIS Runtime is initialized.
 public class ArcGISRuntimeInitializedMessage(bool isInitialized)
     : ValueChangedMessage<bool>(isInitialized) { }
+
+// Message to request runtime initialization.
+public class ArcGISRuntimeInitializeRequestMessage() { }
 
 public partial class ConfigurationService : IConfigurationService
 {
@@ -46,7 +44,23 @@ public partial class ConfigurationService : IConfigurationService
         logger.LogInformation(ConfigurationServiceLog, "Starting ConfigurationService");
         this.localSettingsService = localSettingsService;
 
-        // _ = ArcGISRuntimeInitialize();
+        // Register a message handler for the ArcGISRuntimeInitializeRequestMessage.
+        WeakReferenceMessenger.Default.Register<
+            ConfigurationService,
+            ArcGISRuntimeInitializeRequestMessage
+        >(
+            this,
+            async (recipient, message) =>
+            {
+                logger.LogDebug(
+                    ConfigurationServiceLog,
+                    "ConfigurationService, ArcGISRuntimeInitializeRequestMessage: {message}.",
+                    message
+                );
+                await ArcGISRuntimeInitialize();
+            }
+        );
+
         _ = Initialize();
     }
 
@@ -140,7 +154,7 @@ public partial class ConfigurationService : IConfigurationService
             // Initialize the ArcGIS Maps SDK runtime before any components are created.
 
             var apiKey = await localSettingsService.ReadSettingAsync<string>(
-                PrePlannedMapConfiguration.Item[Key.ArcgisApiKey]
+                Item[Key.ArcgisApiKey]
             );
             Guard.Against.NullOrEmpty(
                 apiKey,
@@ -149,15 +163,14 @@ public partial class ConfigurationService : IConfigurationService
             );
             if (apiKey is not null)
             {
-                ArcGISRuntimeEnvironment.Initialize(
-                    config =>
-                        config
-                            // .UseLicense("[Your ArcGIS Maps SDK License key]")
-                            .UseApiKey(apiKey)
-                            .ConfigureAuthentication(
-                                auth => auth.UseDefaultChallengeHandler() // Use the default authentication dialog
-                            // .UseOAuthAuthorizeHandler(myOauthAuthorizationHandler) // Configure a custom OAuth dialog
-                            )
+                ArcGISRuntimeEnvironment.Initialize(config =>
+                    config
+                        // .UseLicense("[Your ArcGIS Maps SDK License key]")
+                        .UseApiKey(apiKey)
+                        .ConfigureAuthentication(auth =>
+                            auth.UseDefaultChallengeHandler() // Use the default authentication dialog
+                        // .UseOAuthAuthorizeHandler(myOauthAuthorizationHandler) // Configure a custom OAuth dialog
+                        )
                 );
             }
             logger.LogInformation(
