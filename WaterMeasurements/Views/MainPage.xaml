@@ -396,12 +396,16 @@
 
                                 <StackPanel Margin="0,0,0,0">
 
-                                    <controls:SettingsExpander Description="Keys for development and production" Header="ArcGIS Keys">
+                                    <controls:SettingsExpander x:Uid="Settings_ArcGISKeys">
+
+                                        <ComboBox
+                                            x:Name="licenseComboBox"
+                                            Margin="0,0,10,0"
+                                            SelectionChanged="Select_License_Click" />
 
                                         <controls:SettingsExpander.Items>
 
                                             <controls:SettingsCard HorizontalContentAlignment="Stretch">
-
                                                 <Grid>
                                                     <Grid.RowDefinitions>
                                                         <RowDefinition Height="*" />
@@ -422,7 +426,7 @@
                                                             Template="{StaticResource ButtonHelpTemplate}" />
                                                         <ToolTipService.ToolTip>
                                                             <ToolTip
-                                                                Content="API key for application from developer account."
+                                                                x:Uid="Settings_ApiKeyToolTip"
                                                                 HorizontalOffset="200"
                                                                 VerticalOffset="-48" />
                                                         </ToolTipService.ToolTip>
@@ -441,9 +445,9 @@
                                                         PasswordRevealMode="Hidden" />
                                                     <TextBlock
                                                         x:Name="ApiKeyArcGISError"
-                                                        VerticalAlignment="Center"
-                                                        Margin="10,0,0,0"
                                                         Grid.Row="2"
+                                                        Margin="10,0,0,0"
+                                                        VerticalAlignment="Center"
                                                         Foreground="{ThemeResource SystemFillColorCriticalBrush}"
                                                         Text="{x:Bind MapConfigurationView.ApiKeyError, Mode=OneWay}"
                                                         Visibility="{x:Bind MapConfigurationView.ApiKeyErrorVisibility, Mode=OneWay}" />
@@ -456,6 +460,63 @@
                                                         IsChecked="False"
                                                         Unchecked="RevealApiKey_Changed" />
                                                 </Grid>
+                                            </controls:SettingsCard>
+
+                                            <controls:SettingsCard HorizontalContentAlignment="Stretch">
+                                                <Grid>
+                                                    <Grid.RowDefinitions>
+                                                        <RowDefinition Height="*" />
+                                                        <RowDefinition Height="*" />
+                                                        <RowDefinition Height="*" />
+                                                    </Grid.RowDefinitions>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*" MinWidth="380" />
+                                                    </Grid.ColumnDefinitions>
+
+                                                    <StackPanel HorizontalAlignment="Stretch" Orientation="Horizontal">
+                                                        <TextBlock x:Uid="Settings_LicenseKey" />
+                                                        <Button
+                                                            Width="12"
+                                                            Height="12"
+                                                            Margin="5,0,0,0"
+                                                            Click="{x:Bind MapConfigurationView.ArcGISApiKeyHelpClick}"
+                                                            Template="{StaticResource ButtonHelpTemplate}" />
+                                                        <ToolTipService.ToolTip>
+                                                            <ToolTip
+                                                                x:Uid="Settings_LicenseKeyToolTip"
+                                                                HorizontalOffset="200"
+                                                                VerticalOffset="-48" />
+                                                        </ToolTipService.ToolTip>
+                                                    </StackPanel>
+                                                    <PasswordBox
+                                                        x:Name="LicenseKeyArcGIS"
+                                                        Grid.Row="1"
+                                                        Width="450"
+                                                        MaxWidth="500"
+                                                        Margin="10,5,0,0"
+                                                        HorizontalAlignment="Stretch"
+                                                        AutomationProperties.Name="ArcGIS API key password box"
+                                                        LostFocus="{x:Bind MapConfigurationView.StoreLicenseKeyAsync, Mode=OneWay}"
+                                                        Password="{x:Bind MapConfigurationView.LicenseKey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                        PasswordChanged="{x:Bind MapConfigurationView.LicenseKeyIsChanging, Mode=OneWay}"
+                                                        PasswordRevealMode="Hidden" />
+                                                    <TextBlock
+                                                        x:Name="LicenseKeyArcGISError"
+                                                        Grid.Row="2"
+                                                        Margin="10,0,0,0"
+                                                        VerticalAlignment="Center"
+                                                        Foreground="{ThemeResource SystemFillColorCriticalBrush}"
+                                                        Text="{x:Bind MapConfigurationView.LicenseKeyError, Mode=OneWay}"
+                                                        Visibility="{x:Bind MapConfigurationView.LicenseKeyErrorVisibility, Mode=OneWay}" />
+                                                    <CheckBox
+                                                        x:Name="RevealLicenseKey"
+                                                        x:Uid="Settings_RevealLicenseKey"
+                                                        Grid.Row="2"
+                                                        HorizontalAlignment="Right"
+                                                        Checked="RevealLicenseKey_Changed"
+                                                        IsChecked="False"
+                                                        Unchecked="RevealLicenseKey_Changed" />
+                                                </Grid>
 
                                             </controls:SettingsCard>
 
@@ -463,7 +524,7 @@
                                     </controls:SettingsExpander>
 
 
-                                    <controls:SettingsExpander Description="Main map settings from ArcGIS online" Header="Web Map Settings">
+                                    <controls:SettingsExpander x:Uid="Settings_WebMap">
 
                                         <controls:SettingsExpander.Items>
 
@@ -481,7 +542,7 @@
                                                                 Template="{StaticResource ButtonHelpTemplate}" />
                                                             <ToolTipService.ToolTip>
                                                                 <ToolTip
-                                                                    Content="Id from hosted Web Map, ID field in Details."
+                                                                    x:Uid="Settings_WebMapToolTip"
                                                                     HorizontalOffset="200"
                                                                     VerticalOffset="-48" />
                                                             </ToolTipService.ToolTip>
@@ -489,11 +550,11 @@
                                                         <TextBox
                                                             x:Name="WebMapId"
                                                             MaxWidth="450"
-                                                            IsSpellCheckEnabled="False"
                                                             Margin="10,5,0,0"
+                                                            IsSpellCheckEnabled="False"
                                                             LostFocus="{x:Bind MapConfigurationView.StorePreplannedMapIdAsync, Mode=OneWay}"
-                                                            Text="{x:Bind MapConfigurationView.PreplannedMapId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
-                                                            TextChanged="{x:Bind MapConfigurationView.PreplannedMapIdIsChanging, Mode=OneWay}"/>
+                                                            Text="{x:Bind MapConfigurationView.PreplannedMapId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                            TextChanged="{x:Bind MapConfigurationView.PreplannedMapIdIsChanging, Mode=OneWay}" />
                                                         <TextBlock
                                                             x:Name="WebMapIdError"
                                                             HorizontalAlignment="right"
@@ -513,7 +574,7 @@
                                                                 Template="{StaticResource ButtonHelpTemplate}" />
                                                             <ToolTipService.ToolTip>
                                                                 <ToolTip
-                                                                    Content="Name from Web Map, Settings, OfflineMap areas."
+                                                                    x:Uid="Settings_PreplannedMapNameToolTip"
                                                                     HorizontalOffset="200"
                                                                     VerticalOffset="-48" />
                                                             </ToolTipService.ToolTip>

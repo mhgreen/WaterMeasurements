@@ -31,6 +31,9 @@ using static WaterMeasurements.Models.PrePlannedMapConfiguration;
 
 namespace WaterMeasurements.ViewModels;
 
+public class SetLicenseTypeMessage(string licenseType)
+    : ValueChangedMessage<string>(licenseType) { }
+
 public partial class MapConfigurationViewModel : ObservableValidator
 {
     private readonly ILogger<MapConfigurationViewModel> Logger;
@@ -195,12 +198,12 @@ public partial class MapConfigurationViewModel : ObservableValidator
     public void PreplannedMapIdIsChanging()
     {
         // Log to trace that the PreplannedMapIdIsChanging command was called.
-        Logger.LogDebug(
+        Logger.LogTrace(
             MapConfigurationViewModelLog,
             "MapConfigurationViewModel, PreplannedMapIdIsChanging: PreplannedMapIdIsChanging invoked."
         );
         // Log the PreplannedMapId.
-        Logger.LogDebug(
+        Logger.LogTrace(
             MapConfigurationViewModelLog,
             "MapConfigurationViewModel, PreplannedMapIdIsChanging: PreplannedMapId: {preplannedMapId}.",
             PreplannedMapId
@@ -215,7 +218,7 @@ public partial class MapConfigurationViewModel : ObservableValidator
                 results
             );
             // Log isValid to trace.
-            Logger.LogDebug(
+            Logger.LogTrace(
                 MapConfigurationViewModelLog,
                 "MapConfigurationViewModel, PreplannedMapIdIsChanging: isValid: {isValid}.",
                 preplannedMapIdValid
@@ -225,7 +228,7 @@ public partial class MapConfigurationViewModel : ObservableValidator
                 var firstValidationResult = results.FirstOrDefault();
                 if (firstValidationResult != null)
                 {
-                    Logger.LogDebug(
+                    Logger.LogTrace(
                         MapConfigurationViewModelLog,
                         "MapConfigurationViewModel, PreplannedMapIdIsChanging: firstValidationResult: {firstValidationResult}.",
                         firstValidationResult
@@ -235,7 +238,7 @@ public partial class MapConfigurationViewModel : ObservableValidator
                 {
                     if (firstValidationResult.ToString() == "NeedId")
                     {
-                        Logger.LogDebug(
+                        Logger.LogTrace(
                             MapConfigurationViewModelLog,
                             "MapConfigurationViewModel, PreplannedMapIdIsChanging: NeedId error."
                         );
@@ -244,7 +247,7 @@ public partial class MapConfigurationViewModel : ObservableValidator
                     }
                     if (firstValidationResult.ToString() == "NotOneToHundred")
                     {
-                        Logger.LogDebug(
+                        Logger.LogTrace(
                             MapConfigurationViewModelLog,
                             "MapConfigurationViewModel, PreplannedMapIdIsChanging: NotOneToHundred error."
                         );
@@ -302,7 +305,7 @@ public partial class MapConfigurationViewModel : ObservableValidator
                 var firstValidationResult = results.FirstOrDefault();
                 if (firstValidationResult != null)
                 {
-                    Logger.LogDebug(
+                    Logger.LogTrace(
                         MapConfigurationViewModelLog,
                         "MapConfigurationViewModel, ApiKeyIsChanging: firstValidationResult: {firstValidationResult}.",
                         firstValidationResult
@@ -379,7 +382,7 @@ public partial class MapConfigurationViewModel : ObservableValidator
                 var firstValidationResult = results.FirstOrDefault();
                 if (firstValidationResult != null)
                 {
-                    Logger.LogDebug(
+                    Logger.LogTrace(
                         MapConfigurationViewModelLog,
                         "MapConfigurationViewModel, LicenseKeyIsChanging: firstValidationResult: {firstValidationResult}.",
                         firstValidationResult
@@ -641,9 +644,6 @@ public partial class MapConfigurationViewModel : ObservableValidator
         Logger = logger;
         LocalSettingsService = localSettingsService;
 
-        // ErrorsChanged += MapConfigurationErrorsChanged;
-        // PropertyChanged += MapConfigurationPropertyChanged;
-
         _ = Initialize();
         // Log that the MapConfigurationViewModel is starting.
         Logger.LogInformation(MapConfigurationViewModelLog, "Starting MapConfigurationViewModel");
@@ -687,6 +687,37 @@ public partial class MapConfigurationViewModel : ObservableValidator
                 MapConfigurationViewModelLog,
                 "MapConfigurationViewModel, Initialize: ApiKey: {ApiKey}.",
                 ApiKey
+            );
+            // Get the license key from local settings.
+            LicenseKey = await LocalSettingsService.ReadSettingAsync<string>(
+                PrePlannedMapConfiguration.Item[PrePlannedMapConfiguration.Key.ArcgisLicenseKey]
+            );
+            // Log the license key.
+            Logger.LogDebug(
+                MapConfigurationViewModelLog,
+                "MapConfigurationViewModel, Initialize: LicenseKey: {LicenseKey}.",
+                LicenseKey
+            );
+            // Define a message handler for the SetLicenseTypeMessage.
+            WeakReferenceMessenger.Default.Register<
+                MapConfigurationViewModel,
+                SetLicenseTypeMessage
+            >(
+                this,
+                async (recipient, message) =>
+                {
+                    // Log the license type.
+                    Logger.LogDebug(
+                        MapConfigurationViewModelLog,
+                        "MapConfigurationViewModel, Initialize: License type: {licenseType}.",
+                        message.Value
+                    );
+                    // set the license type in the local settings.
+                    await LocalSettingsService.SaveSettingAsync(
+                        Item[Key.CurrentArcGisKey],
+                        message.Value
+                    );
+                }
             );
         }
         catch (Exception exception)

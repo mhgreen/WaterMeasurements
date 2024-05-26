@@ -161,7 +161,33 @@ public partial class ConfigurationService : IConfigurationService
                 nameof(apiKey),
                 "Configuration Service, Initialize(): apiKey is null."
             );
-            if (apiKey is not null)
+            var licenseKey = await localSettingsService.ReadSettingAsync<string>(
+                Item[Key.ArcgisLicenseKey]
+            );
+            Guard.Against.NullOrEmpty(
+                licenseKey,
+                nameof(licenseKey),
+                "Configuration Service, Initialize(): licenseKey is null."
+            );
+            var currentArcGisKey = await localSettingsService.ReadSettingAsync<string>(
+                Item[Key.CurrentArcGisKey]
+            );
+            // If the currentArcGisKey is null, set it to "APIKey" as a default.
+            currentArcGisKey ??= "APIKey";
+
+            if (currentArcGisKey == "LicenseKey")
+            {
+                ArcGISRuntimeEnvironment.Initialize(config =>
+                    config
+                        .UseLicense(licenseKey)
+                        // .UseApiKey("[Your ArcGIS location services API Key]")
+                        .ConfigureAuthentication(auth =>
+                            auth.UseDefaultChallengeHandler() // Use the default authentication dialog
+                        // .UseOAuthAuthorizeHandler(myOauthAuthorizationHandler) // Configure a custom OAuth dialog
+                        )
+                );
+            }
+            else
             {
                 ArcGISRuntimeEnvironment.Initialize(config =>
                     config

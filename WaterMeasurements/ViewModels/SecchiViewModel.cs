@@ -1774,51 +1774,6 @@ public partial class SecchiViewModel : ObservableRecipient
                     );
                 }
             }
-
-            /*
-            // Send an UpdateFeatureMessage to the GeoDatabaseService.
-            WeakReferenceMessenger.Default.Send<UpdateFeatureMessage, uint>(
-                new UpdateFeatureMessage(
-                    new FeatureUpdateMessage("SecchiLocations", "LocationId", queryResult.First())
-                ),
-                secchiLocationsChannel
-            );
-
-            // Find the item in SecchiLocations that matches locationID and remove that item.
-            var secchiLocationDisplay = SecchiLocations.FirstOrDefault(x =>
-                x.LocationId == locationId
-            );
-            if (secchiLocationDisplay != null)
-            {
-                SecchiLocations.Remove(secchiLocationDisplay);
-            }
-            else
-            {
-                logger.LogError(
-                    SecchiViewModelLog,
-                    "SecchiViewModel, UpdateLocation:: LocationId: {locationId} not found in SecchiLocations.",
-                    locationId
-                );
-            }
-
-            // Send a message to the SqliteService to update the location in the table.
-            WeakReferenceMessenger.Default.Send<UpdateLocationRecordInTableMessage>(
-                new UpdateLocationRecordInTableMessage(
-                    new UpdateLocationRecordInTable(
-                        new LocationRecord(
-                            secchiLocationDisplay.Latitude,
-                            secchiLocationDisplay.Longitude,
-                            secchiLocationDisplay.LocationId,
-                            secchiLocationDisplay.LocationName,
-                            secchiLocationDisplay.LocationType,
-                            secchiLocationDisplay.RecordStatus,
-                            secchiLocationDisplay.LocationCollected
-                        ),
-                        DbType.SecchiLocations
-                    )
-                )
-            );
-            */
         }
         catch (Exception exception)
         {

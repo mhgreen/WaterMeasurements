@@ -132,12 +132,12 @@ public partial class SecchiConfigurationViewModel : ObservableValidator
         // Log to trace that the SecchiObservationsIsChanging command was called.
         Logger.LogTrace(
             SecchiConfigurationViewModelLog,
-            "SecchiObservationsIsChanging(): SecchiObservationsIsChanging invoked."
+            "SecchiConfigurationViewModel, SecchiObservationsIsChanging: SecchiObservationsIsChanging invoked."
         );
         // Log the SecchiObservations.
         Logger.LogTrace(
             SecchiConfigurationViewModelLog,
-            "SecchiObservationsIsChanging(): SecchiObservations: {secchiObservations}.",
+            "SecchiConfigurationViewModel, SecchiObservationsIsChanging: SecchiObservations: {secchiObservations}.",
             SecchiObservations
         );
 
@@ -150,7 +150,7 @@ public partial class SecchiConfigurationViewModel : ObservableValidator
         // Log isValid to debug.
         Logger.LogTrace(
             SecchiConfigurationViewModelLog,
-            "SecchiObservationsIsChanging(): isValid: {isValid}.",
+            "SecchiConfigurationViewModel, SecchiObservationsIsChanging: isValid: {isValid}.",
             secchiObservationsValid
         );
         if (secchiObservationsValid is false)
@@ -160,7 +160,7 @@ public partial class SecchiConfigurationViewModel : ObservableValidator
             {
                 Logger.LogDebug(
                     SecchiConfigurationViewModelLog,
-                    "SecchiObservationsIsChanging(): firstValidationResult: {firstValidationResult}.",
+                    "SecchiConfigurationViewModel, SecchiObservationsIsChanging: firstValidationResult: {firstValidationResult}.",
                     firstValidationResult
                 );
             }
@@ -170,7 +170,7 @@ public partial class SecchiConfigurationViewModel : ObservableValidator
                 {
                     Logger.LogTrace(
                         SecchiConfigurationViewModelLog,
-                        "SecchiObservationsIsChanging(): NeedURL error."
+                        "SecchiConfigurationViewModel, SecchiObservationsIsChanging: NeedURL error."
                     );
                     SecchiObservationsError = unableWithoutURL;
                     SecchiObservationsErrorVisibility = "Visible";
@@ -179,7 +179,7 @@ public partial class SecchiConfigurationViewModel : ObservableValidator
                 {
                     Logger.LogTrace(
                         SecchiConfigurationViewModelLog,
-                        "SecchiObservationsIsChanging(): ObsNotOneToHundredFifty error."
+                        "SecchiConfigurationViewModel, SecchiObservationsIsChanging: ObsNotOneToHundredFifty error."
                     );
                     SecchiObservationsError = stringNotOneToHundredFifty;
                     SecchiObservationsErrorVisibility = "Visible";
@@ -188,7 +188,7 @@ public partial class SecchiConfigurationViewModel : ObservableValidator
                 {
                     Logger.LogTrace(
                         SecchiConfigurationViewModelLog,
-                        "SecchiObservationsIsChanging(): InvalidURL error."
+                        "SecchiConfigurationViewModel, SecchiObservationsIsChanging: InvalidURL error."
                     );
                     SecchiObservationsError = urlInvalid;
                     SecchiObservationsErrorVisibility = "Visible";
@@ -208,14 +208,14 @@ public partial class SecchiConfigurationViewModel : ObservableValidator
         {
             Logger.LogTrace(
                 SecchiConfigurationViewModelLog,
-                "StoreSecchiObservationsAsync(): invoked with SecchiObservations set to: {SecchiObservations}",
+                "SecchiConfigurationViewModel, StoreSecchiObservationsAsync: invoked with SecchiObservations set to: {SecchiObservations}",
                 SecchiObservations
             );
 
             Guard.Against.Null(
                 LocalSettingsService,
                 nameof(LocalSettingsService),
-                "StoreSecchiObservationsAsync(): LocalSettingsService is null."
+                "SecchiConfigurationViewModel, StoreSecchiObservationsAsync: LocalSettingsService is null."
             );
             if (SecchiObservations is not null && secchiObservationsValid)
             {
@@ -232,7 +232,7 @@ public partial class SecchiConfigurationViewModel : ObservableValidator
             {
                 Logger.LogTrace(
                     SecchiConfigurationViewModelLog,
-                    "StoreSecchiObservationsAsync(): SecchiObservations did not pass validation or is not yet validated via SecchiObservationsIsChanging(), not saving the value."
+                    "SecchiConfigurationViewModel, StoreSecchiObservationsAsync: SecchiObservations did not pass validation or is not yet validated via SecchiObservationsIsChanging(), not saving the value."
                 );
             }
         }
@@ -241,7 +241,7 @@ public partial class SecchiConfigurationViewModel : ObservableValidator
             Logger.LogError(
                 SecchiConfigurationViewModelLog,
                 exception,
-                "StoreSecchiObservationsAsync(): exception: {exception}.",
+                "SecchiConfigurationViewModel, StoreSecchiObservationsAsync: exception: {exception}.",
                 exception.Message.ToString()
             );
         }
@@ -253,12 +253,12 @@ public partial class SecchiConfigurationViewModel : ObservableValidator
         // Log to trace that the SecchiLocationsIsChanging command was called.
         Logger.LogTrace(
             SecchiConfigurationViewModelLog,
-            "SecchiLocationsIsChanging(): SecchiLocationsIsChanging invoked."
+            "SecchiConfigurationViewModel, SecchiLocationsIsChanging: SecchiLocationsIsChanging invoked."
         );
         // Log the SecchiLocations.
         Logger.LogTrace(
             SecchiConfigurationViewModelLog,
-            "SecchiLocationsIsChanging(): SecchiLocations: {secchiLocations}.",
+            "SecchiConfigurationViewModel, SecchiLocationsIsChanging: SecchiLocations: {secchiLocations}.",
             SecchiLocations
         );
 
@@ -271,7 +271,7 @@ public partial class SecchiConfigurationViewModel : ObservableValidator
         // Log isValid to debug.
         Logger.LogTrace(
             SecchiConfigurationViewModelLog,
-            "SecchiLocationsIsChanging(): isValid: {isValid}.",
+            "SecchiConfigurationViewModel, SecchiLocationsIsChanging: isValid: {isValid}.",
             secchiLocationsValid
         );
         if (secchiLocationsValid is false)
@@ -281,7 +281,7 @@ public partial class SecchiConfigurationViewModel : ObservableValidator
             {
                 Logger.LogDebug(
                     SecchiConfigurationViewModelLog,
-                    "SecchiLocationsIsChanging(): firstValidationResult: {firstValidationResult}.",
+                    "SecchiConfigurationViewModel, SecchiLocationsIsChanging: firstValidationResult: {firstValidationResult}.",
                     firstValidationResult
                 );
             }
@@ -291,7 +291,7 @@ public partial class SecchiConfigurationViewModel : ObservableValidator
                 {
                     Logger.LogTrace(
                         SecchiConfigurationViewModelLog,
-                        "SecchiLocationsIsChanging(): NeedURL error."
+                        "SecchiConfigurationViewModel, SecchiLocationsIsChanging: NeedURL error."
                     );
                     SecchiLocationsError = unableWithoutURL;
                     SecchiLocationsErrorVisibility = "Visible";
@@ -300,7 +300,7 @@ public partial class SecchiConfigurationViewModel : ObservableValidator
                 {
                     Logger.LogTrace(
                         SecchiConfigurationViewModelLog,
-                        "SecchiLocationsIsChanging(): LocNotOneToHundredFifty error."
+                        "SecchiConfigurationViewModel, SecchiLocationsIsChanging: LocNotOneToHundredFifty error."
                     );
                     SecchiLocationsError = stringNotOneToHundredFifty;
                     SecchiLocationsErrorVisibility = "Visible";
@@ -309,7 +309,7 @@ public partial class SecchiConfigurationViewModel : ObservableValidator
                 {
                     Logger.LogTrace(
                         SecchiConfigurationViewModelLog,
-                        "SecchiLocationsIsChanging(): InvalidURL error."
+                        "SecchiConfigurationViewModel, SecchiLocationsIsChanging: InvalidURL error."
                     );
                     SecchiLocationsError = urlInvalid;
                     SecchiLocationsErrorVisibility = "Visible";
@@ -329,14 +329,14 @@ public partial class SecchiConfigurationViewModel : ObservableValidator
         {
             Logger.LogTrace(
                 SecchiConfigurationViewModelLog,
-                "StoreSecchiLocationsAsync(): invoked with SecchiLocations set to: {SecchiLocations}",
+                "SecchiConfigurationViewModel, StoreSecchiLocationsAsync: invoked with SecchiLocations set to: {SecchiLocations}",
                 SecchiLocations
             );
 
             Guard.Against.Null(
                 LocalSettingsService,
                 nameof(LocalSettingsService),
-                "StoreSecchiLocationsAsync(): LocalSettingsService is null."
+                "SecchiConfigurationViewModel, StoreSecchiLocationsAsync: LocalSettingsService is null."
             );
             if (SecchiLocations is not null && secchiLocationsValid)
             {
@@ -353,7 +353,7 @@ public partial class SecchiConfigurationViewModel : ObservableValidator
             {
                 Logger.LogTrace(
                     SecchiConfigurationViewModelLog,
-                    "StoreSecchiLocationsAsync(): SecchiLocations did not pass validation or is not yet validated via SecchiLocationsIsChanging(), not saving the value."
+                    "SecchiConfigurationViewModel, StoreSecchiLocationsAsync: SecchiLocations did not pass validation or is not yet validated via SecchiLocationsIsChanging(), not saving the value."
                 );
             }
         }
@@ -362,7 +362,7 @@ public partial class SecchiConfigurationViewModel : ObservableValidator
             Logger.LogError(
                 SecchiConfigurationViewModelLog,
                 exception,
-                "StoreSecchiLocationsAsync(): exception: {exception}.",
+                "SecchiConfigurationViewModel, StoreSecchiLocationsAsync: exception: {exception}.",
                 exception.Message.ToString()
             );
         }
@@ -374,12 +374,12 @@ public partial class SecchiConfigurationViewModel : ObservableValidator
         // Log to trace that the SecchiGeoTriggerDistanceIsChanging command was called.
         Logger.LogTrace(
             SecchiConfigurationViewModelLog,
-            "SecchiGeoTriggerDistanceIsChanging(): SecchiGeoTriggerDistanceIsChanging invoked."
+            "SecchiConfigurationViewModel, SecchiGeoTriggerDistanceIsChanging: SecchiGeoTriggerDistanceIsChanging invoked."
         );
         // Log the SecchiGeoTriggerDistance.
         Logger.LogTrace(
             SecchiConfigurationViewModelLog,
-            "SecchiGeoTriggerDistanceIsChanging(): SecchiGeoTriggerDistance: {secchiGeoTriggerDistance}.",
+            "SecchiConfigurationViewModel, SecchiGeoTriggerDistanceIsChanging: SecchiGeoTriggerDistance: {secchiGeoTriggerDistance}.",
             SecchiGeoTriggerDistance
         );
 
@@ -395,7 +395,7 @@ public partial class SecchiConfigurationViewModel : ObservableValidator
         // Log isValid to debug.
         Logger.LogTrace(
             SecchiConfigurationViewModelLog,
-            "SecchiGeoTriggerDistanceIsChanging(): isValid: {isValid}.",
+            "SecchiConfigurationViewModel, SecchiGeoTriggerDistanceIsChanging: isValid: {isValid}.",
             secchiTriggerDistanceValid
         );
         if (secchiTriggerDistanceValid is false)
@@ -405,7 +405,7 @@ public partial class SecchiConfigurationViewModel : ObservableValidator
             {
                 Logger.LogDebug(
                     SecchiConfigurationViewModelLog,
-                    "SecchiGeoTriggerDistanceIsChanging(): firstValidationResult: {firstValidationResult}.",
+                    "SecchiConfigurationViewModel, SecchiGeoTriggerDistanceIsChanging: firstValidationResult: {firstValidationResult}.",
                     firstValidationResult
                 );
             }
@@ -415,7 +415,7 @@ public partial class SecchiConfigurationViewModel : ObservableValidator
                 {
                     Logger.LogTrace(
                         SecchiConfigurationViewModelLog,
-                        "SecchiGeoTriggerDistanceIsChanging(): NeedDistance error."
+                        "SecchiConfigurationViewModel, SecchiGeoTriggerDistanceIsChanging: NeedDistance error."
                     );
                     SecchiGeotriggerDistanceError = unableWithoutDistance;
                     SecchiGeotriggerDistanceErrorVisibility = "Visible";
@@ -424,7 +424,7 @@ public partial class SecchiConfigurationViewModel : ObservableValidator
                 {
                     Logger.LogTrace(
                         SecchiConfigurationViewModelLog,
-                        "SecchiGeoTriggerDistanceIsChanging(): NotBetweenOneAndTwenty error."
+                        "SecchiConfigurationViewModel, SecchiGeoTriggerDistanceIsChanging: NotBetweenOneAndTwenty error."
                     );
                     SecchiGeotriggerDistanceError = stringNotOneToTwenty;
                     SecchiGeotriggerDistanceErrorVisibility = "Visible";
@@ -444,14 +444,14 @@ public partial class SecchiConfigurationViewModel : ObservableValidator
         {
             Logger.LogTrace(
                 SecchiConfigurationViewModelLog,
-                "StoreSecchiGeoTriggerDistanceAsync(): invoked with SecchiGeoTriggerDistance set to: {SecchiGeoTriggerDistance}",
+                "SecchiConfigurationViewModel, StoreSecchiGeoTriggerDistanceAsync: invoked with SecchiGeoTriggerDistance set to: {SecchiGeoTriggerDistance}",
                 SecchiGeoTriggerDistance
             );
 
             Guard.Against.Null(
                 LocalSettingsService,
                 nameof(LocalSettingsService),
-                "StoreSecchiGeoTriggerDistanceAsync(): LocalSettingsService is null."
+                "SecchiConfigurationViewModel, StoreSecchiGeoTriggerDistanceAsync: LocalSettingsService is null."
             );
             if (SecchiGeoTriggerDistance is not null && secchiTriggerDistanceValid)
             {
@@ -468,7 +468,7 @@ public partial class SecchiConfigurationViewModel : ObservableValidator
             {
                 Logger.LogTrace(
                     SecchiConfigurationViewModelLog,
-                    "StoreSecchiGeoTriggerDistanceAsync(): SecchiGeoTriggerDistance is null or zero, not saving the value."
+                    "SecchiConfigurationViewModel, StoreSecchiGeoTriggerDistanceAsync: SecchiGeoTriggerDistance is null or zero, not saving the value."
                 );
             }
         }
@@ -477,7 +477,7 @@ public partial class SecchiConfigurationViewModel : ObservableValidator
             Logger.LogError(
                 SecchiConfigurationViewModelLog,
                 exception,
-                "StoreSecchiGeoTriggerDistanceAsync(): exception: {exception}.",
+                "SecchiConfigurationViewModel, StoreSecchiGeoTriggerDistanceAsync: exception: {exception}.",
                 exception.Message.ToString()
             );
         }
@@ -491,12 +491,12 @@ public partial class SecchiConfigurationViewModel : ObservableValidator
         // Log to trace that the ShowErrors command was called.
         Logger.LogTrace(
             SecchiConfigurationViewModelLog,
-            "ShowErrors(): ShowErrors command called."
+            "SecchiConfigurationViewModel, ShowErrors: ShowErrors command called."
         );
         // Log the message.
         Logger.LogTrace(
             SecchiConfigurationViewModelLog,
-            "ShowErrors(): Message: {message}.",
+            "SecchiConfigurationViewModel, ShowErrors: Message: {message}.",
             message
         );
     }
@@ -508,9 +508,6 @@ public partial class SecchiConfigurationViewModel : ObservableValidator
     {
         Logger = logger;
         LocalSettingsService = localSettingsService;
-
-        // ErrorsChanged += MapConfigurationErrorsChanged;
-        // PropertyChanged += MapConfigurationPropertyChanged;
 
         _ = Initialize();
         // Log that the MapConfigurationViewModel is starting.
@@ -527,7 +524,7 @@ public partial class SecchiConfigurationViewModel : ObservableValidator
             Guard.Against.Null(
                 LocalSettingsService,
                 nameof(LocalSettingsService),
-                "Initialize(): LocalSettingsService is null."
+                "SecchiConfigurationViewModel, Initialize: LocalSettingsService is null."
             );
 
             // Get the URL for Secchi observations from local settings.
@@ -548,7 +545,7 @@ public partial class SecchiConfigurationViewModel : ObservableValidator
             // Log to trace the value of unableWithoutURL.
             Logger.LogTrace(
                 SecchiConfigurationViewModelLog,
-                "Initialize(): unableWithoutURL: {unableWithoutURL}.",
+                "SecchiConfigurationViewModel, Initialize: unableWithoutURL: {unableWithoutURL}.",
                 unableWithoutURL
             );
         }
@@ -557,7 +554,7 @@ public partial class SecchiConfigurationViewModel : ObservableValidator
             Logger.LogError(
                 SecchiConfigurationViewModelLog,
                 exception,
-                "Initialize(): exception: {exception}.",
+                "SecchiConfigurationViewModel, Initialize: exception: {exception}.",
                 exception.Message.ToString()
             );
         }
@@ -568,7 +565,7 @@ public partial class SecchiConfigurationViewModel : ObservableValidator
         // Log that the ArcGISApiKeyHelpClick event was fired.
         Logger.LogDebug(
             SecchiConfigurationViewModelLog,
-            "SecchiKeyHelpClick(): SecchiKeyHelpClick event sender {sender}, RoutedEventArgs {eventArgs}.",
+            "SecchiConfigurationViewModel, SecchiKeyHelpClick: SecchiKeyHelpClick event sender {sender}, RoutedEventArgs {eventArgs}.",
             sender.ToString(),
             eventArgs.ToString()
         );

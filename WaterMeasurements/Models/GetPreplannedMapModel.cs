@@ -42,7 +42,8 @@ public static class PrePlannedMapConfiguration
         DownloadOfflineMap,
         ArcgisApiKey,
         OfflineMapIdentifier,
-        ArcgisLicenseKey
+        ArcgisLicenseKey,
+        CurrentArcGisKey
     }
 
     public static Dictionary<Key, string> Item { get; private set; } =
@@ -57,6 +58,7 @@ public static class PrePlannedMapConfiguration
             { Key.DownloadOfflineMap, "DownloadOfflineMap" },
             { Key.ArcgisApiKey, "ArcGISApiKey" },
             { Key.OfflineMapIdentifier, "OfflineMapIdentifier" },
-            { Key.ArcgisLicenseKey, "LicenseKey" }
+            { Key.ArcgisLicenseKey, "LicenseKey" },
+            { Key.CurrentArcGisKey, "CurrentArcGisKey" }
         };
 }

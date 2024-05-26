@@ -21,6 +21,7 @@ using Stateless;
 using WaterMeasurements.Contracts.Services;
 using WaterMeasurements.Models;
 using Windows.ApplicationModel.Store;
+using Windows.Storage;
 using static WaterMeasurements.Models.PrePlannedMapConfiguration;
 
 // using static WaterMeasurements.Models.GetPreplannedMapModel;
@@ -72,7 +73,7 @@ public partial class GetPreplannedMapService : IGetPreplannedMapService
 
     // The ID for a web map item hosted on the server.
     // This is used to make sure that the retrieved map is the correct one.
-    private const string PreplannedMapName = "WaterData_MapArea";
+    private string PreplannedMapName = string.Empty;
 
     // Key for map package path which is stored when the map is downloaded and is used for offline retrieval.
     private const string packagePathKey = "MapPakagePath";
@@ -92,7 +93,7 @@ public partial class GetPreplannedMapService : IGetPreplannedMapService
     // Key to cause download of offline map package (true = cause download, false = regular operation).
     private const string downloadOfflineMapKey = "DownloadOfflineMap";
 
-    // Configure the offline data folder to store secchi map.
+    // Configure the offline data folder to store the offline map.
     private static readonly string offlineDataFolder = Path.Combine(
         WaterMeasurementsFolder,
         "Map",
@@ -213,6 +214,32 @@ public partial class GetPreplannedMapService : IGetPreplannedMapService
                 localSettingsService,
                 nameof(localSettingsService),
                 "GetPreplannedMapService, StateMachine: localSettingsService can not be null."
+            );
+
+            Guard.Against.Null(
+                PrePlannedMapConfiguration.Item[Key.PreplannedMapName],
+                nameof(PrePlannedMapConfiguration.Item),
+                "GetPreplannedMapService, StateMachine: PrePlannedMapConfiguration.Item[Key.PreplannedMapName] can not be null."
+            );
+
+            // Get the preplanned map name from local settings.
+#pragma warning disable CS8601 // Possible null reference assignment.
+            PreplannedMapName = await localSettingsService.ReadSettingAsync<string>(
+                PrePlannedMapConfiguration.Item[Key.PreplannedMapName]
+            );
+#pragma warning restore CS8601 // Possible null reference assignment.
+
+            Guard.Against.NullOrEmpty(
+                PreplannedMapName,
+                nameof(PreplannedMapName),
+                "GetPreplannedMapService, StateMachine: PreplannedMapName can not be null or empty."
+            );
+
+            // Log the preplanned map name.
+            logger.LogDebug(
+                DownloadPreplannedEvent,
+                "GetPreplannedMapService, StateMachine: PreplannedMapName: {PreplannedMapName}.",
+                PreplannedMapName
             );
 
             await localSettingsService.SaveSettingAsync(

@@ -26,6 +26,7 @@ using NLog;
 using NLog.Fluent;
 using Stateless;
 using WaterMeasurements.Contracts.Services;
+using WaterMeasurements.Helpers;
 using WaterMeasurements.Models;
 using WaterMeasurements.Services;
 using WaterMeasurements.Services.IncrementalLoaders;
@@ -55,6 +56,13 @@ public class SetMapAutoPanMessage(bool value) : ValueChangedMessage<bool>(value)
 
 // Message to center the map.
 public class SetMapCenterMessage(bool value) : ValueChangedMessage<bool>(value) { }
+
+// ComboBox item model to be used where text and tag are needed.
+public class ComboBoxItemModel
+{
+    public required string DisplayText { get; set; }
+    public required string Tag { get; set; }
+}
 
 public partial class MainPage : Page
 {
@@ -150,63 +158,6 @@ public partial class MainPage : Page
         ClearLocationSelection();
     }
 
-    /*
-    [RelayCommand]
-    public void StoreDeveloperKeyAsync()
-    {
-        apiKey = ApiKeyArcGIS.Password;
-        Logger.Debug("API key changed to: " + apiKey);
-
-        try
-        {
-            Task.Run(async () =>
-                {
-                    await ViewModel.StoreSettingByKeyAsync(
-                        PrePlannedMapConfiguration.Item[Key.ArcgisApiKey],
-                        apiKey
-                    );
-                })
-                .Wait();
-        }
-        catch (Exception exception)
-        {
-            // Log the exception message to error.
-            Logger.Error(
-                exception,
-                "An error occurred in MainPage.xaml.cs, StoreDeveloperKeyAsync: {exception}",
-                exception.Message
-            );
-        }
-    }
-
-    [RelayCommand]
-    public void StoreWebMapIdAsync()
-    {
-        Logger.Debug("webMapId changed to: " + WebMapId.Text);
-
-        try
-        {
-            Task.Run(async () =>
-                {
-                    await ViewModel.StoreSettingByKeyAsync(
-                        PrePlannedMapConfiguration.Item[Key.OfflineMapIdentifier],
-                        WebMapId.Text
-                    );
-                })
-                .Wait();
-        }
-        catch (Exception exception)
-        {
-            // Log the exception message to error.
-            Logger.Error(
-                exception,
-                "An error occurred in MainPage.xaml.cs, StoreWebMapIdAsync: {exception}",
-                exception.Message
-            );
-        }
-    }
-    */
-
     private void RevealApiKey_Changed(object sender, RoutedEventArgs routedEventArgs)
     {
         _ = sender;
@@ -218,6 +169,20 @@ public partial class MainPage : Page
         else
         {
             ApiKeyArcGIS.PasswordRevealMode = PasswordRevealMode.Hidden;
+        }
+    }
+
+    private void RevealLicenseKey_Changed(object sender, RoutedEventArgs routedEventArgs)
+    {
+        _ = sender;
+        _ = routedEventArgs;
+        if (RevealLicenseKey.IsChecked == true)
+        {
+            LicenseKeyArcGIS.PasswordRevealMode = PasswordRevealMode.Visible;
+        }
+        else
+        {
+            LicenseKeyArcGIS.PasswordRevealMode = PasswordRevealMode.Hidden;
         }
     }
 
@@ -258,6 +223,22 @@ public partial class MainPage : Page
             }
             // centerAutoPanSelected = false;
         };
+
+        // This defines a list of items for the licenseComboBox.
+        // It is done this way in order to localize the display text.
+        // Tags are used to identify the selected item as the text is localized.
+        ComboBoxItemModel[] items =
+        [
+            new() { DisplayText = ResourceExtensions.GetLocalized("UseAPI"), Tag = "APIKey" },
+            new()
+            {
+                DisplayText = ResourceExtensions.GetLocalized("UseLicense"),
+                Tag = "LicenseKey"
+            },
+        ];
+        licenseComboBox.ItemsSource = items;
+        licenseComboBox.PlaceholderText = ResourceExtensions.GetLocalized("SelectLicenseType");
+        licenseComboBox.DisplayMemberPath = "DisplayText";
 
         // Send the UI Dispatcher Queue to subscribers.
         DispatcherQueue.TryEnqueue(() =>
@@ -408,19 +389,6 @@ public partial class MainPage : Page
         {
             Logger.Debug("MainPage.xaml.cs, Initialize: Initializing MainPage");
 
-            /*
-            apiKey = await ViewModel.RetrieveSettingByKeyAsync<string>(
-                PrePlannedMapConfiguration.Item[Key.ArcgisApiKey]
-            );
-
-            webMapId = await ViewModel.RetrieveSettingByKeyAsync<string>(
-                PrePlannedMapConfiguration.Item[Key.OfflineMapIdentifier]
-            );
-            var preplannedMapName = await ViewModel.RetrieveSettingByKeyAsync<string>(
-                PrePlannedMapConfiguration.Item[Key.PreplannedMapName]
-            );
-            */
-
             // Get the preplanned map name from local settings.
             var preplannedMapName = await LocalSettingsService.ReadSettingAsync<string>(
                 Item[Key.PreplannedMapName]
@@ -472,6 +440,23 @@ public partial class MainPage : Page
                 );
             }
 
+            // Get the current ArcGIS key type from local settings.
+            var licenseKeyType = await LocalSettingsService.ReadSettingAsync<string>(
+                Item[Key.CurrentArcGisKey]
+            );
+
+            // If the licenseKeyType is APIKey, then set the licenseComboBox to the first item: APIKey.
+            // If the licenseKeyType is LicenseKey, then set the licenseComboBox to the second item: LicenseKey.
+            // Otherwise, the licenseComboBox is not set and will default to the placeholder text.
+            if (licenseKeyType == "APIKey")
+            {
+                licenseComboBox.SelectedIndex = 0;
+            }
+            else if (licenseKeyType == "LicenseKey")
+            {
+                licenseComboBox.SelectedIndex = 1;
+            }
+
             SetLocationOverlay();
 
             // Register to get the current collection view.
@@ -489,84 +474,6 @@ public partial class MainPage : Page
                 }
             );
 
-            /*
-            if (MapView.GraphicsOverlays is not null)
-            {
-                // Create a graphics overlay and add it to the map view.
-                graphicsOverlay = new GraphicsOverlay { Id = "SecchiLocations" };
-                selectionOverlay = new GraphicsOverlay();
-                // var secchiLocationPoints = new GraphicsOverlay();
-                MapView.GraphicsOverlays.Add(graphicsOverlay);
-                MapView.GraphicsOverlays.Add(selectionOverlay);
-
-                // Load the Secchi locations onto the map in response to the FeatureTableMessage.
-                if (secchiChannelNumbers.LocationChannel is not 0)
-                {
-                    // Register to get location featuretable messages on the secchiLocationsChannel.
-                    WeakReferenceMessenger.Default.Register<FeatureTableMessage, uint>(
-                        this,
-                        secchiChannelNumbers.LocationChannel,
-                        (recipient, message) =>
-                        {
-                            Logger.Trace(
-                                "MainPage.xaml.cs, FeatureTableMessage, secchiLocationsChannel: {secchiLocationsChannel}, FeatureTable: {featureTable}.",
-                                secchiChannelNumbers.LocationChannel,
-                                message.Value.TableName
-                            );
-                            if (MapView.Map is not null)
-                            {
-                                secchiLocationFeatures = message.Value;
-
-                                // create a where clause to get all the features
-                                var queryParameters = new QueryParameters() { WhereClause = "1=1" };
-
-                                // query the feature table
-                                var queryResult = secchiLocationFeatures
-                                    .QueryFeaturesAsync(queryParameters)
-                                    .Result;
-
-                                foreach (var feature in queryResult)
-                                {
-                                    // Create a new graphic using the feature's geometry and the collection location symbol
-                                    var graphic = new Graphic(
-                                        feature.Geometry,
-                                        MapSymbols.CollectionLocationSymbol
-                                    );
-
-                                    // Add the LocationId from the feature's attributes to the graphic's attributes
-                                    graphic.Attributes.Add(
-                                        "LocationId",
-                                        feature.Attributes["LocationId"]
-                                    );
-
-                                    // Add the graphic to the graphics overlay
-                                    graphicsOverlay.Graphics.Add(graphic);
-                                }
-                            }
-                            else
-                            {
-                                // Log to trace that the MapView.Map is null.
-                                Logger.Error(
-                                    "MainPage.xaml.cs, MainPage FeatureTableMessage handler: MapView.Map is null, locations will not be displayed."
-                                );
-                            }
-                        }
-                    );
-                }
-                else
-                {
-                    // Log to trace that the secchiLocationsChannel is not set.
-                    Logger.Error("MainPage.xaml.cs, MainPage: secchiLocationsChannel is not set.");
-                }
-            }
-            else
-            {
-                // Log to error that the MapView.GraphicsOverlays is null.
-                Logger.Error("MainPage.xaml.cs, Initialize: MapView.GraphicsOverlays is null.");
-            }
-
-            */
-
             // Add a handler for the MapViewTapped event.
             MapView.GeoViewTapped += OnMapViewTapped;
 
@@ -577,8 +484,8 @@ public partial class MainPage : Page
             geometryEditor = new GeometryEditor();
             MapView.GeometryEditor = geometryEditor;
 
-            // Get the current value of the GeoTriggerDistanceMeters setting.
-            geoTriggerDistance = await ViewModel.RetrieveSettingByKeyAsync<double>(
+            // Get the preplanned map name from local settings.
+            geoTriggerDistance = await LocalSettingsService.ReadSettingAsync<double>(
                 SecchiConfiguration.Item[SecchiConfiguration.Key.GeoTriggerDistanceMeters]
             );
 
@@ -644,11 +551,6 @@ public partial class MainPage : Page
                     );
                 }
             );
-
-            // Request an ArcGIS Runtime initialization from the ConfigurationService via the MainViewModel.
-            // Do this by calling ArcGISRuntimeInitialize() from RequestArcGISRuntimeInitializeMessage in the MainViewModel.
-            // This is done this way in order to manage the sequence of events.
-            // await ViewModel.RequestArcGISRuntimeInitializeMessage();
 
             // Send an ArcGISRuntimeInitializeRequestMessage requesting runtime initialization from the ConfigurationService.
             WeakReferenceMessenger.Default.Send(new ArcGISRuntimeInitializeRequestMessage());
@@ -1000,74 +902,6 @@ public partial class MainPage : Page
         }
     }
 
-    /*
-    public void SecchiCollectionListView_ItemClick(object sender, ItemClickEventArgs eventArgs)
-    {
-        _ = sender;
-        var item = eventArgs.ClickedItem as SecchiCollectionDisplay;
-
-        if (item is not null)
-        {
-            Logger.Debug(
-                "MainPage.xaml.cs, SecchiCollectionListView_ItemClick: {locationName}, Lat {latitude}, Lon {longitude}, OBJECTID {ObjectId}",
-                item.LocationName,
-                item.Latitude,
-                item.Longitude,
-                item.ObjectId
-            );
-
-            if (item.Latitude is null || item.Longitude is null)
-            {
-                // Log to error that the Latitude or Longitude is null.
-                Logger.Error(
-                    "MainPage.xaml.cs, SecchiCollectionListView_ItemClick: Latitude({latitude}) or Longitude({longitude}) is null, unable to display location.",
-                    item.Latitude,
-                    item.Longitude
-                );
-                return;
-            }
-
-            // Log to debug that the Center and AutoPan buttons are being deselected.
-            Logger.Debug(
-                "MainPage.xaml.cs, SecchiCollectionListView_ItemClick: Deselecting Center and AutoPan buttons."
-            );
-            DeselectCenterAutoPan();
-
-            // Create a MapPoint from the latitude and longitude
-            var mapPoint = new MapPoint(
-                (double)item.Longitude,
-                (double)item.Latitude,
-                SpatialReferences.Wgs84
-            );
-
-            // Center the map on the selected location
-            MapView.SetViewpointCenterAsync(mapPoint);
-
-            var graphicWithSymbol = new Graphic(mapPoint, MapSymbols.HighlightLocationSymbol);
-            if (selectionOverlay != null)
-            {
-                // Log to trace that the selectionOverlay is being cleared.
-                Logger.Trace(
-                    "MainPage.xaml.cs, SecchiCollectionListView_ItemClick: Clearing selectionOverlay."
-                );
-                selectionOverlay.Graphics.Clear();
-                // Log to trace that the graphicWithSymbol is being added to the selectionOverlay.
-                Logger.Trace(
-                    "MainPage.xaml.cs, SecchiCollectionListView_ItemClick: Adding graphicWithSymbol to selectionOverlay."
-                );
-                selectionOverlay.Graphics.Add(graphicWithSymbol);
-            }
-            else
-            {
-                // Log to error that the selectionOverlay is null.
-                Logger.Error(
-                    "MainPage.xaml.cs, SecchiCollectionListView_ItemClick: selectionOverlay is null."
-                );
-            }
-        }
-    }
-    */
-
     public void SecchiNavView_ItemInvoked(
         NavigationView sender,
         NavigationViewItemInvokedEventArgs args
@@ -1244,37 +1078,6 @@ public partial class MainPage : Page
             );
 
             locationInfo.LocationNumber = nextLocationNumber;
-
-            /*
-            if (secchiLocationFeatures is null)
-            {
-                // Log to trace that the secchiLocationFeatures is null.
-                Logger.Error(
-                    "MainPage.xaml.cs, SaveLocationAsync: secchiLocationFeatures is null."
-                );
-                return;
-            }
-
-            // create a where clause to get all the features
-            var queryParameters = new QueryParameters() { WhereClause = "1=1" };
-
-            // query the feature table
-            var queryResult = await secchiLocationFeatures.QueryFeaturesAsync(queryParameters);
-
-            // find the maximum LocationId
-            var maxLocationId = queryResult
-                .Select(feature => Convert.ToInt32(feature.Attributes["LocationId"]))
-                .Max();
-
-            // the next location number is one more than the maximum
-            var nextLocationNumber = maxLocationId + 1;
-
-            // Log to trace the nextLocationNumber.
-            Logger.Trace(
-                "MainPage.xaml.cs, SaveLocationAsync: nextLocationNumber: {nextLocationNumber}",
-                nextLocationNumber
-            );
-            */
 
             // Set the location name to the value of NewLocationView.LocationName.
             // This could be retrieved from either NewLocationView or from SecchiLocationName in MainPage.xaml
@@ -2264,6 +2067,71 @@ public partial class MainPage : Page
             Logger.Error(
                 exception,
                 "MainPage.xaml.cs, Delete_Observation_Click: An error occurred in Delete_Observation_Click: {exception}",
+                exception.Message
+            );
+        }
+    }
+
+    private void Select_License_Click(object sender, RoutedEventArgs eventArgs)
+    {
+        // Log to trace that the Select_License_Click method was called.
+        Logger.Trace("MainPage.xaml.cs, Select_License_Click: Select_License_Click method called.");
+
+        var selectedItem = (ComboBoxItemModel)licenseComboBox.SelectedItem;
+        var selectedTag = selectedItem.Tag;
+
+        try
+        {
+            Guard.Against.Null(
+                selectedTag,
+                nameof(selectedTag),
+                "Tag in Select_License_Click is null."
+            );
+
+            // var selectedTag = selected.Tag;
+
+            // Log to trace the value of selectedTag.
+            Logger.Trace(
+                "MainPage.xaml.cs, Select_License_Click: SelectedTag: {selectedTag}",
+                selectedTag
+            );
+
+            // Select the appropriate measurement type to add based on current view.
+            switch (selectedTag)
+            {
+                case "APIKey":
+                    // Select the license.
+                    // Log to debug the license selection.
+                    Logger.Trace(
+                        "MainPage.xaml.cs, Select_License_Click: License selected: Use API Key"
+                    );
+                    // Send a message to set the license type to APIKey.
+                    WeakReferenceMessenger.Default.Send(new SetLicenseTypeMessage(selectedTag));
+                    break;
+                case "LicenseKey":
+                    // Your code here
+                    // log to debug the license selection.
+                    Logger.Trace(
+                        "MainPage.xaml.cs, Select_License_Click: License selected: Use License"
+                    );
+                    // Send a message to set the license type to LicenseKey.
+                    WeakReferenceMessenger.Default.Send(new SetLicenseTypeMessage(selectedTag));
+                    break;
+                default:
+                    // Log to error that the license type is not recognized and its value.
+                    Logger.Error(
+                        "MainPage.xaml.cs, SaveLocationAsync: Value for DataCollectionView.SelectView not recognized: {selectedTag}.",
+                        selectedTag
+                    );
+                    break;
+            }
+        }
+        catch (Exception exception)
+        {
+            // Log to trace the exception message.
+            Logger.Error(
+                exception,
+                "MainPage.xaml.cs, Select_License_Click: An error occurred in Select_License_Click: {exception}",
                 exception.Message
             );
         }

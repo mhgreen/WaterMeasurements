@@ -300,4 +300,46 @@
   <data name="Error_UnableWithoutKey" xml:space="preserve">
     <value>Unable to validate without key.</value>
   </data>
+  <data name="SelectLicenseType" xml:space="preserve">
+    <value>Select license type</value>
+    <comment>Placeholder text for license ComboBox</comment>
+  </data>
+  <data name="Settings_ApiKeyToolTip.Content" xml:space="preserve">
+    <value>API key for application from developer account.</value>
+  </data>
+  <data name="Settings_ArcGISKeys.Description" xml:space="preserve">
+    <value>Keys for development and production</value>
+  </data>
+  <data name="Settings_ArcGISKeys.Header" xml:space="preserve">
+    <value>ArcGIS Keys</value>
+  </data>
+  <data name="Settings_LicenseKey.Text" xml:space="preserve">
+    <value>ArcGIS License Key</value>
+  </data>
+  <data name="Settings_LicenseKeyToolTip.Content" xml:space="preserve">
+    <value>License key for application from developer account.</value>
+  </data>
+  <data name="Settings_PreplannedMapNameToolTip.Content" xml:space="preserve">
+    <value>Name from Web Map, Settings, OfflineMap areas.</value>
+  </data>
+  <data name="Settings_RevealLicenseKey.Content" xml:space="preserve">
+    <value>Show License Key</value>
+  </data>
+  <data name="Settings_WebMap.Description" xml:space="preserve">
+    <value>Main map settings from ArcGIS online</value>
+  </data>
+  <data name="Settings_WebMap.Header" xml:space="preserve">
+    <value>Web Map Settings</value>
+  </data>
+  <data name="Settings_WebMapToolTip.Content" xml:space="preserve">
+    <value>Id from hosted Web Map, ID field in Details.</value>
+  </data>
+  <data name="UseAPI" xml:space="preserve">
+    <value>Use API Key</value>
+    <comment>Use API text for license ComboBox</comment>
+  </data>
+  <data name="UseLicense" xml:space="preserve">
+    <value>Use License</value>
+    <comment>Use License text for licence ComboBox</comment>
+  </data>
 </root>
