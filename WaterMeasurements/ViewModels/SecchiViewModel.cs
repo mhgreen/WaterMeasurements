@@ -54,6 +54,31 @@ public partial class SecchiViewModel : ObservableRecipient
     [ObservableProperty]
     private Brush mapBorderColor = new SolidColorBrush(Colors.Transparent);
 
+    // Observable property to enable moving to data collection panel.
+    // This is set to true when the geolocation is within the geotrigger fence.
+    // If true, the user can move back and forth between the collection panel and other panels.
+    [ObservableProperty]
+    private bool isCollectMeasurementEnabled = false;
+
+    // Observable property to enable discarding a collected set of measurements.
+    // This is set to true when the user has collected a set of measurements.
+    [ObservableProperty]
+    private bool isDiscardCollectedEnabled = false;
+
+    // Observable property to enable uploading a collected set of measurements.
+    // This is set to true when the user has collected a set of measurements.
+    // An upload is only allowed if WiFi is available.
+    [ObservableProperty]
+    private bool isUploadEnabled = false;
+
+    // Observable property to enable saving a set of measurements.
+    // This is set to true once both observations and locations are available.
+    // It may be possible that a geotrigger has presented the collection panel
+    // prior to everything being initialized. The user can collect measurements
+    // and once everything is initialized, the measurements can be saved.
+    [ObservableProperty]
+    private bool isSecchiMeasurementsSaveEnabled = true;
+
     // Feature for the current location sent by the GeoTriggerService.
     public ArcGISFeature? feature;
 
@@ -123,6 +148,15 @@ public partial class SecchiViewModel : ObservableRecipient
 
     private readonly StateMachine<SecchiServiceState, SecchiServiceTrigger> stateMachine;
 
+    private readonly StateMachine<
+        SecchiServiceState,
+        SecchiServiceTrigger
+    >.TriggerWithParameters<ArcGISFeature> geoTriggerFenceExited;
+    private readonly StateMachine<
+        SecchiServiceState,
+        SecchiServiceTrigger
+    >.TriggerWithParameters<ArcGISFeature> geoTriggerFenceEntered;
+
     private readonly ISqliteService? sqliteService;
 
     public SecchiViewModel(
@@ -182,6 +216,16 @@ public partial class SecchiViewModel : ObservableRecipient
         // Create the state machine.
         stateMachine = new StateMachine<SecchiServiceState, SecchiServiceTrigger>(
             SecchiServiceState.WaitingForObservations
+        );
+
+        // Trigger for geotrigger fence entered with feature as a parameter.
+        geoTriggerFenceEntered = stateMachine.SetTriggerParameters<ArcGISFeature>(
+            SecchiServiceTrigger.GeoTriggerFenceEntered
+        );
+
+        // Trigger for geotrigger fence exited with feature as a parameter.
+        geoTriggerFenceExited = stateMachine.SetTriggerParameters<ArcGISFeature>(
+            SecchiServiceTrigger.GeoTriggerFenceExited
         );
 
         var isConfigured = CheckConfiguration();
@@ -497,6 +541,12 @@ public partial class SecchiViewModel : ObservableRecipient
 
                         uiDispatcherQueue = UiQueueResponse.Response.UIDispatcherQueue;
 
+                        Guard.Against.Null(
+                            uiDispatcherQueue,
+                            nameof(uiDispatcherQueue),
+                            "SecchiViewModel, HandleGeotriggerNotification: uiDispatcherQueue can not be null."
+                        );
+
                         // The UI thread is available, so fire the UiThreadRecievedorPresent trigger.
                         stateMachine.Fire(SecchiServiceTrigger.UiThreadRecievedorPresent);
                     }
@@ -530,7 +580,7 @@ public partial class SecchiViewModel : ObservableRecipient
                         // Log the ObservationFeatureTableReceived trigger.
                         logger.LogDebug(
                             SecchiViewModelLog,
-                            "SecchiViewModel, stateMachine (SecchiServiceState.Running): ObservationFeatureTableReceived trigger received."
+                            "SecchiViewModel, stateMachine (SecchiServiceState.Running): ObservationFeatureTableReceived notification received."
                         );
                         DataCollectionUpdate(featureTable);
                     }
@@ -542,8 +592,13 @@ public partial class SecchiViewModel : ObservableRecipient
                         // Log the InternetUnavailableRecieved trigger.
                         logger.LogDebug(
                             SecchiViewModelLog,
-                            "SecchiViewModel, stateMachine (SecchiServiceState.Running): InternetUnavailableRecieved trigger received."
+                            "SecchiViewModel, stateMachine (SecchiServiceState.Running): InternetUnavailableRecieved notification received."
                         );
+                        // Disable the upload button if the network is unavailable.
+                        uiDispatcherQueue!.TryEnqueue(() =>
+                        {
+                            IsUploadEnabled = false;
+                        });
                     }
                 )
                 .InternalTransition(
@@ -553,8 +608,86 @@ public partial class SecchiViewModel : ObservableRecipient
                         // Log the InternetAvailableRecieved trigger.
                         logger.LogDebug(
                             SecchiViewModelLog,
-                            "SecchiViewModel, stateMachine (SecchiServiceState.Running): InternetAvailableRecieved trigger received."
+                            "SecchiViewModel, stateMachine (SecchiServiceState.Running): InternetAvailableRecieved notification received."
                         );
+                        // Enable the upload button if the network is available.
+                        uiDispatcherQueue!.TryEnqueue(() =>
+                        {
+                            IsUploadEnabled = true;
+                        });
+                    }
+                )
+                .InternalTransition(
+                    geoTriggerFenceEntered,
+                    (feature, _) =>
+                    {
+                        // Log the InternetAvailableRecieved trigger.
+                        logger.LogDebug(
+                            SecchiViewModelLog,
+                            "SecchiViewModel, stateMachine (SecchiServiceState.Running): GeoTriggerFenceEntered notification received."
+                        );
+
+                        feature.Attributes.TryGetValue("LocationName", out var locationName);
+                        feature.Attributes.TryGetValue("LocationId", out var locationId);
+
+                        Guard.Against.Null(
+                            locationName,
+                            nameof(locationName),
+                            "SecchiViewModel, HandleGeotriggerNotification: locationName can not be null."
+                        );
+
+                        // Log the locationName and locationId to debug.
+                        logger.LogDebug(
+                            SecchiViewModelLog,
+                            "SecchiViewModel, stateMachine (SecchiServiceState.Running): GeoTriggerFenceEntered notification received, LocationName: {locationName}, LocationId: {locationId}.",
+                            locationName,
+                            locationId
+                        );
+
+                        // Set the map border color to the accent fill color.
+                        // Set the SecchiCollectionPointName to the locationName.
+                        // Enable the menu option to allow moving to the collection entry panel.
+                        uiDispatcherQueue!.TryEnqueue(() =>
+                        {
+                            MapBorderColor = (SolidColorBrush)
+                                Application.Current.Resources["AccentFillColorDefaultBrush"];
+                            SecchiCollectionPointName = locationName.ToString()!;
+                            IsCollectMeasurementEnabled = true;
+                        });
+
+                        // Send a SetSecchiSelectViewMessage with the value of "SecchiDataEntry".
+                        WeakReferenceMessenger.Default.Send<SetSecchiSelectViewMessage>(
+                            new SetSecchiSelectViewMessage("SecchiDataEntry")
+                        );
+                    }
+                )
+                .InternalTransition(
+                    geoTriggerFenceExited,
+                    (feature, _) =>
+                    {
+                        // Log the InternetAvailableRecieved trigger.
+                        logger.LogDebug(
+                            SecchiViewModelLog,
+                            "SecchiViewModel, stateMachine (SecchiServiceState.Running): GeoTriggerFenceExited notification received."
+                        );
+                        feature.Attributes.TryGetValue("LocationName", out var locationName);
+                        feature.Attributes.TryGetValue("LocationId", out var locationId);
+
+                        // Log the locationName and locationId to debug.
+                        logger.LogDebug(
+                            SecchiViewModelLog,
+                            "SecchiViewModel, stateMachine (SecchiServiceState.Running): GeoTriggerFenceExited notification received, LocationName: {locationName}, LocationId: {locationId}.",
+                            locationName,
+                            locationId
+                        );
+
+                        // Set the map border color to transparent.
+                        // Disable the menu option to allow moving to the collection entry panel.
+                        uiDispatcherQueue!.TryEnqueue(() =>
+                        {
+                            MapBorderColor = new SolidColorBrush(Colors.Transparent);
+                            IsCollectMeasurementEnabled = false;
+                        });
                     }
                 )
                 // Permit the AppClosing trigger.
@@ -568,13 +701,15 @@ public partial class SecchiViewModel : ObservableRecipient
                     // Log the AppClosing trigger.
                     logger.LogDebug(
                         SecchiViewModelLog,
-                        "SecchiViewModel, stateMachine (SecchiServiceState.AppClosing): AppClosing trigger received."
+                        "SecchiViewModel, stateMachine (SecchiServiceState.AppClosing): AppClosing notification received."
                     );
                     // Unregister all messages.
                     Shutdown();
                 })
                 .Ignore(SecchiServiceTrigger.InternetAvailableRecieved)
-                .Ignore(SecchiServiceTrigger.InternetUnavailableRecieved);
+                .Ignore(SecchiServiceTrigger.InternetUnavailableRecieved)
+                .Ignore(SecchiServiceTrigger.GeoTriggerFenceEntered)
+                .Ignore(SecchiServiceTrigger.GeoTriggerFenceExited);
 
             // Write unhandled trigger to log.
             stateMachine.OnUnhandledTrigger(
@@ -846,16 +981,15 @@ public partial class SecchiViewModel : ObservableRecipient
                 // Subscribe to geodatabase download progress messages and put those on the UI thread.
                 SubscribeGeoDbDownload(uiDispatcherQueue);
 
-                // Subscribe to GeoTriggerMessage.
+                // Subscribe to GeoTriggerMessages once the UI has been configured.
+                // This allows GeoTriggerMessages to be received if the app is started
+                // within a geofence.
                 WeakReferenceMessenger.Default.Register<GeoTriggerMessage, uint>(
                     this,
                     secchiGeotriggerChannel,
                     (recipient, message) =>
                     {
-                        HandleGeotriggerNotification(
-                            message.Value.GeotriggerNotificationInfo,
-                            uiDispatcherQueue
-                        );
+                        HandleGeotriggerNotification(message.Value.GeotriggerNotificationInfo);
                     }
                 );
             }
@@ -1079,13 +1213,10 @@ public partial class SecchiViewModel : ObservableRecipient
         }
     }
 
-    private void HandleGeotriggerNotification(
-        GeotriggerNotificationInfo info,
-        DispatcherQueue uiDispatcherQueue
-    )
+    private void HandleGeotriggerNotification(GeotriggerNotificationInfo info)
     {
         // Log to debug the type of notification.
-        logger.LogDebug(
+        logger.LogTrace(
             SecchiViewModelLog,
             "SecchiViewModel, HandleGeotriggerNotification, GeotriggerNotification: {notificationType} received.",
             info.GeotriggerMonitor.ToString()
@@ -1095,114 +1226,40 @@ public partial class SecchiViewModel : ObservableRecipient
         {
             try
             {
-                if (uiDispatcherQueue is not null)
+                feature = fenceInfo.FenceGeoElement as ArcGISFeature;
+                Guard.Against.Null(
+                    feature,
+                    nameof(feature),
+                    "SecchiViewModel, HandleGeotriggerNotification: feature can not be null as this is used for location and identifier."
+                );
+
+                switch (fenceInfo.FenceNotificationType)
                 {
-                    switch (fenceInfo.FenceNotificationType)
-                    {
-                        case FenceNotificationType.Entered:
-                            logger.LogInformation(
-                                SecchiViewModelLog,
-                                "SecchiViewModel, HandleGeotriggerNotification, FenceNotification: Entered. {fenceInfo}",
-                                fenceInfo.Message
-                            );
-                            uiDispatcherQueue.TryEnqueue(() =>
-                            {
-                                MapBorderColor = (SolidColorBrush)
-                                    Application.Current.Resources["AccentFillColorDefaultBrush"];
-                            });
-                            break;
-                        case FenceNotificationType.Exited:
-                            logger.LogInformation(
-                                SecchiViewModelLog,
-                                "SecchiViewModel, HandleGeotriggerNotification, FenceNotification: Exited. {fenceInfo}",
-                                fenceInfo.Message
-                            );
-                            uiDispatcherQueue.TryEnqueue(() =>
-                            {
-                                MapBorderColor = new SolidColorBrush(Colors.Transparent);
-                            });
-                            break;
-                        default:
-                            logger.LogInformation(
-                                SecchiViewModelLog,
-                                "SecchiViewModel, HandleGeotriggerNotification, FenceNotification: Unknown. {fenceInfo}",
-                                fenceInfo.Message
-                            );
-                            break;
-                    }
-                    if (fenceInfo.FenceGeoElement is null)
-                    {
-                        logger.LogError(
+                    case FenceNotificationType.Entered:
+                        logger.LogTrace(
                             SecchiViewModelLog,
-                            "SecchiViewModel, HandleGeotriggerNotification: fenceInfo.FenceGeoElement is null."
+                            "SecchiViewModel, HandleGeotriggerNotification, FenceNotification: Entered. {fenceInfo}",
+                            fenceInfo.Message
                         );
-                        throw new Exception("fenceInfo.FenceGeoElement is null.");
-                    }
-                    feature = fenceInfo.FenceGeoElement as ArcGISFeature;
-                    if (feature is not null)
-                    {
-                        if (fenceInfo.FenceNotificationType == FenceNotificationType.Entered)
-                        {
-                            logger.LogDebug(
-                                SecchiViewModelLog,
-                                "SecchiViewModel, HandleGeotriggerNotification: ArcGIS Feature Geometry: {featureGeometry}",
-                                feature.Geometry?.ToString()
-                            );
-
-                            var locationId = feature.Attributes["LocationId"];
-                            var locationName = feature.Attributes["LocationName"];
-                            if (locationId is not null && locationName is not null)
-                            {
-                                logger.LogDebug(
-                                    SecchiViewModelLog,
-                                    "SecchiViewModel, HandleGeotriggerNotification: FenceNotification: Entered. {locationId}, {locationName}",
-                                    locationId,
-                                    locationName
-                                );
-
-                                // Send a SetSecchiSelectViewMessage with the value of "SecchiDataEntry".
-                                WeakReferenceMessenger.Default.Send<SetSecchiSelectViewMessage>(
-                                    new SetSecchiSelectViewMessage("SecchiDataEntry")
-                                );
-
-                                uiDispatcherQueue.TryEnqueue(() =>
-                                {
-                                    SecchiCollectionPointName = locationName.ToString()!;
-                                });
-                            }
-                        }
-                        if (fenceInfo.FenceNotificationType == FenceNotificationType.Exited)
-                        {
-                            logger.LogDebug(
-                                SecchiViewModelLog,
-                                "SecchiViewModel, HandleGeotriggerNotification: ArcGIS Feature Geometry: {featureGeometry}",
-                                feature.Geometry?.ToString()
-                            );
-
-                            var locationId = feature.Attributes["LocationId"];
-                            var locationName = feature.Attributes["LocationName"];
-                            if (locationId is not null && locationName is not null)
-                            {
-                                logger.LogDebug(
-                                    SecchiViewModelLog,
-                                    "SecchiViewModel, HandleGeotriggerNotification: FenceNotification: Exited. {locationId}, {locationName}",
-                                    locationId,
-                                    locationName
-                                );
-                            }
-                        }
-                    }
-                }
-                else
-                {
-                    logger.LogError(
-                        SecchiViewModelLog,
-                        "SecchiViewModel, HandleGeotriggerNotification: Unable to dispatch to the UI, uiDispatcherQueue is null."
-                    );
-                    throw new ArgumentNullException(
-                        paramName: nameof(uiDispatcherQueue),
-                        message: "SecchiViewModel, HandleGeotriggerNotification: uiDispatcherQueue can not be null."
-                    );
+                        // Trigger the GeoTriggerFenceEntered trigger.
+                        stateMachine.Fire(geoTriggerFenceEntered!, feature);
+                        break;
+                    case FenceNotificationType.Exited:
+                        logger.LogTrace(
+                            SecchiViewModelLog,
+                            "SecchiViewModel, HandleGeotriggerNotification, FenceNotification: Exited. {fenceInfo}",
+                            fenceInfo.Message
+                        );
+                        // Trigger the GeoTriggerFenceExited trigger.
+                        stateMachine.Fire(geoTriggerFenceExited!, feature);
+                        break;
+                    default:
+                        logger.LogTrace(
+                            SecchiViewModelLog,
+                            "SecchiViewModel, HandleGeotriggerNotification, FenceNotification: Unknown. {fenceInfo}",
+                            fenceInfo.Message
+                        );
+                        break;
                 }
             }
             catch (Exception exception)

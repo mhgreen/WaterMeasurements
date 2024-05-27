@@ -26,6 +26,8 @@ public enum SecchiServiceTrigger
     LocationFeatureTableReceived,
     ObservationAndLocationFeatureTablesReceived,
     UiThreadRecievedorPresent,
+    GeoTriggerFenceEntered,
+    GeoTriggerFenceExited,
     Cancel
 }
 
@@ -79,6 +81,8 @@ public readonly record struct SecchiChannelNumbersMessage(
     uint LocationChannel,
     uint GeoTriggerChannel
 );
+
+public readonly record struct LocationNameAndId(string LocationName, int LocationId);
 
 // Source and type of location for adding a new location.
 public struct SecchiAddLocation

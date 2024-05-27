@@ -689,7 +689,7 @@
                             PaneTitle="Secchi Location Measurements">
 
                             <NavigationView.MenuItems>
-                                <NavigationViewItem x:Name="SecchiNavMeasurementAdd" Content="Collect Measurement">
+                                <NavigationViewItem x:Name="SecchiNavMeasurementAdd" Content="Collect Measurement" IsEnabled="{x:Bind SecchiView.IsCollectMeasurementEnabled, Mode=OneWay}">
                                     <NavigationViewItem.Icon>
                                         <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE710;" />
                                     </NavigationViewItem.Icon>
@@ -704,12 +704,12 @@
                                         <FontIcon FontFamily="{StaticResource AppIconFont}" Glyph="&#xE903;" />
                                     </NavigationViewItem.Icon>
                                 </NavigationViewItem>
-                                <NavigationViewItem x:Name="SecchiNavDiscard" Content="Discard Collected">
+                                <NavigationViewItem x:Name="SecchiNavDiscard" Content="Discard Collected" IsEnabled="{x:Bind SecchiView.IsDiscardCollectedEnabled, Mode=OneWay}">
                                     <NavigationViewItem.Icon>
                                         <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE74D;" />
                                     </NavigationViewItem.Icon>
                                 </NavigationViewItem>
-                                <NavigationViewItem x:Name="SecchiNavUpload" Content="Upload">
+                                <NavigationViewItem x:Name="SecchiNavUpload" Content="Upload" IsEnabled="{x:Bind SecchiView.IsUploadEnabled, Mode=OneWay}">
                                     <NavigationViewItem.Icon>
                                         <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE898;" />
                                     </NavigationViewItem.Icon>
@@ -894,6 +894,7 @@
                                                     <Button
                                                         x:Name="SecchiSaveButton"
                                                         x:Uid="Main_SecchiSaveButton"
+                                                        IsEnabled="{x:Bind SecchiView.IsSecchiMeasurementsSaveEnabled}"
                                                         Click="{x:Bind SaveSecchiMeasurements_Click}" />
                                                     <Button
                                                         x:Name="SecchiCancelButton"
