@@ -155,7 +155,7 @@ public partial class GeoDatabaseService : IGeoDatabaseService
                 {
                     logger.LogDebug(
                         GeoDatabaseLog,
-                        "GeoDatabaseService, GeoDatabaseRequestMessage: Name: {name}, Type: {GeoDatabaseType} Channel: {channel}, LocationsUrl: {LocationsUrl}, CauseGeoDatabaseDownload: {CauseGeoDatabaseDownload}.",
+                        "GeoDatabaseService, GeoDatabaseRequestMessage: Name: {name}, Type: {GeoDatabaseType} Channel: {channel}, Url: {Url}, CauseGeoDatabaseDownload: {CauseGeoDatabaseDownload}.",
                         geoDatabaseInstance.Value.Name,
                         geoDatabaseInstance.Value.GeoDatabaseType,
                         geoDatabaseInstance.Value.Channel,
@@ -171,7 +171,7 @@ public partial class GeoDatabaseService : IGeoDatabaseService
         {
             logger.LogDebug(
                 GeoDatabaseLog,
-                "GeoDatabaseService, GeoDatabaseService: Name: {name}, Type: {GeoDatabaseType} Channel: {channel}, LocationsUrl: {LocationsUrl}, CauseGeoDatabaseDownload: {CauseGeoDatabaseDownload}.",
+                "GeoDatabaseService, GeoDatabaseService: Name: {name}, Type: {GeoDatabaseType} Channel: {channel}, Url: {Url}, CauseGeoDatabaseDownload: {CauseGeoDatabaseDownload}.",
                 geoDatabaseInstance.Value.Name,
                 geoDatabaseInstance.Value.GeoDatabaseType,
                 geoDatabaseInstance.Value.Channel,

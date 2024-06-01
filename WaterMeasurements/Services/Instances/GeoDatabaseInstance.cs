@@ -21,6 +21,7 @@ using WaterMeasurements.Contracts.Services;
 using WaterMeasurements.Contracts.Services.Instances;
 using WaterMeasurements.Models;
 using WaterMeasurements.Views;
+using Windows.Media.Capture;
 
 namespace WaterMeasurements.Services.Instances;
 
@@ -53,6 +54,9 @@ public partial class GeoDatabaseInstance : IGeoDatabaseInstance
         "WaterMeasurements",
         "DownloadedGeoDatabases"
     );
+
+    // Internet available flag.
+    private volatile bool isInternetCurrentlyAvailable = false;
 
     private readonly StateMachine<GeoDbServiceState, GeoDbServiceTrigger> stateMachine;
 
@@ -111,7 +115,7 @@ public partial class GeoDatabaseInstance : IGeoDatabaseInstance
         // Log the name, channel, and Url of the GeoDatabaseInstance.
         logger.LogInformation(
             GeoDatabaseLog,
-            "GeoDatabaseInstance: Name: {name}, Type: {GeoDatabaseType} Channel: {channel}, LocationsUrl: {LocationsUrl}, CauseGeoDatabaseDownload: {CauseGeoDatabaseDownload}.",
+            "GeoDatabaseInstance: Name: {name}, Type: {GeoDatabaseType} Channel: {channel}, Url: {Url}, CauseGeoDatabaseDownload: {CauseGeoDatabaseDownload}.",
             Name,
             GeoDatabaseType,
             Channel,
@@ -187,7 +191,9 @@ public partial class GeoDatabaseInstance : IGeoDatabaseInstance
                 .Permit(
                     GeoDbServiceTrigger.MapEnvelopeReceived,
                     GeoDbServiceState.IsInternetAvailable
-                );
+                )
+                .Ignore(GeoDbServiceTrigger.InternetAvailableRecieved)
+                .Ignore(GeoDbServiceTrigger.InternetUnavailableRecieved);
 
             // When a config envelope or map envelope is received, wait for internet status.
             // If internet is available, then move to SyncReady, otherwise move to UseLocal.
@@ -301,7 +307,35 @@ public partial class GeoDatabaseInstance : IGeoDatabaseInstance
                         SendFeatureTableZero(currentGeodatabase);
                     }
                 )
-                .Ignore(GeoDbServiceTrigger.InternetAvailableRecieved)
+                // Handle InternetAvailableRecieved and InternetUnavailableRecieved triggers.
+                .InternalTransition(
+                    GeoDbServiceTrigger.InternetAvailableRecieved,
+                    _ =>
+                    {
+                        // Log the InternetAvailableRecieved trigger.
+                        logger.LogDebug(
+                            GeoDatabaseLog,
+                            "GeoDatabaseInstance {name}, stateMachine (GeoDbServiceState.UseLocal): InternetAvailableRecieved trigger received.",
+                            Name
+                        );
+                        // Set the isInternetAvailable flag to true.
+                        isInternetCurrentlyAvailable = true;
+                    }
+                )
+                .InternalTransition(
+                    GeoDbServiceTrigger.InternetUnavailableRecieved,
+                    _ =>
+                    {
+                        // Log the InternetUnavailableRecieved trigger.
+                        logger.LogDebug(
+                            GeoDatabaseLog,
+                            "GeoDatabaseInstance {name}, stateMachine (GeoDbServiceState.UseLocal): InternetUnavailableRecieved trigger received.",
+                            Name
+                        );
+                        // Set the isInternetAvailable flag to false.
+                        isInternetCurrentlyAvailable = false;
+                    }
+                )
                 .Permit(GeoDbServiceTrigger.AppClosing, GeoDbServiceState.AppClosing);
 
             // There was not a local geodatabase, so download one.
@@ -477,7 +511,6 @@ public partial class GeoDatabaseInstance : IGeoDatabaseInstance
                 }
             );
 
-            /*
             // Register to get NetworkChangedMessage and use that to trigger InternetAvailableRecieved and InternetUnavailableRecieved.
             WeakReferenceMessenger.Default.Register<NetworkChangedMessage>(
                 this,
@@ -486,6 +519,7 @@ public partial class GeoDatabaseInstance : IGeoDatabaseInstance
                     logger.LogDebug(
                         GeoDatabaseLog,
                         "GeoDatabaseInstance {name}, NetworkChangedMessage IsInternetAvailable = {isInternetAvailable}.",
+                        Name,
                         message.Value.IsInternetAvailable
                     );
                     if (message.Value.IsInternetAvailable)
@@ -498,7 +532,6 @@ public partial class GeoDatabaseInstance : IGeoDatabaseInstance
                     }
                 }
             );
-            */
         }
         catch (Exception exception)
         {
@@ -1238,6 +1271,110 @@ public partial class GeoDatabaseInstance : IGeoDatabaseInstance
                 GeoDatabaseLog,
                 exception,
                 "GeoDatabaseInstance {name}, DownloadGeodatabase: Exception: {exception}.",
+                Name,
+                exception.Message
+            );
+        }
+    }
+
+    // Synchronize the geodatabase.
+    private async Task SynchronizeGeodatabase()
+    {
+        try
+        {
+            // Check to see if the current geodatabase is null.
+            Guard.Against.Null(
+                currentGeodatabase,
+                nameof(currentGeodatabase),
+                "GeoDatabaseInstance, SynchronizeGeodatabase: currentGeodatabase is null."
+            );
+
+            // Check to see if the current geodatabase is in a transaction.
+            if (currentGeodatabase.IsInTransaction)
+            {
+                logger.LogDebug(
+                    GeoDatabaseLog,
+                    "GeoDatabaseInstance {name}, SynchronizeGeodatabase: currentGeodatabase is in a transaction, committing transaction.",
+                    Name
+                );
+                currentGeodatabase.CommitTransaction();
+            }
+            else
+            {
+                logger.LogDebug(
+                    GeoDatabaseLog,
+                    "GeoDatabaseInstance {name}, SynchronizeGeodatabase: currentGeodatabase is not in a transaction.",
+                    Name
+                );
+                return;
+            }
+
+            // Create a new GeodatabaseSyncTask with the uri of the feature server.
+            var gdbTask = await GeodatabaseSyncTask.CreateAsync(new Uri(Url));
+
+            // Create parameters for the task: layers and extent to include, out spatial reference, and sync model.
+            var gdbParams = await gdbTask.CreateDefaultSyncGeodatabaseParametersAsync(
+                currentGeodatabase
+            );
+
+            // Create a geodatabase job that syncs the geodatabase.
+            var syncGdbJob = gdbTask.SyncGeodatabase(gdbParams, currentGeodatabase);
+
+            // Add a handler for progress changes on the job.
+            syncGdbJob.ProgressChanged += GdbPercentChanged;
+
+            // Handle the job changed event and check the status of the job; store the geodatabase when it's ready.
+            syncGdbJob.StatusChanged += (s, e) =>
+            {
+                // See if the job succeeded.
+                if (syncGdbJob.Status == JobStatus.Succeeded)
+                {
+                    logger.LogDebug(
+                        GeoDatabaseLog,
+                        "GeoDatabaseInstance {name}, SynchronizeGeodatabase: Synchronized local geodatabase.",
+                        Name
+                    );
+                }
+                else if (syncGdbJob.Status == JobStatus.Failed)
+                {
+                    // If syncGdbJob.Status is Failed, see if there is an error with the job.
+                    if (syncGdbJob.Error != null)
+                    {
+                        logger.LogDebug(
+                            GeoDatabaseLog,
+                            "GeoDatabaseInstance {name}, SynchronizeGeodatabase: Unable to synchronize local geodatabase: {syncGdbJob.Error}.",
+                            Name,
+                            syncGdbJob.Error.Message
+                        );
+                    }
+                    else
+                    {
+                        logger.LogDebug(
+                            GeoDatabaseLog,
+                            "GeoDatabaseInstance {name}, SynchronizeGeodatabase: Unable to synchronize local geodatabase, but no error returned.",
+                            Name
+                        );
+                    }
+                }
+            };
+
+            // Handle the progress changed event and send the percent complete.
+            void GdbPercentChanged(object? sender, EventArgs progressChanged)
+            {
+                logger.LogDebug(
+                    GeoDatabaseLog,
+                    "GeoDatabaseInstance {name}, SynchronizeGeodatabase: Upload progress: {syncGdbJob.Progress}.",
+                    Name,
+                    syncGdbJob.Progress
+                );
+            }
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(
+                GeoDatabaseLog,
+                exception,
+                "GeoDatabaseInstance {name}, SynchronizeGeodatabase: Exception: {exception}.",
                 Name,
                 exception.Message
             );
