@@ -342,4 +342,16 @@
     <value>Use License</value>
     <comment>Use License text for licence ComboBox</comment>
   </data>
+  <data name="Main_DeleteObservationsButton.Label" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="Main_DeleteObservationsToolTip.Content" xml:space="preserve">
+    <value>Delete all collected observations</value>
+  </data>
+  <data name="Main_UploadObservationsButton.Label" xml:space="preserve">
+    <value>Upload</value>
+  </data>
+  <data name="Main_UploadObservationsToolTip.Content" xml:space="preserve">
+    <value>Upload all collected observations to ArcGIS Online</value>
+  </data>
 </root>

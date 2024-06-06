@@ -133,6 +133,7 @@ public enum GeoDbServiceTrigger
     GeoDatabaseAddFeature,
     GeoDatabaseDeleteFeature,
     GeoDatabaseUpdateFeature,
+    GeoDatabaseSync,
     GeoDatabaseSecchiMeasurementReceived,
     FeatureTableRequestReceived,
     Cancel

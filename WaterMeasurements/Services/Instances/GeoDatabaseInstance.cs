@@ -213,6 +213,10 @@ public partial class GeoDatabaseInstance : IGeoDatabaseInstance
             // If a local geodatabase exists, then move to UseLocal, otherwise move to DownloadGeodatabase.
             stateMachine
                 .Configure(GeoDbServiceState.SyncReady)
+                .OnEntryFrom(
+                    GeoDbServiceTrigger.InternetAvailableRecieved,
+                    () => isInternetCurrentlyAvailable = true
+                )
                 .Permit(GeoDbServiceTrigger.LocalGeoDatabaseExists, GeoDbServiceState.UseLocal)
                 //.Permit(GeoDbServiceTrigger.LocalGeoDatabaseExists, GeoDbServiceState.DownloadGeodatabase)
                 .Permit(
@@ -223,12 +227,24 @@ public partial class GeoDatabaseInstance : IGeoDatabaseInstance
             // Get the local geodatabase.
             stateMachine
                 .Configure(GeoDbServiceState.UseLocal)
+                .OnEntryFrom(
+                    GeoDbServiceTrigger.InternetUnavailableRecieved,
+                    () => isInternetCurrentlyAvailable = false
+                )
                 .OnEntry(async () =>
                 {
                     Guard.Against.Null(
                         mapEnvelope,
                         nameof(mapEnvelope),
                         "GeoDatabaseInstance, stateMachine (GeoDbServiceState.UseLocal): mapEnvelope is null."
+                    );
+
+                    // Log to debug the state of isInternetCurrentlyAvailable.
+                    logger.LogDebug(
+                        GeoDatabaseLog,
+                        "GeoDatabaseInstance {name}, stateMachine (GeoDbServiceState.UseLocal): isInternetCurrentlyAvailable: {isInternetCurrentlyAvailable}.",
+                        Name,
+                        isInternetCurrentlyAvailable
                     );
 
                     // Use GetDownloadedGeodatabase() to get the local geodatabase and store it in a CurrentGeodatabase record.
@@ -334,6 +350,38 @@ public partial class GeoDatabaseInstance : IGeoDatabaseInstance
                         );
                         // Set the isInternetAvailable flag to false.
                         isInternetCurrentlyAvailable = false;
+                    }
+                )
+                .InternalTransition(
+                    GeoDbServiceTrigger.GeoDatabaseSync,
+                    async _ =>
+                    {
+                        // Log the GeoDatabaseSync trigger.
+                        logger.LogDebug(
+                            GeoDatabaseLog,
+                            "GeoDatabaseInstance {name}, stateMachine (GeoDbServiceState.UseLocal): GeoDatabaseSync trigger received.",
+                            Name
+                        );
+                        // Log the current state of isInternetCurrentlyAvailable.
+                        logger.LogDebug(
+                            GeoDatabaseLog,
+                            "GeoDatabaseInstance {name}, stateMachine (GeoDbServiceState.UseLocal): isInternetCurrentlyAvailable: {isInternetCurrentlyAvailable}.",
+                            Name,
+                            isInternetCurrentlyAvailable
+                        );
+                        if (isInternetCurrentlyAvailable)
+                        {
+                            await SynchronizeGeodatabase();
+                        }
+                        else
+                        {
+                            // Log an error indicating that a GeoDatabaseSync was tried with internet access unavailable.
+                            logger.LogDebug(
+                                GeoDatabaseLog,
+                                "GeoDatabaseInstance {name}, stateMachine (GeoDbServiceState.UseLocal): Unable to sync geodatabase, internet access is currently unavailable.",
+                                Name
+                            );
+                        }
                     }
                 )
                 .Permit(GeoDbServiceTrigger.AppClosing, GeoDbServiceState.AppClosing);
@@ -508,6 +556,22 @@ public partial class GeoDatabaseInstance : IGeoDatabaseInstance
                         message.Value
                     );
                     stateMachine.Fire(featureUpdateMessage, message.Value);
+                }
+            );
+
+            // Register to get GeodatabaseSyncMessage.
+            WeakReferenceMessenger.Default.Register<GeoDatabaseSyncMessage, uint>(
+                this,
+                Channel,
+                (recipient, message) =>
+                {
+                    logger.LogDebug(
+                        GeoDatabaseLog,
+                        "GeoDatabaseInstance {name}, GeodatabaseSyncMessage for {geodatabase}.",
+                        Name,
+                        message.Value
+                    );
+                    stateMachine.Fire(GeoDbServiceTrigger.GeoDatabaseSync);
                 }
             );
 
@@ -1297,7 +1361,7 @@ public partial class GeoDatabaseInstance : IGeoDatabaseInstance
                     "GeoDatabaseInstance {name}, SynchronizeGeodatabase: currentGeodatabase is in a transaction, committing transaction.",
                     Name
                 );
-                currentGeodatabase.CommitTransaction();
+                // currentGeodatabase.CommitTransaction();
             }
             else
             {
@@ -1306,67 +1370,87 @@ public partial class GeoDatabaseInstance : IGeoDatabaseInstance
                     "GeoDatabaseInstance {name}, SynchronizeGeodatabase: currentGeodatabase is not in a transaction.",
                     Name
                 );
-                return;
             }
 
-            // Create a new GeodatabaseSyncTask with the uri of the feature server.
-            var gdbTask = await GeodatabaseSyncTask.CreateAsync(new Uri(Url));
-
-            // Create parameters for the task: layers and extent to include, out spatial reference, and sync model.
-            var gdbParams = await gdbTask.CreateDefaultSyncGeodatabaseParametersAsync(
-                currentGeodatabase
-            );
-
-            // Create a geodatabase job that syncs the geodatabase.
-            var syncGdbJob = gdbTask.SyncGeodatabase(gdbParams, currentGeodatabase);
-
-            // Add a handler for progress changes on the job.
-            syncGdbJob.ProgressChanged += GdbPercentChanged;
-
-            // Handle the job changed event and check the status of the job; store the geodatabase when it's ready.
-            syncGdbJob.StatusChanged += (s, e) =>
-            {
-                // See if the job succeeded.
-                if (syncGdbJob.Status == JobStatus.Succeeded)
-                {
-                    logger.LogDebug(
-                        GeoDatabaseLog,
-                        "GeoDatabaseInstance {name}, SynchronizeGeodatabase: Synchronized local geodatabase.",
-                        Name
-                    );
-                }
-                else if (syncGdbJob.Status == JobStatus.Failed)
-                {
-                    // If syncGdbJob.Status is Failed, see if there is an error with the job.
-                    if (syncGdbJob.Error != null)
-                    {
-                        logger.LogDebug(
-                            GeoDatabaseLog,
-                            "GeoDatabaseInstance {name}, SynchronizeGeodatabase: Unable to synchronize local geodatabase: {syncGdbJob.Error}.",
-                            Name,
-                            syncGdbJob.Error.Message
-                        );
-                    }
-                    else
-                    {
-                        logger.LogDebug(
-                            GeoDatabaseLog,
-                            "GeoDatabaseInstance {name}, SynchronizeGeodatabase: Unable to synchronize local geodatabase, but no error returned.",
-                            Name
-                        );
-                    }
-                }
-            };
-
-            // Handle the progress changed event and send the percent complete.
-            void GdbPercentChanged(object? sender, EventArgs progressChanged)
+            if (currentGeodatabase.HasLocalEdits())
             {
                 logger.LogDebug(
                     GeoDatabaseLog,
-                    "GeoDatabaseInstance {name}, SynchronizeGeodatabase: Upload progress: {syncGdbJob.Progress}.",
-                    Name,
-                    syncGdbJob.Progress
+                    "GeoDatabaseInstance {name}, SynchronizeGeodatabase: currentGeodatabase has local edits.",
+                    Name
                 );
+
+                // Create a new GeodatabaseSyncTask with the uri of the feature server.
+                var gdbTask = await GeodatabaseSyncTask.CreateAsync(new Uri(Url));
+
+                // Create parameters for the task: layers and extent to include, out spatial reference, and sync model.
+                var gdbParams = await gdbTask.CreateDefaultSyncGeodatabaseParametersAsync(
+                    currentGeodatabase
+                );
+
+                // Create a geodatabase job that syncs the geodatabase.
+                var syncGdbJob = gdbTask.SyncGeodatabase(gdbParams, currentGeodatabase);
+
+                // Add a handler for progress changes on the job.
+                syncGdbJob.ProgressChanged += GdbPercentChanged;
+
+                // Handle the job changed event and check the status of the job; store the geodatabase when it's ready.
+                syncGdbJob.StatusChanged += (s, e) =>
+                {
+                    // See if the job succeeded.
+                    if (syncGdbJob.Status == JobStatus.Succeeded)
+                    {
+                        logger.LogDebug(
+                            GeoDatabaseLog,
+                            "GeoDatabaseInstance {name}, SynchronizeGeodatabase: Synchronized local geodatabase.",
+                            Name
+                        );
+                    }
+                    else if (syncGdbJob.Status == JobStatus.Failed)
+                    {
+                        // If syncGdbJob.Status is Failed, see if there is an error with the job.
+                        if (syncGdbJob.Error != null)
+                        {
+                            logger.LogDebug(
+                                GeoDatabaseLog,
+                                "GeoDatabaseInstance {name}, SynchronizeGeodatabase: Unable to synchronize local geodatabase: {syncGdbJob.Error}.",
+                                Name,
+                                syncGdbJob.Error.Message
+                            );
+                        }
+                        else
+                        {
+                            logger.LogDebug(
+                                GeoDatabaseLog,
+                                "GeoDatabaseInstance {name}, SynchronizeGeodatabase: Unable to synchronize local geodatabase, but no error returned.",
+                                Name
+                            );
+                        }
+                    }
+                };
+
+                // Await the completion of the job.
+                await syncGdbJob.GetResultAsync();
+
+                // Handle the progress changed event and send the percent complete.
+                void GdbPercentChanged(object? sender, EventArgs progressChanged)
+                {
+                    logger.LogDebug(
+                        GeoDatabaseLog,
+                        "GeoDatabaseInstance {name}, SynchronizeGeodatabase: Upload progress: {syncGdbJob.Progress}.",
+                        Name,
+                        syncGdbJob.Progress
+                    );
+                }
+            }
+            else
+            {
+                logger.LogDebug(
+                    GeoDatabaseLog,
+                    "GeoDatabaseInstance {name}, SynchronizeGeodatabase: currentGeodatabase does not have local edits.",
+                    Name
+                );
+                return;
             }
         }
         catch (Exception exception)

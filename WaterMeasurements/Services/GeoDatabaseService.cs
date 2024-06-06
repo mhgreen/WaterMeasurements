@@ -74,6 +74,10 @@ public class UpdateFeatureMessage(FeatureUpdateMessage featureUpdateMessage)
 public class ChangedFeatureMessage(FeatureChangedMessage featureChangedMessage)
     : ValueChangedMessage<FeatureChangedMessage>(featureChangedMessage) { }
 
+// Message to synchronize geodatabase.
+public class GeoDatabaseSyncMessage(string instanceName)
+    : ValueChangedMessage<string>(instanceName) { }
+
 public partial class GeoDatabaseService : IGeoDatabaseService
 {
     private readonly ILogger<GeoDatabaseService> logger;

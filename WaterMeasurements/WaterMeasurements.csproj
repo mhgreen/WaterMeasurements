@@ -40,7 +40,7 @@
     <PackageReference Include="Dapper.SimpleSqlBuilder" Version="3.7.4" />
     <PackageReference Include="Esri.ArcGISRuntime.Toolkit.WinUI" Version="200.4.0" />
     <PackageReference Include="Esri.ArcGISRuntime.WinUI" Version="200.4.0" />
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.5" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.6" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.5.240428000" />
     <PackageReference Include="Microsoft.Xaml.Behaviors.WinUI.Managed" Version="2.0.9" />
@@ -49,7 +49,7 @@
     <PackageReference Include="Rebus.RabbitMq" Version="9.3.0" />
     <PackageReference Include="Rebus.ServiceProvider" Version="10.1.2" />
     <PackageReference Include="RecordParser" Version="2.3.0" />
-    <PackageReference Include="Stateless" Version="5.15.0" />
+    <PackageReference Include="Stateless" Version="5.16.0" />
     <PackageReference Include="System.IO.Ports" Version="8.0.0" />
     <PackageReference Include="UnitsNet" Version="5.50.0" />
     <PackageReference Include="WinUIEx" Version="2.3.4" />

@@ -1502,6 +1502,33 @@ public partial class SecchiViewModel : ObservableRecipient
         }
     }
 
+    public void SyncObservations()
+    {
+        try
+        {
+            Guard.Against.Null(
+                currentObservationsTable,
+                nameof(currentObservationsTable),
+                "SecchiViewModel, SyncObservations(): currentObservationsTable can not be null."
+            );
+
+            // Send a GeodatabaseSyncMessage to the GeoDatabaseService to sync the SecchiObservations feature table.
+            WeakReferenceMessenger.Default.Send<GeoDatabaseSyncMessage, uint>(
+                new GeoDatabaseSyncMessage("SecchiObservations"),
+                secchiObservationsChannel
+            );
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(
+                SecchiViewModelLog,
+                exception,
+                "Exception generated in SecchiViewModel, SyncObservations: {message}.",
+                exception.Message.ToString()
+            );
+        }
+    }
+
     public async Task<int> NextLocationId()
     {
         await locationIdSemaphore.WaitAsync();
