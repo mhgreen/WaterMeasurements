@@ -619,7 +619,7 @@ public partial class SecchiViewModel : ObservableRecipient
                 )
                 .InternalTransition(
                     geoTriggerFenceEntered,
-                    (feature, _) =>
+                    async (feature, _) =>
                     {
                         // Log the InternetAvailableRecieved trigger.
                         logger.LogDebug(
@@ -642,6 +642,20 @@ public partial class SecchiViewModel : ObservableRecipient
                             "SecchiViewModel, stateMachine (SecchiServiceState.Running): GeoTriggerFenceEntered notification received, LocationName: {locationName}, LocationId: {locationId}.",
                             locationName,
                             locationId
+                        );
+
+                        var locationCollected = await WeakReferenceMessenger.Default.Send(
+                            new GetLocationRecordCollectionStateMessage(
+                                (int)locationId!,
+                                DbType.SecchiLocations
+                            )
+                        );
+
+                        // Log the locationCollected to debug.
+                        logger.LogDebug(
+                            SecchiViewModelLog,
+                            "SecchiViewModel, HandleGeotriggerNotification, FenceNotification: Entered, LocationCollected: {locationCollected}.",
+                            locationCollected
                         );
 
                         // Set the map border color to the accent fill color.
@@ -1236,16 +1250,17 @@ public partial class SecchiViewModel : ObservableRecipient
                 switch (fenceInfo.FenceNotificationType)
                 {
                     case FenceNotificationType.Entered:
-                        logger.LogTrace(
+                        logger.LogDebug(
                             SecchiViewModelLog,
                             "SecchiViewModel, HandleGeotriggerNotification, FenceNotification: Entered. {fenceInfo}",
                             fenceInfo.Message
                         );
+
                         // Trigger the GeoTriggerFenceEntered trigger.
                         stateMachine.Fire(geoTriggerFenceEntered!, feature);
                         break;
                     case FenceNotificationType.Exited:
-                        logger.LogTrace(
+                        logger.LogDebug(
                             SecchiViewModelLog,
                             "SecchiViewModel, HandleGeotriggerNotification, FenceNotification: Exited. {fenceInfo}",
                             fenceInfo.Message
@@ -1254,7 +1269,7 @@ public partial class SecchiViewModel : ObservableRecipient
                         stateMachine.Fire(geoTriggerFenceExited!, feature);
                         break;
                     default:
-                        logger.LogTrace(
+                        logger.LogDebug(
                             SecchiViewModelLog,
                             "SecchiViewModel, HandleGeotriggerNotification, FenceNotification: Unknown. {fenceInfo}",
                             fenceInfo.Message

@@ -7,25 +7,23 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using Windows.Networking.Connectivity;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.Mvvm.Messaging.Messages;
-
 using Microsoft.Extensions.Logging;
 using WaterMeasurements.Contracts.Services;
 using WaterMeasurements.Models;
 using WaterMeasurements.Views;
+using Windows.Networking.Connectivity;
 
 namespace WaterMeasurements.Services;
 
 // Message to notify modules that the status of the network has changed.
-public class NetworkChangedMessage(NetworkStatus networkStatus) : ValueChangedMessage<NetworkStatus>(networkStatus)
-{
-}
+public class NetworkChangedMessage(NetworkStatus networkStatus)
+    : ValueChangedMessage<NetworkStatus>(networkStatus) { }
 
 // Message for requesting the current network status.
 public class NetworkStatusRequestMessage : AsyncRequestMessage<NetworkStatus> { }
@@ -65,7 +63,9 @@ public partial class NetworkStatusService : INetworkStatusService
                     message.Reply(networkStatus);
                 }
             );
+
             Initialize();
+
             // Register to get MapPageUnloadedMessage messages.
             WeakReferenceMessenger.Default.Register<MapPageUnloaded>(
                 this,

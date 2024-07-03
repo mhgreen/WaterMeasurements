@@ -61,6 +61,27 @@ public class UpdateLocationRecordInTableMessage(
 public class LocationRecordUpdatedInTableMessage(DbType dbType)
     : ValueChangedMessage<DbType>(dbType) { }
 
+// Message to set a location record to collected.
+public class SetLocationRecordCollectedStateMessage(
+    SetLocationRecordCollectedState setLocationRecordCollected
+) : ValueChangedMessage<SetLocationRecordCollectedState>(setLocationRecordCollected) { }
+
+// Message to request the collection status of a location record.
+public class GetLocationRecordCollectionStateMessage : AsyncRequestMessage<LocationCollected>
+{
+    public int LocationId { get; }
+    public DbType DbType { get; }
+
+    public GetLocationRecordCollectionStateMessage(int locationId, DbType dbType)
+    {
+        (LocationId, DbType) = (locationId, dbType);
+        // This seems to be preferred over the following:
+        // LocationId = locationId;
+        // DbType = dbType;
+        // which gives an IDE0290 warning.
+    }
+}
+
 // Message to request a group of records from the Sqlite database.
 public class GetSqliteRecordsGroupRequest(SqliteRecordsGroupRequest sqliteRecordsGroupRequest)
     : ValueChangedMessage<SqliteRecordsGroupRequest>(sqliteRecordsGroupRequest) { }
@@ -238,6 +259,75 @@ public partial class SqliteService : ISqliteService
                         message.Value.PageSize,
                         message.Value.PageNumber
                     );
+                }
+            );
+
+            // Register a message handler for SetLocationRecordCollectedStateMessage.
+            WeakReferenceMessenger.Default.Register<SetLocationRecordCollectedStateMessage>(
+                this,
+                async (recipient, message) =>
+                {
+                    // Log the SetLocationRecordCollectedStateMessage.
+                    logger.LogDebug(
+                        SqliteLog,
+                        "SqliteService, SetLocationRecordCollectedStateMessage: {message}.",
+                        message
+                    );
+
+                    // Call SetLocationRecordtoCollectedState with the extracted locationId, dbType, and LocationCollectedState.
+                    await SetLocationRecordtoCollectedState(
+                        message.Value.LocationId,
+                        message.Value.DbType,
+                        message.Value.LocationCollectedState
+                    );
+                }
+            );
+
+            // Register a message handler for GetLocationRecordCollectionStateMessage.
+            WeakReferenceMessenger.Default.Register<GetLocationRecordCollectionStateMessage>(
+                this,
+                async (recipient, message) =>
+                {
+                    // Log the GetLocationRecordCollectionStateMessage.
+                    logger.LogDebug(
+                        SqliteLog,
+                        "SqliteService, GetLocationRecordCollectionStateMessage: {message}.",
+                        message
+                    );
+
+                    // Log the locationId and dbType to trace.
+                    logger.LogDebug(
+                        SqliteLog,
+                        "SqliteService, GetLocationRecordCollectionStateMessage: LocationId: {message.LocationId}, DbType: {message.DbType}.",
+                        message.LocationId,
+                        message.DbType
+                    );
+
+                    // Get current network status.
+                    var networkStatus =
+                        await WeakReferenceMessenger.Default.Send<NetworkStatusRequestMessage>();
+
+                    // Log the network status to debug.
+                    logger.LogDebug(
+                        SqliteLog,
+                        "SqliteService, GetLocationRecordCollectionStateMessage: NetworkStatusRequestMessage: IsInternetAvailable: {networkStatus.IsInternetAvailable}.",
+                        networkStatus.IsInternetAvailable
+                    );
+
+                    var collectionState = await GetLocationRecordCollectionState(
+                        message.LocationId,
+                        message.DbType
+                    );
+
+                    // Log the collectionstate to debug.
+                    logger.LogDebug(
+                        SqliteLog,
+                        "SqliteService, GetLocationRecordCollectionStateMessage: CollectionState: {collectionState}.",
+                        collectionState
+                    );
+
+                    // Call GetLocationRecordCollectionState with the extracted locationId.
+                    message.Reply(LocationCollected.NotCollected);
                 }
             );
         }
@@ -962,6 +1052,151 @@ public partial class SqliteService : ISqliteService
                 "Sqlite Service, UpdadateLocationRecordInTable: Error updating location record in table: {exception}.",
                 exception.ToString()
             );
+        }
+    }
+
+    public async Task SetLocationRecordtoCollectedState(
+        int locationId,
+        DbType DbType,
+        LocationCollected LocationCollectedState
+    )
+    {
+        try
+        {
+            logger.LogTrace(SqliteLog, "SetLocationRecordtoCollected called.");
+            // Log the DbType to trace.
+            logger.LogTrace(SqliteLog, "DbType: {DbType}", DbType);
+            // Log the locationId to trace.
+            logger.LogTrace(SqliteLog, "LocationId: {locationId}", locationId);
+
+            Guard.Against.Null(
+                locationId,
+                nameof(locationId),
+                "Sqlite Service, SetLocationRecordtoCollectedState: Location number is null."
+            );
+
+            Guard.Against.Null(
+                DbType,
+                nameof(DbType),
+                "SqliteService, SetLocationRecordtoCollectedState: Database type is null"
+            );
+
+            Guard.Against.Null(
+                LocationCollectedState,
+                nameof(LocationCollectedState),
+                "SqliteService, SetLocationRecordtoCollectedState: LocationCollectedState is null"
+            );
+
+            var updateSqlTablePortion =
+                $@"
+                UPDATE {DbType}
+                ";
+
+            // Create the sqlite update statement.
+            var builder = SimpleBuilder.Create(
+                $@" SET LocationCollected = {(int)LocationCollectedState} WHERE LocationId = {locationId}"
+            );
+
+            var sqlStatement = updateSqlTablePortion + builder.Sql;
+
+            // Log builder.sql to trace.
+            logger.LogTrace(
+                SqliteLog,
+                "Sqlite Service, UpdadateLocationRecordInTable: Sqlite update statement: {builder.Sql}",
+                sqlStatement
+            );
+
+            // Open the connection to the sqlite database.
+            using var database = await GetOpenConnectionAsync();
+
+            // Get the number of updated records from the update statement.
+            var updatedRecords = database.Execute(sqlStatement, builder.Parameters);
+
+            // Log the number of updated records to trace.
+            logger.LogTrace(
+                SqliteLog,
+                "Sqlite Service, SetLocationRecordtoCollected: Updated {updatedRecords} records in {DbType} table.",
+                updatedRecords,
+                DbType
+            );
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(
+                SqliteLog,
+                "Sqlite Service, SetLocationRecordtoCollected: Error setting location record to collected: {exception}.",
+                exception.ToString()
+            );
+        }
+    }
+
+    public async Task<LocationCollected> GetLocationRecordCollectionState(
+        int locationId,
+        DbType DbType
+    )
+    {
+        try
+        {
+            logger.LogDebug(SqliteLog, "GetLocationRecordCollectionState called.");
+            // Log the DbType to trace.
+            logger.LogDebug(SqliteLog, "DbType: {DbType}", DbType);
+            // Log the locationId to trace.
+            logger.LogDebug(SqliteLog, "LocationId: {locationId}", locationId);
+
+            Guard.Against.Null(
+                locationId,
+                nameof(locationId),
+                "Sqlite Service, GetLocationRecordCollectionState: Location number is null."
+            );
+
+            Guard.Against.Null(
+                DbType,
+                nameof(DbType),
+                "SqliteService, GetLocationRecordCollectionState: Database type is null"
+            );
+
+            // Create the table portion of the sqlite select statement.
+            var selectSqlTablePortion =
+                $@"
+                SELECT LocationCollected
+                FROM {DbType}
+                WHERE LocationId = {locationId}
+                ";
+
+            // Log selectLocationRecordSql to trace.
+            logger.LogDebug(
+                SqliteLog,
+                "Sqlite select statement: {selectSqlTablePortion}",
+                selectSqlTablePortion
+            );
+
+            // Open the connection to the sqlite database.
+            using var database = await GetOpenConnectionAsync();
+
+            // Get the locationCollected value from the select statement.
+            // var locationCollected = database.Query<LocationCollected>(selectSqlTablePortion);
+            var locationCollected = await database.QueryFirstAsync<int>(selectSqlTablePortion);
+
+            // Cast the integer to the LocationCollected enum.
+            var locationCollectedEnum = (LocationCollected)locationCollected;
+
+            // Log the locationCollected value to trace.
+            logger.LogDebug(
+                SqliteLog,
+                "Sqlite Service, GetLocationRecordCollectionState: LocationCollected: {locationCollected}",
+                locationCollectedEnum
+            );
+
+            return locationCollectedEnum;
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(
+                SqliteLog,
+                "Sqlite Service, GetLocationRecordCollectionState: Error getting location record collection state: {exception}.",
+                exception.ToString()
+            );
+            return LocationCollected.Error;
         }
     }
 

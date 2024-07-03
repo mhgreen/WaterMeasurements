@@ -31,7 +31,8 @@ public enum LocationType
 public enum LocationCollected
 {
     NotCollected,
-    Collected
+    Collected,
+    Error
 }
 
 public enum CollectionDirection
@@ -62,6 +63,13 @@ public readonly record struct DeleteLocationRecordFromTable(int LocationId, DbTy
 public readonly record struct UpdateLocationRecordInTable(
     LocationRecord LocationRecord,
     DbType DbType
+);
+
+// Record to set a location to collected in a table.
+public readonly record struct SetLocationRecordCollectedState(
+    int LocationId,
+    DbType DbType,
+    LocationCollected LocationCollectedState
 );
 
 // Record to update location detail.
