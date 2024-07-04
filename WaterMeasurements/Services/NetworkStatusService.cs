@@ -49,6 +49,7 @@ public partial class NetworkStatusService : INetworkStatusService
         try
         {
             NetworkInformation.NetworkStatusChanged += OnNetworkStatusChanged;
+
             // Respond to requests for the current network status.
             WeakReferenceMessenger.Default.Register<
                 NetworkStatusService,

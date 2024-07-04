@@ -644,35 +644,37 @@ public partial class SecchiViewModel : ObservableRecipient
                             locationId
                         );
 
-                        var locationCollected = await WeakReferenceMessenger.Default.Send(
-                            new GetLocationRecordCollectionStateMessage(
+                        var locationCollected =
+                            await sqliteService.GetLocationRecordCollectionState(
                                 (int)locationId!,
                                 DbType.SecchiLocations
-                            )
-                        );
+                            );
 
-                        // Log the locationCollected to debug.
-                        logger.LogDebug(
-                            SecchiViewModelLog,
-                            "SecchiViewModel, HandleGeotriggerNotification, FenceNotification: Entered, LocationCollected: {locationCollected}.",
-                            locationCollected
-                        );
-
-                        // Set the map border color to the accent fill color.
-                        // Set the SecchiCollectionPointName to the locationName.
-                        // Enable the menu option to allow moving to the collection entry panel.
-                        uiDispatcherQueue!.TryEnqueue(() =>
+                        if (locationCollected == LocationCollected.NotCollected)
                         {
-                            MapBorderColor = (SolidColorBrush)
-                                Application.Current.Resources["AccentFillColorDefaultBrush"];
-                            SecchiCollectionPointName = locationName.ToString()!;
-                            IsCollectMeasurementEnabled = true;
-                        });
+                            // Log the locationCollected to debug.
+                            logger.LogDebug(
+                                SecchiViewModelLog,
+                                "SecchiViewModel, HandleGeotriggerNotification, FenceNotification: Entered, LocationCollected: {locationCollected}.",
+                                locationCollected
+                            );
 
-                        // Send a SetSecchiSelectViewMessage with the value of "SecchiDataEntry".
-                        WeakReferenceMessenger.Default.Send<SetSecchiSelectViewMessage>(
-                            new SetSecchiSelectViewMessage("SecchiDataEntry")
-                        );
+                            // Set the map border color to the accent fill color.
+                            // Set the SecchiCollectionPointName to the locationName.
+                            // Enable the menu option to allow moving to the collection entry panel.
+                            uiDispatcherQueue!.TryEnqueue(() =>
+                            {
+                                MapBorderColor = (SolidColorBrush)
+                                    Application.Current.Resources["AccentFillColorDefaultBrush"];
+                                SecchiCollectionPointName = locationName.ToString()!;
+                                IsCollectMeasurementEnabled = true;
+                            });
+
+                            // Send a SetSecchiSelectViewMessage with the value of "SecchiDataEntry".
+                            WeakReferenceMessenger.Default.Send<SetSecchiSelectViewMessage>(
+                                new SetSecchiSelectViewMessage("SecchiDataEntry")
+                            );
+                        }
                     }
                 )
                 .InternalTransition(

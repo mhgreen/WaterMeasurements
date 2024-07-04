@@ -43,4 +43,12 @@ public interface ISqliteService
     );
 
     public Task DeleteLocationDetailRecordFromDetailTable(int locationId, DbType dbType);
+
+    public Task SetLocationRecordtoCollectedState(
+        int locationId,
+        DbType DbType,
+        LocationCollected LocationCollectedState
+    );
+
+    public Task<LocationCollected> GetLocationRecordCollectionState(int LocationId, DbType DbType);
 }
