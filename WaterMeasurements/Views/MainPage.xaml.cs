@@ -73,6 +73,7 @@ public partial class MainPage : Page
     public SecchiConfigurationViewModel SecchiConfigurationView { get; }
     public NewLocationViewModel NewLocationView { get; }
     public ILocalSettingsService LocalSettingsService { get; }
+    public IMeasurementQueueService MeasurementQueueService { get; }
 
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
@@ -195,6 +196,7 @@ public partial class MainPage : Page
         SecchiConfigurationView = App.GetService<SecchiConfigurationViewModel>();
         NewLocationView = App.GetService<NewLocationViewModel>();
         LocalSettingsService = App.GetService<ILocalSettingsService>();
+        MeasurementQueueService = App.GetService<IMeasurementQueueService>();
 
         Logger.Debug("MainPage.xaml.cs, MainPage: Starting");
 
@@ -1016,6 +1018,10 @@ public partial class MainPage : Page
     private void CancelSecchiMeasurements_Click()
     {
         secchiPageSelection.SecchiSelectView = "SecchiCollectionTable";
+        // Send a MeasurementCompleteMessage to the MeasurementQueueService.
+        WeakReferenceMessenger.Default.Send<MeasurementCompleteMessage>(
+            new MeasurementCompleteMessage(MeasurementType.Secchi)
+        );
     }
 
     [RelayCommand]

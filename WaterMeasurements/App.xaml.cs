@@ -111,6 +111,7 @@ public partial class App : Application
                     services.AddSingleton<IGeoTriggerService, GeoTriggerService>();
                     services.AddSingleton<IWaterQualityService, WaterQualityService>();
                     services.AddSingleton<ICommunicationService, CommunicationService>();
+                    services.AddSingleton<IMeasurementQueueService, MeasurementQueueService>();
 
                     // Configuration
                     services.Configure<LocalSettingsOptions>(

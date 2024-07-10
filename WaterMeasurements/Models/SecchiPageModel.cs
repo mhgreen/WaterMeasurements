@@ -28,6 +28,7 @@ public enum SecchiServiceTrigger
     UiThreadRecievedorPresent,
     GeoTriggerFenceEntered,
     GeoTriggerFenceExited,
+    BeginMeasurement,
     Cancel
 }
 

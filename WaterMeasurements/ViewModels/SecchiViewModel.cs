@@ -659,6 +659,11 @@ public partial class SecchiViewModel : ObservableRecipient
                                 locationCollected
                             );
 
+                            // Send a AddMeasurementRequestMessage to the MeasurementQueueService.
+                            WeakReferenceMessenger.Default.Send<AddMeasurementRequestMessage>(
+                                new AddMeasurementRequestMessage(MeasurementType.Secchi)
+                            );
+
                             // Set the map border color to the accent fill color.
                             // Set the SecchiCollectionPointName to the locationName.
                             // Enable the menu option to allow moving to the collection entry panel.
@@ -704,6 +709,17 @@ public partial class SecchiViewModel : ObservableRecipient
                             MapBorderColor = new SolidColorBrush(Colors.Transparent);
                             IsCollectMeasurementEnabled = false;
                         });
+                    }
+                )
+                .InternalTransition(
+                    SecchiServiceTrigger.BeginMeasurement,
+                    _ =>
+                    {
+                        // Log the BeginMeasurement trigger.
+                        logger.LogDebug(
+                            SecchiViewModelLog,
+                            "SecchiViewModel, stateMachine (SecchiServiceState.Running): BeginMeasurement notification received."
+                        );
                     }
                 )
                 // Permit the AppClosing trigger.
@@ -996,6 +1012,17 @@ public partial class SecchiViewModel : ObservableRecipient
 
                 // Subscribe to geodatabase download progress messages and put those on the UI thread.
                 SubscribeGeoDbDownload(uiDispatcherQueue);
+
+                // Subscribe to BeginMeasurementMessages before GeoTriggerMessages as those trigger
+                // adding a request to take a specific type of measurement to the
+                // queue maintained by the MeasurementQueueService.
+                WeakReferenceMessenger.Default.Register<BeginMeasurementMessage>(
+                    this,
+                    (recipient, message) =>
+                    {
+                        stateMachine.Fire(SecchiServiceTrigger.BeginMeasurement);
+                    }
+                );
 
                 // Subscribe to GeoTriggerMessages once the UI has been configured.
                 // This allows GeoTriggerMessages to be received if the app is started
@@ -1417,6 +1444,22 @@ public partial class SecchiViewModel : ObservableRecipient
                     new FeatureAddMessage("SecchiObservations", "OBJECTID", secchiObservation)
                 ),
                 secchiObservationsChannel
+            );
+
+            // Set the location to Collected via SetLocationRecordCollectedStateMessage.
+            WeakReferenceMessenger.Default.Send<SetLocationRecordCollectedStateMessage>(
+                new SetLocationRecordCollectedStateMessage(
+                    new SetLocationRecordCollectedState(
+                        locationId,
+                        DbType.SecchiLocations,
+                        LocationCollected.Collected
+                    )
+                )
+            );
+
+            // Send a MeasurementCompleteMessage to the MeasurementQueueService.
+            WeakReferenceMessenger.Default.Send<MeasurementCompleteMessage>(
+                new MeasurementCompleteMessage(MeasurementType.Secchi)
             );
 
             /*

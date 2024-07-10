@@ -3,8 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Esri.ArcGISRuntime.Data;
 
 namespace WaterMeasurements.Contracts.Services;
 
-public interface IGeoTriggerService { }
+public interface IMeasurementQueueService { }
