@@ -47,7 +47,8 @@ public interface ISqliteService
     public Task SetLocationRecordtoCollectedState(
         int locationId,
         DbType DbType,
-        LocationCollected LocationCollectedState
+        LocationCollected LocationCollectedState,
+        LocationsCollectedStateScope SetScope
     );
 
     public Task<LocationCollected> GetLocationRecordCollectionState(int LocationId, DbType DbType);

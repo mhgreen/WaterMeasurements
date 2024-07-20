@@ -47,6 +47,12 @@ public enum CollectOccasional
     Collect
 }
 
+public enum LocationsCollectedStateScope
+{
+    SingleLocation,
+    AllLocations
+}
+
 // Record to create a table from a feature table.
 public readonly record struct FeatureToTable(FeatureTable FeatureTable, DbType DbType);
 
@@ -69,7 +75,8 @@ public readonly record struct UpdateLocationRecordInTable(
 public readonly record struct SetLocationRecordCollectedState(
     int LocationId,
     DbType DbType,
-    LocationCollected LocationCollectedState
+    LocationCollected LocationCollectedState,
+    LocationsCollectedStateScope Scope
 );
 
 // Record to update location detail.

@@ -26,7 +26,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Ardalis.GuardClauses" Version="4.5.0" />
+    <PackageReference Include="Ardalis.GuardClauses" Version="4.6.0" />
     <PackageReference Include="CommunityToolkit.Labs.Uwp.Controls.DataTable" Version="0.1.230830" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.2" />
     <PackageReference Include="CommunityToolkit.WinUI.Collections" Version="8.0.240109" />
@@ -37,21 +37,23 @@
     <PackageReference Include="CommunityToolkit.WinUI.Triggers" Version="8.0.240109" />
     <PackageReference Include="Dapper" Version="2.1.35" />
     <PackageReference Include="Dapper.Contrib" Version="2.0.78" />
-    <PackageReference Include="Dapper.SimpleSqlBuilder" Version="3.7.4" />
+    <PackageReference Include="Dapper.SimpleSqlBuilder" Version="4.0.5" />
     <PackageReference Include="Esri.ArcGISRuntime.Toolkit.WinUI" Version="200.4.0" />
     <PackageReference Include="Esri.ArcGISRuntime.WinUI" Version="200.4.0" />
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.6" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.7" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
-    <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.5.240428000" />
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.5.240627000" />
     <PackageReference Include="Microsoft.Xaml.Behaviors.WinUI.Managed" Version="2.0.9" />
-    <PackageReference Include="Rebus" Version="8.4.2" />
+    <PackageReference Include="Rebus" Version="8.4.3" />
     <PackageReference Include="Rebus.NLog" Version="6.0.0" />
-    <PackageReference Include="Rebus.RabbitMq" Version="9.3.0" />
+    <PackageReference Include="Rebus.RabbitMq" Version="9.3.6" />
     <PackageReference Include="Rebus.ServiceProvider" Version="10.1.2" />
     <PackageReference Include="RecordParser" Version="2.3.0" />
     <PackageReference Include="Stateless" Version="5.16.0" />
     <PackageReference Include="System.IO.Ports" Version="8.0.0" />
-    <PackageReference Include="UnitsNet" Version="5.50.0" />
+    <PackageReference Include="System.Text.Json" Version="8.0.4" />
+    <PackageReference Include="System.Threading.Channels" Version="8.0.0" />
+    <PackageReference Include="UnitsNet" Version="5.54.0" />
     <PackageReference Include="WinUIEx" Version="2.3.4" />
   </ItemGroup>
 

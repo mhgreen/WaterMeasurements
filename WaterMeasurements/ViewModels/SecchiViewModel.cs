@@ -1452,7 +1452,8 @@ public partial class SecchiViewModel : ObservableRecipient
                     new SetLocationRecordCollectedState(
                         locationId,
                         DbType.SecchiLocations,
-                        LocationCollected.Collected
+                        LocationCollected.Collected,
+                        LocationsCollectedStateScope.SingleLocation
                     )
                 )
             );

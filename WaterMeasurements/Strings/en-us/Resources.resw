@@ -354,4 +354,10 @@
   <data name="Main_UploadObservationsToolTip.Content" xml:space="preserve">
     <value>Upload all collected observations to ArcGIS Online</value>
   </data>
+  <data name="Main_ResetCollectedAppButton.Label" xml:space="preserve">
+    <value>Reset Collected</value>
+  </data>
+  <data name="Main_ResetCollectedToolTip.Content" xml:space="preserve">
+    <value>Set all locations to not collected</value>
+  </data>
 </root>

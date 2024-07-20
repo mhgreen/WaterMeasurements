@@ -1577,6 +1577,38 @@ public partial class MainPage : Page
         }
     }
 
+    private void ResetAllLocationsCollectedState(object sender, RoutedEventArgs eventArgs)
+    {
+        // Log to trace that the ResetAllLocationsCollectedState method was called.
+        Logger.Trace(
+            "MainPage.xaml.cs, ResetAllLocationsCollectedState: ResetAllLocationsCollectedState method called."
+        );
+
+        try
+        {
+            // Set the location to not collected via SetLocationRecordCollectedStateMessage.
+            WeakReferenceMessenger.Default.Send<SetLocationRecordCollectedStateMessage>(
+                new SetLocationRecordCollectedStateMessage(
+                    new SetLocationRecordCollectedState(
+                        0,
+                        DbType.SecchiLocations,
+                        LocationCollected.NotCollected,
+                        LocationsCollectedStateScope.AllLocations
+                    )
+                )
+            );
+        }
+        catch (Exception exception)
+        {
+            // Log to trace the exception message.
+            Logger.Error(
+                exception,
+                "MainPage.xaml.cs, ResetAllLocationsCollectedState: An error occurred in ResetAllLocationsCollectedState: {exception}",
+                exception.Message
+            );
+        }
+    }
+
     private void AddLocation_Click(object sender, RoutedEventArgs eventArgs)
     {
         // Log to trace that the AddLocation_Click method was called.

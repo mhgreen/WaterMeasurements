@@ -1209,6 +1209,19 @@
                                                                             VerticalOffset="-48" />
                                                                     </ToolTipService.ToolTip>
                                                                 </AppBarButton>
+                                                                <AppBarButton
+                                                                    x:Uid="Main_ResetCollectedAppButton"
+                                                                    Click="ResetAllLocationsCollectedState">
+                                                                    <AppBarButton.Icon>
+                                                                        <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE777;" />
+                                                                    </AppBarButton.Icon>
+                                                                    <ToolTipService.ToolTip>
+                                                                        <ToolTip
+                                                                            x:Uid="Main_ResetCollectedToolTip"
+                                                                            HorizontalOffset="200"
+                                                                            VerticalOffset="-48" />
+                                                                    </ToolTipService.ToolTip>
+                                                                </AppBarButton>
                                                             </CommandBar>
 
                                                             <ListView

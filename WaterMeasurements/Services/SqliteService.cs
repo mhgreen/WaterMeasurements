@@ -264,7 +264,8 @@ public partial class SqliteService : ISqliteService
                     await SetLocationRecordtoCollectedState(
                         message.Value.LocationId,
                         message.Value.DbType,
-                        message.Value.LocationCollectedState
+                        message.Value.LocationCollectedState,
+                        message.Value.Scope
                     );
                 }
             );
@@ -1012,7 +1013,8 @@ public partial class SqliteService : ISqliteService
     public async Task SetLocationRecordtoCollectedState(
         int LocationId,
         DbType DbType,
-        LocationCollected LocationCollectedState
+        LocationCollected LocationCollectedState,
+        LocationsCollectedStateScope Scope
     )
     {
         IWhereBuilder fluentBuilder;
@@ -1058,6 +1060,36 @@ public partial class SqliteService : ISqliteService
                         .Update($"SecchiLocations")
                         .Set($"LocationCollected = {(int)LocationCollectedState}")
                         .Where($"LocationId = {LocationId}");
+
+                    if (Scope == LocationsCollectedStateScope.AllLocations)
+                    {
+                        logger.LogInformation(
+                            SqliteLog,
+                            "Sqlite Service, SetLocationRecordtoCollected: Setting all locations in SecchiLocations to collected state {LocationCollectedState}.",
+                            LocationCollectedState
+                        );
+                        // Update all locations
+                        fluentBuilder = SimpleBuilder
+                            .CreateFluent()
+                            .Update($"SecchiLocations")
+                            .Set($"LocationCollected = {(int)LocationCollectedState}");
+                    }
+                    else
+                    {
+                        logger.LogDebug(
+                            SqliteLog,
+                            "Sqlite Service, SetLocationRecordtoCollected: Setting location {LocationId} in SecchiLocations to collected state {LocationCollectedState}.",
+                            LocationId,
+                            LocationCollectedState
+                        );
+                        // Update a specific location
+                        fluentBuilder = SimpleBuilder
+                            .CreateFluent()
+                            .Update($"SecchiLocations")
+                            .Set($"LocationCollected = {(int)LocationCollectedState}")
+                            .Where($"LocationId = {LocationId}");
+                    }
+
                     break;
 
                 default:
