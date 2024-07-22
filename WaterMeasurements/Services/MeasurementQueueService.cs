@@ -27,6 +27,12 @@ public class BeginMeasurementMessage(MeasurementType measurementType)
 public class MeasurementCompleteMessage(MeasurementType measurementType)
     : ValueChangedMessage<MeasurementType>(measurementType) { }
 
+// Message to clear the measurement queue.
+public class ClearMeasurementQueueMessage
+{
+    public ClearMeasurementQueueMessage() { }
+}
+
 public partial class MeasurementQueueService : IMeasurementQueueService
 {
     private readonly ILogger<MeasurementQueueService> logger;
@@ -110,6 +116,15 @@ public partial class MeasurementQueueService : IMeasurementQueueService
             }
         );
 
+        // Clear the queue.
+        WeakReferenceMessenger.Default.Register<ClearMeasurementQueueMessage>(
+            this,
+            (recipient, message) =>
+            {
+                ClearQueue();
+            }
+        );
+
         // Log that the MeasurementQueueService has been initialized.
         logger.LogDebug(
             MeasurementQueueServiceLog,
@@ -132,5 +147,20 @@ public partial class MeasurementQueueService : IMeasurementQueueService
                 measurementType
             );
         }
+    }
+
+    // Clear the queue.
+    public void ClearQueue()
+    {
+        lock (requestQueueLock)
+        {
+            measurementQueue.Clear();
+        }
+
+        // Log that the queue has been cleared.
+        logger.LogDebug(
+            MeasurementQueueServiceLog,
+            "MeasurementQueueService: Measurement queue cleared."
+        );
     }
 }

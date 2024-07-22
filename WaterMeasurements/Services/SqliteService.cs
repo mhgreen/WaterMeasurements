@@ -1212,7 +1212,7 @@ public partial class SqliteService : ISqliteService
             );
 
             // Log the number of location collected records to trace.
-            logger.LogTrace(
+            logger.LogDebug(
                 SqliteLog,
                 "Sqlite Service, GetLocationRecordCollectionState: Retrieved {collectedCount} records from {DbType} table.",
                 locationCollected.Count(),
@@ -1236,7 +1236,7 @@ public partial class SqliteService : ISqliteService
                 // Log an error indicating that multiple locations were found.
                 logger.LogError(
                     SqliteLog,
-                    "Sqlite Service, GetLocationRecordCollectionState: multiple records({numberLocations}) with LocationId {LocationId} were found in {DbType} table.",
+                    "Sqlite Service, GetLocationRecordCollectionState, Error: ({numberLocations}) records with LocationId {LocationId} were found in {DbType} table.",
                     locationCollected.Count(),
                     LocationId,
                     DbType

@@ -574,6 +574,35 @@ public partial class SecchiViewModel : ObservableRecipient
                     StartMonitoringNetwork();
                 })
                 .InternalTransition(
+                    locationsFeatureTableReceived,
+                    (featureTable, _) =>
+                    {
+                        // Log the LocationFeatureTableReceived trigger.
+                        logger.LogDebug(
+                            SecchiViewModelLog,
+                            "SecchiViewModel, stateMachine (SecchiServiceState.Running): LocationFeatureTableReceived notification received."
+                        );
+
+                        Guard.Against.Null(
+                            geoTriggerDistance,
+                            nameof(geoTriggerDistance),
+                            "SecchiViewModel, StateMachine, SecchiServiceState.WaitingForLocations: geoTriggerDistance can not be null."
+                        );
+
+                        // Create a geotrigger fence for each location by sending a geotrigger add message to the GeoTriggerService.
+                        WeakReferenceMessenger.Default.Send<GeoTriggerAddMessage>(
+                            new GeoTriggerAddMessage(
+                                new GeoTriggerAdd(
+                                    featureTable,
+                                    "SecchiGeotrigger",
+                                    secchiGeotriggerChannel,
+                                    (double)geoTriggerDistance
+                                )
+                            )
+                        );
+                    }
+                )
+                .InternalTransition(
                     observationsFeatureTableReceived,
                     (featureTable, _) =>
                     {
@@ -702,6 +731,13 @@ public partial class SecchiViewModel : ObservableRecipient
                             locationId
                         );
 
+                        // There may be a number of measurements in the queue for a particular location.
+                        // If the location is exited, then the additional measurements should be discarded.
+                        // Send a message to clear the measurement queue.
+                        WeakReferenceMessenger.Default.Send<ClearMeasurementQueueMessage>(
+                            new ClearMeasurementQueueMessage()
+                        );
+
                         // Set the map border color to transparent.
                         // Disable the menu option to allow moving to the collection entry panel.
                         uiDispatcherQueue!.TryEnqueue(() =>
@@ -812,6 +848,12 @@ public partial class SecchiViewModel : ObservableRecipient
                             "SecchiViewModel, ChangedFeatureMessage, Added, secchiLocationsChannel: {secchiLocationsChannel}, FeatureChangedMessage: {featureChangedMessage}.",
                             secchiLocationsChannel,
                             message.Value
+                        );
+
+                        // Send a message requesting the updated location feature table ("SecchiLocations").
+                        WeakReferenceMessenger.Default.Send(
+                            new FeatureTableRequestMessage("SecchiLocations"),
+                            secchiLocationsChannel
                         );
 
                         // Log the fields in the feature table.
@@ -1102,6 +1144,28 @@ public partial class SecchiViewModel : ObservableRecipient
                     message.Value.ToString()
                 );
                 WaitForObservationsAndLocations(message.Value);
+            }
+        );
+
+        WeakReferenceMessenger.Default.Register<LocationRecordAddedToTableMessage>(
+            this,
+            (recipient, message) =>
+            {
+                logger.LogDebug(
+                    SecchiViewModelLog,
+                    "SecchiViewModel, LocationRecordAddedToTableMessage: LocationRecordAddedToTable: {locationRecordAddedToTable}.",
+                    message.Value
+                );
+
+                /*
+                // Send the feature via an AddFeatureMessage to the GeoDatabaseService.
+                WeakReferenceMessenger.Default.Send<AddFeatureMessage, uint>(
+                    new AddFeatureMessage(
+                        new FeatureAddMessage("SecchiLocations", "LocationId", newFeature)
+                    ),
+                    secchiLocationsChannel
+                );
+                */
             }
         );
     }
@@ -1707,14 +1771,6 @@ public partial class SecchiViewModel : ObservableRecipient
             newFeature.Attributes["LocationId"] = secchiAddLocation.LocationNumber;
             newFeature.Attributes["LocationType"] = (int)secchiAddLocation.LocationType;
 
-            // Send the feature via an AddFeatureMessage to the GeoDatabaseService.
-            WeakReferenceMessenger.Default.Send<AddFeatureMessage, uint>(
-                new AddFeatureMessage(
-                    new FeatureAddMessage("SecchiLocations", "LocationId", newFeature)
-                ),
-                secchiLocationsChannel
-            );
-
             // Add the new location record to Sqlite.
             WeakReferenceMessenger.Default.Send<AddLocationRecordToTableMessage>(
                 new AddLocationRecordToTableMessage(
@@ -1742,6 +1798,14 @@ public partial class SecchiViewModel : ObservableRecipient
                     locationName: secchiAddLocation.LocationName,
                     locationType: (LocationType)secchiAddLocation.LocationType
                 )
+            );
+
+            // Send the feature via an AddFeatureMessage to the GeoDatabaseService.
+            WeakReferenceMessenger.Default.Send<AddFeatureMessage, uint>(
+                new AddFeatureMessage(
+                    new FeatureAddMessage("SecchiLocations", "LocationId", newFeature)
+                ),
+                secchiLocationsChannel
             );
         }
         catch (Exception exception)
