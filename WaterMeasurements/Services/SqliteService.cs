@@ -42,8 +42,8 @@ public class AddLocationRecordToTableMessage(AddLocationRecordToTable addLocatio
     : ValueChangedMessage<AddLocationRecordToTable>(addLocationRecordToTable) { }
 
 // Message to notify modules that a location record has been added to a table.
-public class LocationRecordAddedToTableMessage(DbType dbType)
-    : ValueChangedMessage<DbType>(dbType) { }
+public class LocationRecordAddedToTableMessage(DbTypeAndLocationId dbTypeAndLocationId)
+    : ValueChangedMessage<DbTypeAndLocationId>(dbTypeAndLocationId) { }
 
 // Message to delete a location record from a table.
 public class DeleteLocationRecordFromTableMessage(
@@ -51,8 +51,8 @@ public class DeleteLocationRecordFromTableMessage(
 ) : ValueChangedMessage<DeleteLocationRecordFromTable>(deleteLocationRecordFromTable) { }
 
 // Message to notify modules that a location record has been deleted from a table.
-public class LocationRecordDeletedFromTableMessage(DbType dbType)
-    : ValueChangedMessage<DbType>(dbType) { }
+public class LocationRecordDeletedFromTableMessage(DbTypeAndLocationId dbTypeAndLocationId)
+    : ValueChangedMessage<DbTypeAndLocationId>(dbTypeAndLocationId) { }
 
 // Message to update a location record in a table.
 public class UpdateLocationRecordInTableMessage(
@@ -60,8 +60,8 @@ public class UpdateLocationRecordInTableMessage(
 ) : ValueChangedMessage<UpdateLocationRecordInTable>(updateLocationRecordInTable) { }
 
 // Message to notify modules that a location record has been updated in a table.
-public class LocationRecordUpdatedInTableMessage(DbType dbType)
-    : ValueChangedMessage<DbType>(dbType) { }
+public class LocationRecordUpdatedInTableMessage(DbTypeAndLocationId dbTypeAndLocationId)
+    : ValueChangedMessage<DbTypeAndLocationId>(dbTypeAndLocationId) { }
 
 // Message to set a location record to collected.
 public class SetLocationRecordCollectedStateMessage(
@@ -753,7 +753,11 @@ public partial class SqliteService : ISqliteService
             );
 
             // Send a message that the location record has been added to the table.
-            WeakReferenceMessenger.Default.Send(new LocationRecordAddedToTableMessage(DbType));
+            WeakReferenceMessenger.Default.Send(
+                new LocationRecordAddedToTableMessage(
+                    new DbTypeAndLocationId(DbType, LocationRecord.LocationId)
+                )
+            );
         }
         catch (SqliteException sqliteException)
         {
@@ -935,7 +939,11 @@ public partial class SqliteService : ISqliteService
             );
 
             // Send a message that the location record has been deleted from the table.
-            WeakReferenceMessenger.Default.Send(new LocationRecordDeletedFromTableMessage(DbType));
+            WeakReferenceMessenger.Default.Send(
+                new LocationRecordDeletedFromTableMessage(
+                    new DbTypeAndLocationId(DbType, locationId)
+                )
+            );
         }
         catch (SqliteException sqliteException)
         {
@@ -998,7 +1006,11 @@ public partial class SqliteService : ISqliteService
             );
 
             // Send a message that the location record has been updated in the table.
-            WeakReferenceMessenger.Default.Send(new LocationRecordUpdatedInTableMessage(DbType));
+            WeakReferenceMessenger.Default.Send(
+                new LocationRecordUpdatedInTableMessage(
+                    new DbTypeAndLocationId(DbType, LocationRecord.LocationId)
+                )
+            );
         }
         catch (Exception exception)
         {

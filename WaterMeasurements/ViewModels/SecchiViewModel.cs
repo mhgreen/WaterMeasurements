@@ -1,4 +1,6 @@
-﻿using System.Collections.ObjectModel;
+﻿using System;
+using System.Collections.Concurrent;
+using System.Collections.ObjectModel;
 using System.Drawing;
 using System.Numerics;
 using System.Xml.Linq;
@@ -99,6 +101,10 @@ public partial class SecchiViewModel : ObservableRecipient
     private string? observationsURL = string.Empty;
     private string? locationsURL = string.Empty;
 
+    // Temporary storage for Feature objects, keyed by location ID.
+    // This is used to track adding and deleting locations and is used to update the geolocation list.
+    private readonly Dictionary<int, ArcGISFeature> featureCache = [];
+
     // TODO: add the following to the configuration file.
 
     // -------------------- Set one or both of the following to true to cause download --------------------
@@ -121,6 +127,11 @@ public partial class SecchiViewModel : ObservableRecipient
     // Instead of being a global variable, it could be retrieved from the feature table
     // but doing so would require a query to the feature table each time the location name is needed.
     private string? geotriggerLocationName = string.Empty;
+
+    // Current triggered location ID and indication of whether it is currently being collected.
+    // This is used to handle the case where a geolocation is within the geotrigger fence and
+    // the associated location is deleted.
+    private readonly ConcurrentDictionary<int, bool> geoTriggerLocationAndCollectionState = [];
 
     private GraphicsOverlay secchiLocationsOverlay = new() { Id = "SecchiLocations" };
 
@@ -673,6 +684,24 @@ public partial class SecchiViewModel : ObservableRecipient
                             locationId
                         );
 
+                        // The location has been entered, so set the location as being active, but not yet checked
+                        // for collection status.
+                        var added = geoTriggerLocationAndCollectionState.TryAdd(
+                            (int)locationId!,
+                            false
+                        );
+                        if (added)
+                        {
+                            // Log the locationId to debug.
+                            logger.LogDebug(
+                                SecchiViewModelLog,
+                                "SecchiViewModel, stateMachine (SecchiServiceState.Running): GeoTriggerFenceEntered notification received, LocationId: {locationId} added, not yet validated for collection.",
+                                locationId
+                            );
+                        }
+
+                        // Send a message to the SqliteService to get the location record collection state.
+
                         var locationCollected =
                             await sqliteService.GetLocationRecordCollectionState(
                                 (int)locationId!,
@@ -687,6 +716,23 @@ public partial class SecchiViewModel : ObservableRecipient
                                 "SecchiViewModel, HandleGeotriggerNotification, FenceNotification: Entered, LocationCollected: {locationCollected}.",
                                 locationCollected
                             );
+
+                            // The location is active and eligible for collection.
+                            var updated = geoTriggerLocationAndCollectionState.TryUpdate(
+                                (int)locationId!,
+                                true,
+                                false
+                            );
+
+                            if (updated)
+                            {
+                                // Log the locationId to debug.
+                                logger.LogDebug(
+                                    SecchiViewModelLog,
+                                    "SecchiViewModel, stateMachine (SecchiServiceState.Running): GeoTriggerFenceEntered notification received, LocationId: {locationId} updated, validated for collection.",
+                                    locationId
+                                );
+                            }
 
                             // Send a AddMeasurementRequestMessage to the MeasurementQueueService.
                             WeakReferenceMessenger.Default.Send<AddMeasurementRequestMessage>(
@@ -730,6 +776,22 @@ public partial class SecchiViewModel : ObservableRecipient
                             locationName,
                             locationId
                         );
+
+                        // Remove the location from geoTriggerLocationAndCollectionState.
+                        var removed = geoTriggerLocationAndCollectionState.TryRemove(
+                            (int)locationId!,
+                            out var valueRemoved
+                        );
+
+                        if (removed)
+                        {
+                            // Log the locationId to debug.
+                            logger.LogDebug(
+                                SecchiViewModelLog,
+                                "SecchiViewModel, stateMachine (SecchiServiceState.Running): GeoTriggerFenceExited notification received, LocationId: {locationId} removed. from geoTriggerLocationAndCollectionState",
+                                locationId
+                            );
+                        }
 
                         // There may be a number of measurements in the queue for a particular location.
                         // If the location is exited, then the additional measurements should be discarded.
@@ -1147,24 +1209,143 @@ public partial class SecchiViewModel : ObservableRecipient
             }
         );
 
+        // Register to get LocationRecordAddedToTableMessage messages.
+        // This is used to wait until the location record has been added to the Sqlite table in AddNewLocation
+        // before adding the feature to the GeoDatabaseService.
         WeakReferenceMessenger.Default.Register<LocationRecordAddedToTableMessage>(
             this,
             (recipient, message) =>
             {
+                if (message.Value.DbType != DbType.SecchiLocations)
+                {
+                    return;
+                }
+
                 logger.LogDebug(
                     SecchiViewModelLog,
-                    "SecchiViewModel, LocationRecordAddedToTableMessage: LocationRecordAddedToTable: {locationRecordAddedToTable}.",
-                    message.Value
+                    "SecchiViewModel, LocationRecordAddedToTableMessage: DbType {DbType}, LocationId {LocationId}.",
+                    message.Value.DbType,
+                    message.Value.LocationId
                 );
 
-                /*
-                // Send the feature via an AddFeatureMessage to the GeoDatabaseService.
-                WeakReferenceMessenger.Default.Send<AddFeatureMessage, uint>(
-                    new AddFeatureMessage(
-                        new FeatureAddMessage("SecchiLocations", "LocationId", newFeature)
-                    ),
-                    secchiLocationsChannel
+                if (featureCache.TryGetValue(message.Value.LocationId, out var feature))
+                {
+                    logger.LogTrace(
+                        SecchiViewModelLog,
+                        "SecchiViewModel, LocationRecordAddedToTableMessage: FeatureCache contains LocationId {LocationId}.",
+                        message.Value.LocationId
+                    );
+
+                    // List the elements of feature.
+                    foreach (var attribute in feature.Attributes)
+                    {
+                        logger.LogTrace(
+                            SecchiViewModelLog,
+                            "SecchiViewModel, LocationRecordAddedToTableMessage: FeatureCache contains LocationId {LocationId}, attribute.Key: {attributeName}, attribute.Value: {attributeValue}.",
+                            message.Value.LocationId,
+                            attribute.Key,
+                            attribute.Value
+                        );
+                    }
+
+                    // Send the feature via an AddFeatureMessage to the GeoDatabaseService.
+                    WeakReferenceMessenger.Default.Send<AddFeatureMessage, uint>(
+                        new AddFeatureMessage(
+                            new FeatureAddMessage("SecchiLocations", "LocationId", feature)
+                        ),
+                        secchiLocationsChannel
+                    );
+
+                    // Remove the feature from the cache.
+                    featureCache.Remove(message.Value.LocationId);
+                }
+            }
+        );
+
+        WeakReferenceMessenger.Default.Register<LocationRecordDeletedFromTableMessage>(
+            this,
+            (recipient, message) =>
+            {
+                if (message.Value.DbType != DbType.SecchiLocations)
+                {
+                    return;
+                }
+
+                logger.LogDebug(
+                    SecchiViewModelLog,
+                    "SecchiViewModel, LocationRecordDeletedFromTableMessage: DbType {DbType}, LocationId {LocationId}.",
+                    message.Value.DbType,
+                    message.Value.LocationId
                 );
+
+                if (geoTriggerLocationAndCollectionState.ContainsKey(message.Value.LocationId))
+                {
+                    // Check geoTriggerLocationAndCollectionState for the locationId and determine collection state.
+                    var getCollectionState = geoTriggerLocationAndCollectionState.TryGetValue(
+                        message.Value.LocationId,
+                        out var inCollection
+                    );
+
+                    if (getCollectionState)
+                    {
+                        logger.LogDebug(
+                            SecchiViewModelLog,
+                            "SecchiViewModel, LocationRecordDeletedFromTableMessage: LocationId {LocationId} found in geoTriggerLocationAndCollectionState, inCollection: {inCollection}.",
+                            message.Value.LocationId,
+                            inCollection
+                        );
+
+                        //TODO: Send a message to the GeoTriggerService to remove the geotrigger fence.
+                        //TODO: Update the UI to reflect the location is no longer in collection state.
+                        //TODO: Disable the collection menu option.
+                    }
+
+                    var removed = geoTriggerLocationAndCollectionState.TryRemove(
+                        message.Value.LocationId,
+                        out var valueRemoved
+                    );
+                    if (removed)
+                    {
+                        logger.LogDebug(
+                            SecchiViewModelLog,
+                            "SecchiViewModel, LocationRecordDeletedFromTableMessage: LocationId {LocationId} removed from geoTriggerLocationAndCollectionState.",
+                            message.Value.LocationId
+                        );
+                    }
+                }
+
+                /*
+                if (featureCache.TryGetValue(message.Value.LocationId, out var feature))
+                {
+                    logger.LogTrace(
+                        SecchiViewModelLog,
+                        "SecchiViewModel, LocationRecordDeletedFromTableMessage: FeatureCache contains LocationId {LocationId}.",
+                        message.Value.LocationId
+                    );
+
+                    // List the elements of feature.
+                    foreach (var attribute in feature.Attributes)
+                    {
+                        logger.LogTrace(
+                            SecchiViewModelLog,
+                            "SecchiViewModel, LocationRecordAddedToTableMessage: FeatureCache contains LocationId {LocationId}, attribute.Key: {attributeName}, attribute.Value: {attributeValue}.",
+                            message.Value.LocationId,
+                            attribute.Key,
+                            attribute.Value
+                        );
+                    }
+
+                    // Send the feature via an AddFeatureMessage to the GeoDatabaseService.
+                    WeakReferenceMessenger.Default.Send<AddFeatureMessage, uint>(
+                        new AddFeatureMessage(
+                            new FeatureAddMessage("SecchiLocations", "LocationId", feature)
+                        ),
+                        secchiLocationsChannel
+                    );
+
+                    // Remove the feature from the cache.
+                    featureCache.Remove(message.Value.LocationId);
+                }
                 */
             }
         );
@@ -1800,13 +1981,13 @@ public partial class SecchiViewModel : ObservableRecipient
                 )
             );
 
-            // Send the feature via an AddFeatureMessage to the GeoDatabaseService.
-            WeakReferenceMessenger.Default.Send<AddFeatureMessage, uint>(
-                new AddFeatureMessage(
-                    new FeatureAddMessage("SecchiLocations", "LocationId", newFeature)
-                ),
-                secchiLocationsChannel
-            );
+            // Add the new feature to the featureCache.
+            // This will be used to add the feature to the GeoDatabaseService once the location record has been added to the Sqlite table
+            // and is done to ensure that the location record is added to the Sqlite table before the feature is added to the GeoDatabaseService,
+            // otherwise a geotrigger can take place without the ability to find the associated location record in Sqlite.
+            // See WeakReferenceMessenger.Default.Register<LocationRecordAddedToTableMessage>, the LocationRecordAddedToTableMessage handler
+            // for the use and clearing of this entry.
+            featureCache[(int)secchiAddLocation.LocationNumber] = newFeature;
         }
         catch (Exception exception)
         {

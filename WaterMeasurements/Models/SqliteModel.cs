@@ -56,6 +56,9 @@ public enum LocationsCollectedStateScope
 // Record to create a table from a feature table.
 public readonly record struct FeatureToTable(FeatureTable FeatureTable, DbType DbType);
 
+// Record with a table name and a location id.
+public readonly record struct DbTypeAndLocationId(DbType DbType, int LocationId);
+
 // Record to add a location record to a table.
 public readonly record struct AddLocationRecordToTable(
     LocationRecord LocationRecord,
