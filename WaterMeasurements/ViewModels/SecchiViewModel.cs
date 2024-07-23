@@ -939,6 +939,24 @@ public partial class SecchiViewModel : ObservableRecipient
                             secchiLocationsChannel,
                             message.Value
                         );
+
+                        // Send a message requesting the updated location feature table ("SecchiLocations").
+                        WeakReferenceMessenger.Default.Send(
+                            new FeatureTableRequestMessage("SecchiLocations"),
+                            secchiLocationsChannel
+                        );
+
+                        // Log the fields in the feature table.
+                        foreach (var attribute in message.Value.FeatureChanged.Attributes)
+                        {
+                            logger.LogTrace(
+                                SecchiViewModelLog,
+                                "SecchiViewModel, ChangedFeatureMessage, {name}: attribute.Key: {attributeName}, attribute.Value: {attributeValue}.",
+                                message.Value.FeatureTable,
+                                attribute.Key,
+                                attribute.Value
+                            );
+                        }
                     }
                     else if (message.Value.FeatureTableAction == FeatureTableAction.Updated)
                     {
@@ -1295,9 +1313,13 @@ public partial class SecchiViewModel : ObservableRecipient
                             inCollection
                         );
 
-                        //TODO: Send a message to the GeoTriggerService to remove the geotrigger fence.
-                        //TODO: Update the UI to reflect the location is no longer in collection state.
-                        //TODO: Disable the collection menu option.
+                        // Set the map border color to transparent.
+                        // Disable the menu option to allow moving to the collection entry panel.
+                        uiDispatcherQueue!.TryEnqueue(() =>
+                        {
+                            MapBorderColor = new SolidColorBrush(Colors.Transparent);
+                            IsCollectMeasurementEnabled = false;
+                        });
                     }
 
                     var removed = geoTriggerLocationAndCollectionState.TryRemove(
@@ -1313,40 +1335,6 @@ public partial class SecchiViewModel : ObservableRecipient
                         );
                     }
                 }
-
-                /*
-                if (featureCache.TryGetValue(message.Value.LocationId, out var feature))
-                {
-                    logger.LogTrace(
-                        SecchiViewModelLog,
-                        "SecchiViewModel, LocationRecordDeletedFromTableMessage: FeatureCache contains LocationId {LocationId}.",
-                        message.Value.LocationId
-                    );
-
-                    // List the elements of feature.
-                    foreach (var attribute in feature.Attributes)
-                    {
-                        logger.LogTrace(
-                            SecchiViewModelLog,
-                            "SecchiViewModel, LocationRecordAddedToTableMessage: FeatureCache contains LocationId {LocationId}, attribute.Key: {attributeName}, attribute.Value: {attributeValue}.",
-                            message.Value.LocationId,
-                            attribute.Key,
-                            attribute.Value
-                        );
-                    }
-
-                    // Send the feature via an AddFeatureMessage to the GeoDatabaseService.
-                    WeakReferenceMessenger.Default.Send<AddFeatureMessage, uint>(
-                        new AddFeatureMessage(
-                            new FeatureAddMessage("SecchiLocations", "LocationId", feature)
-                        ),
-                        secchiLocationsChannel
-                    );
-
-                    // Remove the feature from the cache.
-                    featureCache.Remove(message.Value.LocationId);
-                }
-                */
             }
         );
     }
