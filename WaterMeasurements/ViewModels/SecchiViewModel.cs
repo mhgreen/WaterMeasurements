@@ -1932,6 +1932,8 @@ public partial class SecchiViewModel : ObservableRecipient
                 "SecchiViewModel, AddNewLocation(): currentLocationsTable can not be null."
             );
 
+            var occassional = secchiAddLocation.LocationType;
+
             var newFeature = (ArcGISFeature)currentLocationsTable.CreateFeature();
             newFeature.Geometry = secchiAddLocation.Location;
             newFeature.Attributes["Latitude"] = secchiAddLocation.Latitude;
@@ -1965,7 +1967,8 @@ public partial class SecchiViewModel : ObservableRecipient
                     longitude: (double)secchiAddLocation.Longitude,
                     locationId: (int)secchiAddLocation.LocationNumber,
                     locationName: secchiAddLocation.LocationName,
-                    locationType: (LocationType)secchiAddLocation.LocationType
+                    locationType: (LocationType)secchiAddLocation.LocationType,
+                    recordStatus: RecordStatus.WorkingSet
                 )
             );
 

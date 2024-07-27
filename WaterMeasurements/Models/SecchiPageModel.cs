@@ -66,7 +66,8 @@ public class SecchiLocationDisplay(
     double latitude,
     double longitude,
     LocationType locationType,
-    int locationId
+    int locationId,
+    RecordStatus recordStatus
 ) : ILocationsDisplay
 {
     public string LocationName { get; private set; } = locationName;
@@ -74,6 +75,7 @@ public class SecchiLocationDisplay(
     public double Longitude { get; private set; } = longitude;
     public LocationType LocationType { get; private set; } = locationType;
     public int LocationId { get; private set; } = locationId;
+    public RecordStatus RecordStatus { get; private set; } = recordStatus;
     public string LatLon => $"Lat: {Latitude:F4}, Lon: {Longitude:F4}";
 }
 

@@ -82,6 +82,29 @@ public readonly record struct SetLocationRecordCollectedState(
     LocationsCollectedStateScope Scope
 );
 
+// Data transfer object for location flags.
+// This is defined in order to handle the mapping of fields
+// to handle explicit enum conversion and to allow for null values
+// and the mapping of nulls to default values.
+public class LocationFlagsDto
+{
+    public int LocationId { get; set; }
+    public int Status { get; set; }
+    public int LocationCollected { get; set; }
+    public int? CollectionDirection { get; set; }
+    public int? CollectOccasional { get; set; }
+}
+
+// Record of location flags.
+public readonly record struct LocationFlags(
+    int LocationId,
+    RecordStatus RecordStatus,
+    LocationType LocationType,
+    LocationCollected LocationCollected,
+    CollectionDirection CollectionDirection,
+    CollectOccasional CollectOccasional
+);
+
 // Record to update location detail.
 public readonly record struct LocationDetail(
     CollectionDirection? CollectionDirection,

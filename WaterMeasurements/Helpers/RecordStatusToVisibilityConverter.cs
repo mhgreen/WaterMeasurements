@@ -7,7 +7,8 @@ internal class RecordStatusToVisibilityConverter
 {
     public static object Convert(object value)
     {
-        var recordStatus = (RecordStatus)value;
+        // var recordStatus = (RecordStatus)value;
+        var recordStatus = value;
 
         return recordStatus switch
         {

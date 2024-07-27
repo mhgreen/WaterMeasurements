@@ -13,6 +13,7 @@ using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
 using WaterMeasurements.Contracts.Services;
 using WaterMeasurements.Models;
+using Windows.Security.Cryptography.Core;
 using Windows.Storage;
 using Windows.System;
 using static WaterMeasurements.Models.SqliteConfiguration;
@@ -533,8 +534,10 @@ public partial class SqliteService : ISqliteService
                 // Indicate that the feature is from the geodatabase and has been committed.
                 fieldValues["Status"] = (int)RecordStatus.Comitted;
 
-                // All of the above fields are common to all feature tables.
-                // For SecchiLocaitons, add the LocationCollected field to the fieldValues dictionary.
+                // For table types that have location records, set flags to indicate
+                // that the location has not been collected and the collection direction is one way.
+
+                // If the dbType is SecchiLocations, then set appropriate flags.
                 if (dbType == DbType.SecchiLocations)
                 {
                     // Initialize the feature to a state of NotCollected.
@@ -1150,6 +1153,137 @@ public partial class SqliteService : ISqliteService
                 "Sqlite Service, SetLocationRecordtoCollected: Error setting location record to collected: {exception}.",
                 exception.ToString()
             );
+        }
+    }
+
+    public async Task<LocationFlags> GetLocationFlags(int LocationId, DbType DbType)
+    {
+        IWhereBuilder fluentBuilder;
+
+        try
+        {
+            logger.LogDebug(SqliteLog, "Sqlite Service, GetLocationFlags called.");
+            // Log the DbType to trace.
+            logger.LogDebug(SqliteLog, "DbType: {DbType}", DbType);
+            // Log the locationId to trace.
+            logger.LogDebug(SqliteLog, "LocationId: {locationId}", LocationId);
+
+            Guard.Against.Null(
+                LocationId,
+                nameof(LocationId),
+                "Sqlite Service, GetLocationFlags: Location number is null."
+            );
+
+            Guard.Against.Null(
+                DbType,
+                nameof(DbType),
+                "SqliteService, GetLocationFlags: Database type is null"
+            );
+
+            switch (DbType)
+            {
+                case DbType.SecchiLocations:
+
+                    fluentBuilder = SimpleBuilder
+                        .CreateFluent()
+                        .Select(
+                            $"location.LocationId, location.Status, location.LocationCollected, detail.CollectionDirection, detail.CollectOccasional"
+                        )
+                        .From($"SecchiLocations location")
+                        .LeftJoin(
+                            $"SecchiLocationDetail detail ON location.LocationId = detail.LocationId"
+                        )
+                        .Where($"location.LocationId = {LocationId}");
+
+                    break;
+
+                default:
+                    logger.LogError(
+                        SqliteLog,
+                        "Sqlite Service, GetLocationFlags: dbType {DbType} is not implemented.",
+                        DbType
+                    );
+                    return new LocationFlags();
+            }
+
+            // Open the connection to the sqlite database.
+            using var database = await GetOpenConnectionAsync();
+
+            // Log builder.sql to trace.
+            logger.LogTrace(
+                SqliteLog,
+                "Sqlite Service, GetLocationFlags: Sqlite select statement (fluentBuilder): {builder.Sql}",
+                fluentBuilder.Sql
+            );
+
+            var locationFlagsQueryResult = database.Query<LocationFlagsDto>(
+                fluentBuilder.Sql,
+                fluentBuilder.Parameters
+            );
+
+            // Log the number of location flags to trace.
+            logger.LogTrace(
+                SqliteLog,
+                "Sqlite Service, GetLocationFlags: Retrieved {locationFlagsQueryResult} records from {DbType} table.",
+                locationFlagsQueryResult.Count(),
+                DbType
+            );
+
+            if (locationFlagsQueryResult.Count() == 1)
+            {
+                // Load the location flags from the query result.
+                var dto = locationFlagsQueryResult.First();
+
+                // Create a new location flags object from the query result.
+                // For the CollectionDirection and CollectOccasional fields, use the enum value if it is not null,
+                // otherwise use the default value.
+                var locationFlags = new LocationFlags
+                {
+                    LocationId = dto.LocationId,
+                    RecordStatus = (RecordStatus)dto.Status,
+                    LocationCollected = (LocationCollected)dto.LocationCollected,
+                    CollectionDirection = dto.CollectionDirection.HasValue
+                        ? (CollectionDirection)dto.CollectionDirection.Value
+                        : CollectionDirection.OneWay,
+                    CollectOccasional = dto.CollectOccasional.HasValue
+                        ? (CollectOccasional)dto.CollectOccasional.Value
+                        : CollectOccasional.Collect
+                };
+                return locationFlags;
+            }
+            else
+            {
+                // Log an error indicating that multiple locations were found.
+                logger.LogError(
+                    SqliteLog,
+                    "Sqlite Service, GetLocationFlags: multiple records({numberLocations}) with LocationId {LocationId} were found in {DbType} table.",
+                    locationFlagsQueryResult.Count(),
+                    LocationId,
+                    DbType
+                );
+
+                // Return an empty location record.
+                return new LocationFlags();
+            }
+        }
+        catch (SqliteException sqliteException)
+        {
+            logger.LogError(
+                SqliteLog,
+                "Sqlite Service, GetLocationFlags: Error retrieving location flags from table: {sqliteException.Message}, with an error code of {sqliteException.SqliteErrorCode}",
+                sqliteException.Message,
+                sqliteException.SqliteErrorCode
+            );
+            return new LocationFlags();
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(
+                SqliteLog,
+                "Sqlite Service, GetLocationFlags: Error retrieving location flags from table: {exception}",
+                exception.ToString()
+            );
+            return new LocationFlags();
         }
     }
 
@@ -1890,13 +2024,52 @@ public partial class SqliteService : ISqliteService
                 CreationCollisionOption.OpenIfExists
             );
 
+            // Log the sqlite folder to trace.
+            logger.LogTrace(
+                SqliteLog,
+                "Sqlite Service, SetToInitialRun(): Sqlite folder: {sqliteFolder}",
+                sqliteFolder
+            );
+
+            // Log that deleting files with DbName is starting.
+            logger.LogTrace(
+                SqliteLog,
+                "Sqlite Service, SetToInitialRun(): Starting deleting files named {DbName}.",
+                DbName
+            );
+
             // Delete any files with DbName.
             var files = await sqliteFolder.GetFilesAsync();
             foreach (var file in files)
             {
+                // Log the name of the current file to trace.
+                logger.LogTrace(
+                    SqliteLog,
+                    "Sqlite Service, SetToInitialRun(): Checking file name: {file.Name}",
+                    file.Name
+                );
+
                 if (file.Name == DbName)
                 {
-                    await file.DeleteAsync();
+                    // Log that the file is being deleted to trace.
+                    logger.LogTrace(
+                        SqliteLog,
+                        "Sqlite Service, SetToInitialRun(): Deleting file: {file.Name}",
+                        file.Name
+                    );
+                    try
+                    {
+                        await file.DeleteAsync();
+                    }
+                    catch (System.Runtime.InteropServices.COMException ex)
+                    {
+                        logger.LogError(
+                            SqliteLog,
+                            ex,
+                            "Sqlite Service, SetToInitialRun(): Error deleting file: {file.Name}. Check to see if the file is open by another application.",
+                            file.Name
+                        );
+                    }
                 }
             }
 

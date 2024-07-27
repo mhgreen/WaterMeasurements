@@ -4,6 +4,7 @@ using Ardalis.GuardClauses;
 using CommunityToolkit.Mvvm.Messaging;
 using Esri.ArcGISRuntime.Data;
 using Esri.ArcGISRuntime.Geometry;
+using Esri.ArcGISRuntime.Location;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.UI.Xaml;
@@ -252,9 +253,9 @@ public class SecchiLocationCollectionLoader
             // Log the results of the query.
             foreach (var feature in result)
             {
-                logger.LogTrace(
+                logger.LogDebug(
                     SecchiLocationLoaderLog,
-                    "GetPagedItemAsync: (not sorted) Feature: Id {LocationId} Location Name: {LocationName}, Latitude: {latitude}, Longitude: {longitude}, Location Type: {locationType}  Geometry: {Geometry}",
+                    "GetPagedItemAsync: Feature: Id {LocationId} Location Name: {LocationName}, Latitude: {latitude}, Longitude: {longitude}, Location Type: {locationType}, Geometry: {Geometry}",
                     feature.Attributes["LocationId"],
                     feature.Attributes["LocationName"],
                     feature.Attributes["Latitude"],
@@ -331,13 +332,24 @@ public class SecchiLocationCollectionLoader
                         && locationTypeConverted.Value is not null
                     )
                     {
+                        var locationFlags = await sqliteService.GetLocationFlags(
+                            (int)locationIdConverted.Value!,
+                            DbType.SecchiLocations
+                        );
+                        // Log the locationCollected to debug.
+                        logger.LogDebug(
+                            SecchiLocationLoaderLog,
+                            "GetPagedItemAsync: Location Flags: {locationFlags}",
+                            locationFlags
+                        );
                         Add(
                             new SecchiLocationDisplay(
                                 latitude: Wgs84geometry.Y,
                                 longitude: Wgs84geometry.X,
                                 locationId: (int)locationIdConverted.Value,
                                 locationName: (string)locationNameConverted.Value,
-                                locationType: (LocationType)locationTypeConverted.Value
+                                locationType: (LocationType)locationTypeConverted.Value,
+                                recordStatus: locationFlags.RecordStatus
                             )
                         );
                     }

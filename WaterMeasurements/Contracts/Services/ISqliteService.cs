@@ -52,4 +52,6 @@ public interface ISqliteService
     );
 
     public Task<LocationCollected> GetLocationRecordCollectionState(int LocationId, DbType DbType);
+
+    public Task<LocationFlags> GetLocationFlags(int LocationId, DbType DbType);
 }
