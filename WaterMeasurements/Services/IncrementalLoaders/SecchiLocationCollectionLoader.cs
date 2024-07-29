@@ -316,7 +316,7 @@ public class SecchiLocationCollectionLoader
                 if (conversionSuccess)
                 {
                     // Log all of the converted values.
-                    logger.LogTrace(
+                    logger.LogDebug(
                         SecchiLocationLoaderLog,
                         "GetPagedItemAsync: Features after conversion: Id {LocationId} Location Name: {Location}, Latitude: {latitude}, Longitude: {longitude}, Location Type: {locationType}",
                         locationIdConverted.Value,
@@ -339,8 +339,8 @@ public class SecchiLocationCollectionLoader
                         // Log the locationCollected to debug.
                         logger.LogDebug(
                             SecchiLocationLoaderLog,
-                            "GetPagedItemAsync: Location Flags: {locationFlags}",
-                            locationFlags
+                            "GetPagedItemAsync: Location Flags RecordStatus: {locationFlags.RecordStatus}",
+                            locationFlags.RecordStatus
                         );
                         Add(
                             new SecchiLocationDisplay(
@@ -349,7 +349,7 @@ public class SecchiLocationCollectionLoader
                                 locationId: (int)locationIdConverted.Value,
                                 locationName: (string)locationNameConverted.Value,
                                 locationType: (LocationType)locationTypeConverted.Value,
-                                recordStatus: locationFlags.RecordStatus
+                                recordStatus: (RecordStatus)locationFlags.RecordStatus
                             )
                         );
                     }

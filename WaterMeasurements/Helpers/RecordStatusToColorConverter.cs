@@ -1,14 +1,20 @@
 ﻿using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Media;
+using NLog;
 using WaterMeasurements.Models;
 
 namespace WaterMeasurements.Helpers;
 
-internal class RecordStatusToColorConverter
+public class RecordStatusToColorConverter : IValueConverter
 {
-    public static object Convert(object value)
+    private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
+    public object Convert(object value, Type targetType, object parameter, string language)
     {
+        Logger.Trace("RecordStatusToColorConverter, Convert record status to color.");
         var recordStatus = (RecordStatus)value;
+        Logger.Trace("RecordStatusToColorConverter, Record status: {recordStatus}.", recordStatus);
 
         return recordStatus switch
         {

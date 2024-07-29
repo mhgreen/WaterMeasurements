@@ -13,6 +13,7 @@ public interface ILocationsDisplay
     double Latitude { get; }
     double Longitude { get; }
     LocationType LocationType { get; }
+    RecordStatus RecordStatus { get; }
     int LocationId { get; }
     string LatLon => $"Lat: {Latitude:F4}, Lon: {Longitude:F4}";
 }

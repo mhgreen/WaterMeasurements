@@ -1,20 +1,28 @@
 ﻿using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Data;
+using NLog;
 using WaterMeasurements.Models;
 
 namespace WaterMeasurements.Helpers;
 
-internal class RecordStatusToVisibilityConverter
+public class RecordStatusToVisibilityConverter : IValueConverter
 {
-    public static object Convert(object value)
+    private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
+    public object Convert(object value, Type targetType, object parameter, string language)
     {
-        // var recordStatus = (RecordStatus)value;
-        var recordStatus = value;
+        Logger.Trace("RecordStatusToVisibilityConverter, Convert record status to visibility.");
+        var recordStatus = (RecordStatus)value;
+        Logger.Trace(
+            "RecordStatusToVisibilityConverter, Record status: {recordStatus}.",
+            recordStatus
+        );
 
         return recordStatus switch
         {
             RecordStatus.WorkingSet => Visibility.Visible,
             RecordStatus.Comitted => Visibility.Collapsed,
-            _ => Visibility.Collapsed,
+            _ => Visibility.Visible,
         };
     }
 

@@ -97,7 +97,6 @@
                     x:Phase="2"
                     Style="{ThemeResource BodyTextBlockStyle}"
                     Text="{x:Bind LatLon}" />
-                <!--  Visibility="{x:Bind LocationType, Converter={StaticResource RecordStatusToVisibilityConverter}}">  -->
                 <Button
                     x:Name="LocationEdit"
                     Grid.RowSpan="2"
@@ -119,6 +118,7 @@
                     VerticalAlignment="Center"
                     Click="Delete_Location_Click"
                     Scale="0.8, 0.8, 0.8"
+                    Visibility="{x:Bind RecordStatus, Converter={StaticResource RecordStatusToVisibilityConverter}}"
                     Tag="{x:Bind LocationId}">
                     <SymbolIcon Symbol="Delete" />
                 </Button>
@@ -173,7 +173,7 @@
                     x:Phase="2"
                     Style="{ThemeResource BodyTextBlockStyle}"
                     Text="{x:Bind DateLatLon}" />
-                <!--  Visibility="{x:Bind LocationType, Converter={StaticResource RecordStatusToVisibilityConverter}}">  -->
+                <!--  Visibility="{x:Bind RecordStatus, Converter={StaticResource RecordStatusToVisibilityConverter}}">  -->
                 <TextBlock
                     Grid.Row="2"
                     Grid.Column="1"
