@@ -65,25 +65,42 @@
                     <ColumnDefinition Width="50" />
                     <ColumnDefinition Width="50" />
                 </Grid.ColumnDefinitions>
-                <Ellipse
-                    x:Name="Ellipse"
+                <Grid
                     Grid.RowSpan="2"
                     Width="16"
                     Height="16"
                     Margin="6"
                     HorizontalAlignment="Center"
-                    VerticalAlignment="Center"
-                    Fill="{x:Bind LocationType, Converter={StaticResource LocationTypeToColorConverter}}" />
-                <TextBlock
-                    x:Name="CollectionLimit"
-                    Grid.RowSpan="2"
-                    Margin="0,-3,0,0"
-                    HorizontalAlignment="Center"
-                    VerticalAlignment="Center"
-                    FontWeight="Bold"
-                    Foreground="{ThemeResource ApplicationPageBackgroundThemeBrush}"
-                    Style="{ThemeResource BaseTextBlockStyle}"
-                    Text="S" />
+                    VerticalAlignment="Center">
+                    <Ellipse x:Name="Ellipse" Fill="{x:Bind LocationType, Converter={StaticResource LocationTypeToColorConverter}}" />
+
+                    <TextBlock
+                        x:Name="CollectionLimit"
+                        Grid.RowSpan="2"
+                        Margin="0,-3,0,0"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        FontWeight="Bold"
+                        Foreground="{ThemeResource ApplicationPageBackgroundThemeBrush}"
+                        Style="{ThemeResource BaseTextBlockStyle}"
+                        Text="-" />
+                    <Path
+                        Margin="-3"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Data="M 9,1 A 1,1 90 1 1 9,18"
+                        Stroke="ForestGreen"
+                        StrokeThickness="2"
+                        Visibility="Visible" />
+                    <FontIcon
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        FontSize="10"
+                        FontWeight="ExtraBold"
+                        Foreground="{ThemeResource ApplicationPageBackgroundThemeBrush}"
+                        Glyph="&#xE73E;"
+                        Visibility="Collapsed" />
+                </Grid>
                 <TextBlock
                     Grid.Column="1"
                     Margin="12,6,0,0"
@@ -118,8 +135,8 @@
                     VerticalAlignment="Center"
                     Click="Delete_Location_Click"
                     Scale="0.8, 0.8, 0.8"
-                    Visibility="{x:Bind RecordStatus, Converter={StaticResource RecordStatusToVisibilityConverter}}"
-                    Tag="{x:Bind LocationId}">
+                    Tag="{x:Bind LocationId}"
+                    Visibility="{x:Bind RecordStatus, Converter={StaticResource RecordStatusToVisibilityConverter}}">
                     <SymbolIcon Symbol="Delete" />
                 </Button>
 
@@ -1209,9 +1226,7 @@
                                                                             VerticalOffset="-48" />
                                                                     </ToolTipService.ToolTip>
                                                                 </AppBarButton>
-                                                                <AppBarButton
-                                                                    x:Uid="Main_ResetCollectedAppButton"
-                                                                    Click="ResetAllLocationsCollectedState">
+                                                                <AppBarButton x:Uid="Main_ResetCollectedAppButton" Click="ResetAllLocationsCollectedState">
                                                                     <AppBarButton.Icon>
                                                                         <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE777;" />
                                                                     </AppBarButton.Icon>
