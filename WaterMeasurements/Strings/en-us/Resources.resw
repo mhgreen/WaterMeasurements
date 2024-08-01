@@ -360,4 +360,7 @@
   <data name="Main_ResetCollectedToolTip.Content" xml:space="preserve">
     <value>Set all locations to not collected</value>
   </data>
+  <data name="Settings_LocationItemToolTip.Content" xml:space="preserve">
+    <value>Arc on right indicates occassional collection. + or - indicates collect or skip, check indicates has been collected.</value>
+  </data>
 </root>

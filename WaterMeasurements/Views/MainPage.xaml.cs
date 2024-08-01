@@ -2013,6 +2013,90 @@ public partial class MainPage : Page
         }
     }
 
+    private void Always_Collect_Location_Click(object sender, RoutedEventArgs eventArgs)
+    {
+        // Log to trace that the Always_Collect_Location_Click method was called.
+        Logger.Trace(
+            "MainPage.xaml.cs, Always_Collect_Location_Click: Always_Collect_Location_Click method called."
+        );
+
+        var button = sender as Button;
+        try
+        {
+            Guard.Against.Null(
+                button,
+                nameof(button),
+                "Button in Always_Collect_Location_Click is null."
+            );
+
+            // Get the locationId from the button's tag.
+            var locationId = (int)button.Tag;
+
+            // Log to trace the value of sender and eventArgs.
+            Logger.Trace(
+                "MainPage.xaml.cs, Always_Collect_Location_Click: LocationId: {locationId}",
+                locationId
+            );
+        }
+        catch (Exception exception)
+        {
+            // Log to trace the exception message.
+            Logger.Error(
+                exception,
+                "MainPage.xaml.cs, Always_Collect_Location_Click: An error occurred in Always_Collect_Location_Click: {exception}",
+                exception.Message
+            );
+        }
+    }
+
+    private void Reset_Location_Collected_Click(object sender, RoutedEventArgs eventArgs)
+    {
+        // Log to trace that the Reset_Location_Collected_Click method was called.
+        Logger.Trace(
+            "MainPage.xaml.cs, Reset_Location_Collected_Click: Reset_Location_Collected_Click method called."
+        );
+
+        var button = sender as Button;
+        try
+        {
+            Guard.Against.Null(
+                button,
+                nameof(button),
+                "Button in Reset_Location_Collected_Click is null."
+            );
+
+            // Get the locationId from the button's tag.
+            var locationId = (int)button.Tag;
+
+            // Log to trace the value of sender and eventArgs.
+            Logger.Trace(
+                "MainPage.xaml.cs, Reset_Location_Collected_Click: LocationId: {locationId}",
+                locationId
+            );
+
+            // Set the location to not collected via SetLocationRecordCollectedStateMessage.
+            WeakReferenceMessenger.Default.Send<SetLocationRecordCollectedStateMessage>(
+                new SetLocationRecordCollectedStateMessage(
+                    new SetLocationRecordCollectedState(
+                        locationId,
+                        DbType.SecchiLocations,
+                        LocationCollected.NotCollected,
+                        LocationsCollectedStateScope.SingleLocation
+                    )
+                )
+            );
+        }
+        catch (Exception exception)
+        {
+            // Log to trace the exception message.
+            Logger.Error(
+                exception,
+                "MainPage.xaml.cs, Reset_Location_Collected_Click: An error occurred in Reset_Location_Collected_Click: {exception}",
+                exception.Message
+            );
+        }
+    }
+
     private void Edit_Observation_Click(object sender, RoutedEventArgs eventArgs)
     {
         // Log to trace that the Edit_Observation_Click method was called.
