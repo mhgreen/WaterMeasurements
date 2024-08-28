@@ -1,4 +1,6 @@
-﻿namespace WaterMeasurements.Contracts.Services;
+﻿using System;
+
+namespace WaterMeasurements.Contracts.Services;
 
 public interface IPageService
 {

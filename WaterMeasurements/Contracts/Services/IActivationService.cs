@@ -1,4 +1,6 @@
-﻿namespace WaterMeasurements.Contracts.Services;
+﻿using System.Threading.Tasks;
+
+namespace WaterMeasurements.Contracts.Services;
 
 public interface IActivationService
 {

@@ -1,13 +1,19 @@
-﻿using Microsoft.UI.Xaml;
+﻿using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-
 using WaterMeasurements.Activation;
 using WaterMeasurements.Contracts.Services;
 using WaterMeasurements.Views;
 
 namespace WaterMeasurements.Services;
 
-public class ActivationService(ActivationHandler<LaunchActivatedEventArgs> defaultHandler, IEnumerable<IActivationHandler> activationHandlers, IThemeSelectorService themeSelectorService) : IActivationService
+public class ActivationService(
+    ActivationHandler<LaunchActivatedEventArgs> defaultHandler,
+    IEnumerable<IActivationHandler> activationHandlers,
+    IThemeSelectorService themeSelectorService
+) : IActivationService
 {
     private readonly ActivationHandler<LaunchActivatedEventArgs> _defaultHandler = defaultHandler;
     private readonly IEnumerable<IActivationHandler> _activationHandlers = activationHandlers;
@@ -37,7 +43,9 @@ public class ActivationService(ActivationHandler<LaunchActivatedEventArgs> defau
 
     private async Task HandleActivationAsync(object activationArgs)
     {
-        var activationHandler = _activationHandlers.FirstOrDefault(h => h.CanHandle(activationArgs));
+        var activationHandler = _activationHandlers.FirstOrDefault(h =>
+            h.CanHandle(activationArgs)
+        );
 
         if (activationHandler != null)
         {

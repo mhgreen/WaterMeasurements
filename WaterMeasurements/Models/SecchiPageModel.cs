@@ -1,4 +1,6 @@
-﻿using Esri.ArcGISRuntime.Geometry;
+﻿using System;
+using System.Collections.Generic;
+using Esri.ArcGISRuntime.Geometry;
 using WaterMeasurements.Contracts.Templates;
 
 namespace WaterMeasurements.Models;

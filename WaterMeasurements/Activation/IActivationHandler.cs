@@ -1,4 +1,6 @@
-﻿namespace WaterMeasurements.Activation;
+﻿using System.Threading.Tasks;
+
+namespace WaterMeasurements.Activation;
 
 public interface IActivationHandler
 {

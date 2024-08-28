@@ -1,13 +1,12 @@
-﻿using Microsoft.UI.Xaml;
+﻿using System;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Data;
 
 namespace WaterMeasurements.Helpers;
 
 public class EnumToBooleanConverter : IValueConverter
 {
-    public EnumToBooleanConverter()
-    {
-    }
+    public EnumToBooleanConverter() { }
 
     public object Convert(object value, Type targetType, object parameter, string language)
     {

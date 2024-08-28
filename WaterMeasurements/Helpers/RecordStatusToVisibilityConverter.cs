@@ -1,4 +1,5 @@
-﻿using Microsoft.UI.Xaml;
+﻿using System;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Data;
 using NLog;
 using WaterMeasurements.Models;

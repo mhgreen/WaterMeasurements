@@ -1,13 +1,11 @@
-﻿using Microsoft.UI.Xaml;
+﻿using System.Threading.Tasks;
+using Microsoft.UI.Xaml;
 
 namespace WaterMeasurements.Contracts.Services;
 
 public interface IThemeSelectorService
 {
-    ElementTheme Theme
-    {
-        get;
-    }
+    ElementTheme Theme { get; }
 
     Task InitializeAsync();
 

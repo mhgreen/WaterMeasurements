@@ -1,4 +1,6 @@
-﻿using Esri.ArcGISRuntime.Data;
+﻿using System;
+using System.Collections.Generic;
+using Esri.ArcGISRuntime.Data;
 
 namespace WaterMeasurements.Models;
 
