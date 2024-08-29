@@ -1,17 +1,18 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0-windows10.0.19041</TargetFramework>
-    <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
+    <TargetFramework>net8.0-windows10.0.22000.0</TargetFramework>
+    <TargetPlatformMinVersion>10.0.19041.0</TargetPlatformMinVersion>
     <RootNamespace>WaterMeasurements</RootNamespace>
     <ApplicationIcon>Assets/WindowIcon.ico</ApplicationIcon>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <Platforms>x86;x64;arm64</Platforms>
     <RuntimeIdentifiers>win-x86;win-x64;win-arm64</RuntimeIdentifiers>
-    <PublishProfile>Properties\PublishProfiles\win10-$(Platform).pubxml</PublishProfile>
+    <PublishProfile>win-$(Platform).pubxml</PublishProfile>
 	<ImplicitUsings>enable</ImplicitUsings>
 	<Nullable>enable</Nullable>
 	<UseWinUI>true</UseWinUI>
+	<SupportedOSPlatformVersion>10.0.22000.0</SupportedOSPlatformVersion>
     <EnableMsixTooling>true</EnableMsixTooling>
   </PropertyGroup>
   <ItemGroup>
@@ -44,10 +45,6 @@
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.5.240802000" />
     <PackageReference Include="Microsoft.Xaml.Behaviors.WinUI.Managed" Version="2.0.9" />
-    <PackageReference Include="Rebus" Version="8.4.3" />
-    <PackageReference Include="Rebus.NLog" Version="6.0.0" />
-    <PackageReference Include="Rebus.RabbitMq" Version="9.4.0" />
-    <PackageReference Include="Rebus.ServiceProvider" Version="10.1.2" />
     <PackageReference Include="RecordParser" Version="2.3.0" />
     <PackageReference Include="Stateless" Version="5.16.0" />
     <PackageReference Include="System.IO.Ports" Version="8.0.0" />
@@ -70,9 +67,6 @@
     <None Update="appsettings.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <Page Update="Views\Templates\LocationsTemplate.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
   </ItemGroup>
 
   <ItemGroup Condition="'$(DisableMsixProjectCapabilityAddedByProject)'!='true' and '$(EnableMsixTooling)'=='true'">
@@ -89,10 +83,6 @@
   
   <ItemGroup>
     <PRIResource Remove="bin\**" />
-  </ItemGroup>
-  
-  <ItemGroup>
-    <None Remove="Views\Templates\LocationsTemplate.xaml" />
   </ItemGroup>
   
   <ItemGroup>

@@ -16,7 +16,6 @@ using Esri.ArcGISRuntime.Symbology;
 using Esri.ArcGISRuntime.Tasks;
 using Esri.ArcGISRuntime.Tasks.Offline;
 using Microsoft.Extensions.Logging;
-using RabbitMQ.Client;
 using Stateless;
 using WaterMeasurements.Contracts.Services;
 using WaterMeasurements.Contracts.Services.Instances;

@@ -25,7 +25,6 @@ using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
 using Newtonsoft.Json.Linq;
 using NLog;
-using RabbitMQ.Client;
 using WaterMeasurements.Contracts.Services;
 using WaterMeasurements.Helpers;
 using WaterMeasurements.Models;
