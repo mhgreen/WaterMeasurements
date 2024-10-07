@@ -134,7 +134,7 @@ public partial class SecchiViewModel : ObservableRecipient
 
     // Current triggered location ID and indication of whether it is currently being collected.
     // This is used to handle the case where a geolocation is within the geotrigger fence and
-    // the associated location is deleted.
+    // the associated location has been deleted.
     private readonly ConcurrentDictionary<int, bool> geoTriggerLocationAndCollectionState = [];
 
     private GraphicsOverlay secchiLocationsOverlay = new() { Id = "SecchiLocations" };
@@ -743,22 +743,22 @@ public partial class SecchiViewModel : ObservableRecipient
                                 new AddMeasurementRequestMessage(MeasurementType.Secchi)
                             );
 
-                            // Set the map border color to the accent fill color.
-                            // Set the SecchiCollectionPointName to the locationName.
-                            // Enable the menu option to allow moving to the collection entry panel.
-                            uiDispatcherQueue!.TryEnqueue(() =>
-                            {
-                                MapBorderColor = (SolidColorBrush)
-                                    Application.Current.Resources["AccentFillColorDefaultBrush"];
-                                SecchiCollectionPointName = locationName.ToString()!;
-                                IsCollectMeasurementEnabled = true;
-                            });
-
                             // Send a SetSecchiSelectViewMessage with the value of "SecchiDataEntry".
                             WeakReferenceMessenger.Default.Send<SetSecchiSelectViewMessage>(
                                 new SetSecchiSelectViewMessage("SecchiDataEntry")
                             );
                         }
+
+                        // Set the map border color to the accent fill color.
+                        // Set the SecchiCollectionPointName to the locationName.
+                        // Enable the menu option to allow moving to the collection entry panel.
+                        uiDispatcherQueue!.TryEnqueue(() =>
+                        {
+                            MapBorderColor = (SolidColorBrush)
+                                Application.Current.Resources["AccentFillColorDefaultBrush"];
+                            SecchiCollectionPointName = locationName.ToString()!;
+                            IsCollectMeasurementEnabled = true;
+                        });
                     }
                 )
                 .InternalTransition(
