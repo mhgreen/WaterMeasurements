@@ -2,6 +2,7 @@
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows10.0.22000.0</TargetFramework>
+	  <WindowsSdkPackageVersion>10.0.22000.38</WindowsSdkPackageVersion>
     <TargetPlatformMinVersion>10.0.19041.0</TargetPlatformMinVersion>
     <RootNamespace>WaterMeasurements</RootNamespace>
     <ApplicationIcon>Assets/WindowIcon.ico</ApplicationIcon>
