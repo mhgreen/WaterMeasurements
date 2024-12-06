@@ -96,16 +96,21 @@ public class FeatureToType<T1, ConvertedSuccess>(T1 value, ConvertedSuccess conv
         return new FeatureToType<Guid?, bool>(null, false);
     }
 
-    public FeatureToType<DateTimeOffset?, bool> ConvertDateToDateTime(
-        string attribute,
-        Feature feature
-    )
+    public FeatureToType<DateTimeOffset?, bool> ConvertDateToDateTime(string attribute, Feature feature)
     {
         if (feature.Attributes.TryGetValue(attribute, out var value))
         {
-            if (value is DateTimeOffset dateTime)
+            var pacificZone = TimeZoneInfo.FindSystemTimeZoneById("Pacific Standard Time");
+
+            if (value is DateTime dateTime)
             {
-                return new FeatureToType<DateTimeOffset?, bool>(dateTime, true);
+                var dateTimeOffset = new DateTimeOffset(dateTime, TimeSpan.Zero);
+                var pacificTime = TimeZoneInfo.ConvertTime(dateTimeOffset, pacificZone);
+                return new FeatureToType<DateTimeOffset?, bool>(pacificTime, true);
+            }
+            else if (value is DateTimeOffset dateTimeOffset)
+            {
+                return new FeatureToType<DateTimeOffset?, bool>(dateTimeOffset, true);
             }
         }
         return new FeatureToType<DateTimeOffset?, bool>(null, false);
