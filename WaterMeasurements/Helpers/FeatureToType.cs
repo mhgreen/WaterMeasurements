@@ -100,13 +100,13 @@ public class FeatureToType<T1, ConvertedSuccess>(T1 value, ConvertedSuccess conv
     {
         if (feature.Attributes.TryGetValue(attribute, out var value))
         {
-            var pacificZone = TimeZoneInfo.FindSystemTimeZoneById("Pacific Standard Time");
+            var localZone = TimeZoneInfo.Local;
 
             if (value is DateTime dateTime)
             {
                 var dateTimeOffset = new DateTimeOffset(dateTime, TimeSpan.Zero);
-                var pacificTime = TimeZoneInfo.ConvertTime(dateTimeOffset, pacificZone);
-                return new FeatureToType<DateTimeOffset?, bool>(pacificTime, true);
+                var localTime = TimeZoneInfo.ConvertTime(dateTimeOffset, localZone);
+                return new FeatureToType<DateTimeOffset?, bool>(localTime, true);
             }
             else if (value is DateTimeOffset dateTimeOffset)
             {

@@ -1040,7 +1040,7 @@ public partial class GeoDatabaseInstance : IGeoDatabaseInstance
             // Log the contents of the featureAddMessage.
             foreach (var attribute in featureMessage.FeatureToAdd.Attributes)
             {
-                logger.LogDebug(
+                logger.LogTrace(
                     GeoDatabaseLog,
                     "GeoDatabaseInstance {name}, AddFeatureToGeodatabase: featureAddMessage.FeatureToAdd.Attributes: attribute.Key: {attributeName}, attribute.Value: {attributeValue}.",
                     Name,
@@ -1092,7 +1092,7 @@ public partial class GeoDatabaseInstance : IGeoDatabaseInstance
                 );
             }
 
-            ListGeodatabaseContents(currentGeodatabase);
+            // ListGeodatabaseContents(currentGeodatabase);
         }
         catch (Exception exception)
         {
@@ -1133,7 +1133,7 @@ public partial class GeoDatabaseInstance : IGeoDatabaseInstance
             // Log the contents of the featureDeleteMessage.
             foreach (var attribute in featureMessage.FeatureToDelete.Attributes)
             {
-                logger.LogDebug(
+                logger.LogTrace(
                     GeoDatabaseLog,
                     "GeoDatabaseInstance {name}, DeleteFeatureFromGeodatabase: featureDeleteMessage.FeatureToDelete.Attributes: attribute.Key: {attributeName}, attribute.Value: {attributeValue}.",
                     Name,
@@ -1163,7 +1163,7 @@ public partial class GeoDatabaseInstance : IGeoDatabaseInstance
                 Channel
             );
 
-            ListGeodatabaseContents(currentGeodatabase);
+            // ListGeodatabaseContents(currentGeodatabase);
         }
         catch (Exception exception)
         {

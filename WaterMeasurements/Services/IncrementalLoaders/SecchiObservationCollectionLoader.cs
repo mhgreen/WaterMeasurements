@@ -35,8 +35,10 @@ public class SecchiObservationCollectionLoader
     public bool HasMoreItems => hasMoreItems;
 
     // Set the eventId for the logger.
-    private readonly EventId SecchiObservationLoaderLog =
-        new(19, "SecchiObservationCollectionLoader");
+    private readonly EventId SecchiObservationLoaderLog = new(
+        19,
+        "SecchiObservationCollectionLoader"
+    );
 
     // Set the SqliteService and Logger properties.
     // These properties are set by the dependency injection system.

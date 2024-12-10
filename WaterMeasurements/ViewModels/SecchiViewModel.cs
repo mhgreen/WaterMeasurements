@@ -25,6 +25,7 @@ using Microsoft.UI.Xaml.Media;
 using Newtonsoft.Json.Linq;
 using Stateless;
 using WaterMeasurements.Contracts.Services;
+using WaterMeasurements.Helpers;
 using WaterMeasurements.Models;
 using WaterMeasurements.Services;
 using WaterMeasurements.Services.IncrementalLoaders;
@@ -109,12 +110,19 @@ public partial class SecchiViewModel : ObservableRecipient
     // This is used to track adding and deleting locations and is used to update the geolocation list.
     private readonly Dictionary<int, ArcGISFeature> featureCache = [];
 
+    // Initialize helpers.
+
+    private readonly FeatureToType<double?, bool> featureDoubleConverter = new(null, false);
+    private readonly FeatureToType<int?, bool> featureIntConverter = new(null, false);
+    private readonly FeatureToType<long?, bool> featureLongConverter = new(null, false);
+    private readonly FeatureToType<DateTime?, bool> featureDateTimeConverter = new(null, false);
+
     // TODO: add the following to the configuration file.
 
     // -------------------- Set one or both of the following to true to cause download --------------------
 
-    private readonly bool refreshObservations = false;
-    private readonly bool refreshLocations = false;
+    private readonly bool refreshObservations = true;
+    private readonly bool refreshLocations = true;
 
     // -------------------- Set one or both of above to true to cause download ----------------------------
 
@@ -998,6 +1006,9 @@ public partial class SecchiViewModel : ObservableRecipient
                             message.Value
                         );
 
+                        var conversionSuccess = true;
+                        List<string> notConverted = [];
+
                         // Log the fields in the feature table.
                         foreach (var attribute in message.Value.FeatureChanged.Attributes)
                         {
@@ -1010,25 +1021,201 @@ public partial class SecchiViewModel : ObservableRecipient
                             );
                         }
 
-                        // Add the new observation to the SecchiObservations collection.
-                        // This updates the list of observations in the UI.
-                        SecchiObservations.Add(
-                            new SecchiCollectionDisplay(
-                                geotriggerLocationName!,
-                                (double)
-                                    message.Value.FeatureChanged.Attributes["CollectedLatitude"]!,
-                                (double)
-                                    message.Value.FeatureChanged.Attributes["CollectedLongitude"]!,
-                                (int)message.Value.FeatureChanged.Attributes["LocationId"]!,
-                                (int)message.Value.FeatureChanged.Attributes["Measurement1"]!,
-                                (int)message.Value.FeatureChanged.Attributes["Measurement2"]!,
-                                (int)message.Value.FeatureChanged.Attributes["Measurement3"]!,
-                                (double)message.Value.FeatureChanged.Attributes["Secchi"]!,
-                                (DateTimeOffset)
-                                    message.Value.FeatureChanged.Attributes["DateCollected"]!,
-                                (long)message.Value.FeatureChanged.Attributes["OBJECTID"]!
-                            )
+                        var dateCollectedConverted = featureDateTimeConverter.ConvertDateToDateTime(
+                            "DateCollected",
+                            message.Value.FeatureChanged
                         );
+                        conversionSuccess |= dateCollectedConverted.Success;
+                        if (!dateCollectedConverted.Success)
+                        {
+                            notConverted.Add("DateCollected");
+                        }
+
+                        var longitudeConverted = featureDoubleConverter.ConvertFloat64ToDouble(
+                            "CollectedLongitude",
+                            message.Value.FeatureChanged
+                        );
+                        conversionSuccess |= longitudeConverted.Success;
+                        if (!longitudeConverted.Success)
+                        {
+                            notConverted.Add("CollectedLongitude");
+                        }
+
+                        var latitudeConverted = featureDoubleConverter.ConvertFloat64ToDouble(
+                            "CollectedLatitude",
+                            message.Value.FeatureChanged
+                        );
+                        conversionSuccess |= latitudeConverted.Success;
+                        if (!latitudeConverted.Success)
+                        {
+                            notConverted.Add("CollectedLatitude");
+                        }
+
+                        var locationIdConverted = featureIntConverter.ConvertInt32ToInt(
+                            "LocationId",
+                            message.Value.FeatureChanged
+                        );
+                        conversionSuccess |= locationIdConverted.Success;
+                        if (!locationIdConverted.Success)
+                        {
+                            notConverted.Add("LocationId");
+                        }
+
+                        var measurement1Converted = featureIntConverter.ConvertInt32ToInt(
+                            "Measurement1",
+                            message.Value.FeatureChanged
+                        );
+                        conversionSuccess |= measurement1Converted.Success;
+                        if (!measurement1Converted.Success)
+                        {
+                            notConverted.Add("Measurement1");
+                        }
+
+                        var measurement2Converted = featureIntConverter.ConvertInt32ToInt(
+                            "Measurement2",
+                            message.Value.FeatureChanged
+                        );
+                        conversionSuccess |= measurement2Converted.Success;
+                        if (!measurement2Converted.Success)
+                        {
+                            notConverted.Add("Measurement2");
+                        }
+
+                        var measurement3Converted = featureIntConverter.ConvertInt32ToInt(
+                            "Measurement3",
+                            message.Value.FeatureChanged
+                        );
+                        conversionSuccess |= measurement3Converted.Success;
+                        if (!measurement3Converted.Success)
+                        {
+                            notConverted.Add("Measurement3");
+                        }
+
+                        var secchiConverted = featureDoubleConverter.ConvertFloat64ToDouble(
+                            "Secchi",
+                            message.Value.FeatureChanged
+                        );
+                        conversionSuccess |= secchiConverted.Success;
+                        if (!secchiConverted.Success)
+                        {
+                            notConverted.Add("Secchi");
+                        }
+
+                        var objectIdConverted = featureLongConverter.ConvertObjectIdToLong(
+                            "OBJECTID",
+                            message.Value.FeatureChanged
+                        );
+                        conversionSuccess |= objectIdConverted.Success;
+                        if (!objectIdConverted.Success)
+                        {
+                            notConverted.Add("OBJECTID");
+                        }
+
+                        if (conversionSuccess)
+                        {
+                            logger.LogDebug(
+                                SecchiViewModelLog,
+                                "SecchiViewModel, ChangedFeatureMessage, Added, secchiObservationsChannel: {secchiObservationsChannel},"
+                                    + " geotriggerLocationName: {geotriggerLocationName},"
+                                    + " dateCollectedConverted: {dateCollectedConverted},"
+                                    + " longitudeConverted: {longitudeConverted},"
+                                    + " latitudeConverted: {latitudeConverted},"
+                                    + " locationIdConverted: {locationIdConverted},"
+                                    + " measurement1Converted: {measurement1Converted},"
+                                    + " measurement2Converted: {measurement2Converted},"
+                                    + " measurement3Converted: {measurement3Converted},"
+                                    + " secchiConverted: {secchiConverted},"
+                                    + " objectIdConverted: {objectIdConverted}.",
+                                secchiObservationsChannel,
+                                geotriggerLocationName,
+                                dateCollectedConverted.Value,
+                                longitudeConverted.Value,
+                                latitudeConverted.Value,
+                                locationIdConverted.Value,
+                                measurement1Converted.Value,
+                                measurement2Converted.Value,
+                                measurement3Converted.Value,
+                                secchiConverted.Value,
+                                objectIdConverted.Value
+                            );
+
+                            Guard.Against.Null(
+                                geotriggerLocationName,
+                                nameof(geotriggerLocationName),
+                                "geotriggerLocationName can not be null"
+                            );
+                            Guard.Against.Null(
+                                dateCollectedConverted,
+                                nameof(dateCollectedConverted),
+                                "dateCollectedConverted can not be null"
+                            );
+                            Guard.Against.Null(
+                                longitudeConverted,
+                                nameof(longitudeConverted),
+                                "longitudeConverted can not be null"
+                            );
+                            Guard.Against.Null(
+                                latitudeConverted,
+                                nameof(latitudeConverted),
+                                "latitudeConverted can not be null"
+                            );
+                            Guard.Against.Null(
+                                locationIdConverted,
+                                nameof(locationIdConverted),
+                                "locationIdConverted can not be null"
+                            );
+                            Guard.Against.Null(
+                                measurement1Converted,
+                                nameof(measurement1Converted),
+                                "measurement1Converted can not be null"
+                            );
+                            Guard.Against.Null(
+                                measurement2Converted,
+                                nameof(measurement2Converted),
+                                "measurement2Converted can not be null"
+                            );
+                            Guard.Against.Null(
+                                measurement3Converted,
+                                nameof(measurement3Converted),
+                                "measurement3Converted can not be null"
+                            );
+                            Guard.Against.Null(
+                                secchiConverted,
+                                nameof(secchiConverted),
+                                "secchiConverted can not be null"
+                            );
+                            Guard.Against.Null(
+                                objectIdConverted,
+                                nameof(objectIdConverted),
+                                "objectIdConverted can not be null"
+                            );
+
+                            // Add the new observation to the SecchiObservations collection.
+                            // This updates the list of observations in the UI.
+                            SecchiObservations.Add(
+                                new SecchiCollectionDisplay(
+                                    geotriggerLocationName!,
+                                    (double)latitudeConverted.Value!,
+                                    (double)longitudeConverted.Value!,
+                                    (int)locationIdConverted.Value!,
+                                    (int)measurement1Converted.Value!,
+                                    (int)measurement2Converted.Value!,
+                                    (int)measurement3Converted.Value!,
+                                    (double)secchiConverted.Value!,
+                                    (DateTimeOffset)dateCollectedConverted.Value!,
+                                    (long)objectIdConverted.Value!
+                                )
+                            );
+                        }
+                        else
+                        {
+                            logger.LogError(
+                                SecchiViewModelLog,
+                                "SecchiViewModel, ChangedFeatureMessage, Added, secchiObservationsChannel: {secchiObservationsChannel}, The following values did not convert: {notConverted}.",
+                                secchiObservationsChannel,
+                                notConverted
+                            );
+                        }
                     }
                     else if (message.Value.FeatureTableAction == FeatureTableAction.Deleted)
                     {
@@ -2028,7 +2215,7 @@ public partial class SecchiViewModel : ObservableRecipient
             // Create a query to get the feature to delete.
             var queryParameters = new QueryParameters
             {
-                WhereClause = $"LocationId = {locationId}"
+                WhereClause = $"LocationId = {locationId}",
             };
 
             // Query the feature table.
@@ -2132,7 +2319,7 @@ public partial class SecchiViewModel : ObservableRecipient
             // Create a query to get the feature to update.
             var queryParameters = new QueryParameters
             {
-                WhereClause = $"LocationId = {locationId}"
+                WhereClause = $"LocationId = {locationId}",
             };
 
             // Query the feature table.
