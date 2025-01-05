@@ -23,7 +23,7 @@ using WinRT;
 
 namespace WaterMeasurements.Services.IncrementalLoaders;
 
-public class SecchiLocationCollectionLoader
+public partial class SecchiLocationCollectionLoader
     : ObservableCollection<SecchiLocationDisplay>,
         ISupportIncrementalLoading
 {

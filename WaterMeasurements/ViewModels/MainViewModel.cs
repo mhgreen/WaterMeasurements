@@ -271,6 +271,7 @@ public partial class MainViewModel : ObservableRecipient
 
             // TODO: Determine if this is needed.
 
+            /*
             // Send a message requesting the next instance channel.
             uint instanceChannelRequestMessage =
                 WeakReferenceMessenger.Default.Send<InstanceChannelRequestMessage>();
@@ -280,6 +281,7 @@ public partial class MainViewModel : ObservableRecipient
                 "MainViewModel, Initialize(): next instance channel is: {channel}.",
                 instanceChannelRequestMessage
             );
+            */
 
             // Register to get map messages.
             WeakReferenceMessenger.Default.Register<PropertyChangedMessage<Map>>(

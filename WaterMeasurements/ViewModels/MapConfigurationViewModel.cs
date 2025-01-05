@@ -755,12 +755,6 @@ public partial class MapConfigurationViewModel : ObservableValidator
 
         try
         {
-            Guard.Against.Null(
-                args.InvokedItemContainer,
-                nameof(args.InvokedItemContainer),
-                "MapConfigurationViewModel, MapNavView_ItemInvoked: InvokedItemContainer is null."
-            );
-
             // Log the name of the invoked item.
             Logger.LogDebug(
                 MapConfigurationViewModelLog,
@@ -773,6 +767,12 @@ public partial class MapConfigurationViewModel : ObservableValidator
                 MapConfigurationViewModelLog,
                 "MapConfigurationViewModel, MapNavView_ItemInvoked: Sender name: {senderName}.",
                 sender.Name
+            );
+
+            Guard.Against.Null(
+                args.InvokedItemContainer,
+                nameof(args.InvokedItemContainer),
+                "MapConfigurationViewModel, MapNavView_ItemInvoked: InvokedItemContainer is null."
             );
 
             switch (args.InvokedItemContainer.Name)

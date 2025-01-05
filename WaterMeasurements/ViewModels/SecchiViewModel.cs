@@ -121,8 +121,8 @@ public partial class SecchiViewModel : ObservableRecipient
 
     // -------------------- Set one or both of the following to true to cause download --------------------
 
-    private readonly bool refreshObservations = true;
-    private readonly bool refreshLocations = true;
+    private readonly bool refreshObservations = false;
+    private readonly bool refreshLocations = false;
 
     // -------------------- Set one or both of above to true to cause download ----------------------------
 
